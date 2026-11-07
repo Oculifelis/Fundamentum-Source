@@ -1,0 +1,6 @@
+{
+  "trigger": "minecraft:cramming",
+  "aura": "#fundamentum:element/arcane",
+  "consume": "none",
+  "burst": {"radius": 3, "damage": 1, "damage_type": "minecraft:cramming", "include_target": true}
+}

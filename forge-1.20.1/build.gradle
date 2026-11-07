@@ -1,0 +1,152 @@
+plugins {
+    id 'eclipse'
+    id 'idea'
+    id 'maven-publish'
+    id 'net.minecraftforge.gradle' version '[6.0.24,6.2)'
+}
+
+version = "${mod_version}+${minecraft_version}"
+group = mod_group_id
+
+base {
+    archivesName = "${mod_id}-forge"
+}
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+
+minecraft {
+    mappings channel: 'official', version: minecraft_version
+    copyIdeResources = true
+    runs {
+        configureEach {
+            workingDirectory project.file('run')
+            property 'forge.logging.console.level', 'info'
+            // lets mixin mods such as Curios run in the dev environment
+            property 'mixin.env.remapRefMap', 'true'
+            property 'mixin.env.refMapRemappingFile', "${projectDir}/build/createSrgToMcp/output.srg"
+            mods {
+                "${mod_id}" {
+                    source sourceSets.main
+                }
+            }
+        }
+        client {
+            jvmArgs '-Xmx3G'
+            args '-mixin.config=fundamentum.mixins.json'
+        }
+        server {
+            args '--nogui'
+            // the common mixins (LivingEntityMixin, MobMixin) in dev runs too; the jar names the config in its manifest
+            args '-mixin.config=fundamentum.mixins.json'
+            // gradlew runServer -Pwhiptest: the in-game whip test (whip/WhipSelfTest), which stops the server when done
+            if (project.hasProperty('whiptest')) {
+                property 'fundamentum.whiptest', 'true'
+            }
+            // gradlew runServer -Pportaltest: the in-game portal crafting test (portal/PortalSelfTest) with its recipes
+            if (project.hasProperty('portaltest')) {
+                property 'fundamentum.portaltest', 'true'
+            }
+            // gradlew runServer -Pskytest: the Psychedelic Moon's config, roll, command and sky data (sky/SkySelfTest)
+            if (project.hasProperty('skytest')) {
+                property 'fundamentum.skytest', 'true'
+            }
+            // gradlew runServer -Pelementtest: the elemental interaction test (element/ElementSelfTest) with its data
+            if (project.hasProperty('elementtest')) {
+                property 'fundamentum.elementtest', 'true'
+            }
+        }
+    }
+}
+
+repositories {
+    maven {
+        name = 'Curios'
+        url = 'https://maven.theillusivec4.top/'
+        content { includeGroup 'top.theillusivec4.curios' }
+    }
+    maven {
+        name = 'JEI (BlameJared)'
+        url = 'https://maven.blamejared.com/'
+        content { includeGroup 'mezz.jei' }
+    }
+}
+
+dependencies {
+    minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
+    // Curios is required (Oculifelis, 2026-10-25): the wings, mount and hook slots live in it. Dev runs always load it.
+    compileOnly fg.deobf("top.theillusivec4.curios:curios-forge:${curios_version}:api")
+    runtimeOnly fg.deobf("top.theillusivec4.curios:curios-forge:${curios_version}")
+    // JEI is optional: compiled against its API only (the portal crafting category in compat/jei)
+    compileOnly fg.deobf("mezz.jei:jei-${minecraft_version}-common-api:${jei_version}")
+    compileOnly fg.deobf("mezz.jei:jei-${minecraft_version}-forge-api:${jei_version}")
+    testImplementation platform('org.junit:junit-bom:5.13.4')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+// Plain unit tests for code that needs no game (gradlew test)
+tasks.named('test') {
+    useJUnitPlatform()
+}
+
+// The self-tests' data, only in their runs (never build a jar with -Pportaltest, -Pskytest or -Pelementtest)
+if (project.hasProperty('portaltest')) {
+    sourceSets.main.resources.srcDir 'src/portaltest/resources'
+}
+if (project.hasProperty('skytest')) {
+    sourceSets.main.resources.srcDir 'src/skytest/resources'
+}
+if (project.hasProperty('elementtest')) {
+    sourceSets.main.resources.srcDir 'src/elementtest/resources'
+}
+
+tasks.named('processResources', ProcessResources).configure {
+    var replaceProperties = [
+            minecraft_version      : minecraft_version,
+            minecraft_version_range: minecraft_version_range,
+            forge_version_range    : forge_version_range,
+            loader_version_range   : loader_version_range,
+            mod_id                 : mod_id,
+            mod_name               : mod_name,
+            mod_license            : mod_license,
+            mod_version            : mod_version,
+            curios_range           : curios_range,
+            jei_range              : jei_range,
+    ]
+    inputs.properties replaceProperties
+    filesMatching(['META-INF/mods.toml']) {
+        expand replaceProperties
+    }
+}
+
+tasks.named('jar', Jar).configure {
+    manifest {
+        attributes(['Specification-Title': mod_id, 'Implementation-Title': project.name, 'Implementation-Version': project.jar.archiveVersion,
+                    'MixinConfigs': 'fundamentum.mixins.json'])
+    }
+    finalizedBy 'reobfJar'
+}
+
+// Mods that build on Fundamentum read it from this folder's repo/ (gradlew publish), see README.md
+publishing {
+    publications {
+        register('mavenJava', MavenPublication) {
+            artifactId = "${mod_id}-forge"
+            artifact jar
+        }
+    }
+    repositories {
+        maven { url = 'H:/AI_MC_Modding/Fundamentum/repo' }
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+// LGPL-3.0-or-later: the licence texts and credits ship in the jar's META-INF
+tasks.named('jar') {
+    from([rootProject.file('../LICENSE'), rootProject.file('../COPYING'), rootProject.file('../CREDITS.md')]) {
+        into 'META-INF'
+    }
+}

@@ -1,0 +1,5 @@
+{
+  "values": {
+    "minecraft:cow": {"resist": {"minecraft:cactus": 0.5}, "immune": ["minecraft:sweet_berry_bush"]}
+  }
+}

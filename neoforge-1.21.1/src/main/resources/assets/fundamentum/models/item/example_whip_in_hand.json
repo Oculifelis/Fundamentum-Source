@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/handheld",
+  "textures": {
+    "layer0": "fundamentum:item/example_whip_in_hand"
+  }
+}

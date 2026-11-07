@@ -1,0 +1,7 @@
+{
+  "trigger": "#fundamentum:element/fire",
+  "aura": ["#fundamentum:element/water"],
+  "priority": 9,
+  "damage": {"multiplier": 1.5},
+  "fx": {"particle": {"type": "minecraft:cloud"}, "count": 24, "spread": 0.6, "sound": "minecraft:block.lava.extinguish"}
+}

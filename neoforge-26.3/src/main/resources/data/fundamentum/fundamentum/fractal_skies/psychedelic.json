@@ -1,0 +1,20 @@
+{
+  "moon": "fundamentum:psychedelic",
+  "fractal": "mandelbrot",
+  "tour": true,
+  "iterations": 220,
+  "palette": "rainbow",
+  "mapping": "zenith",
+  "center": [-0.6, 0.0],
+  "scale": 1.5,
+  "zoom": {
+    "speed": 0.0125,
+    "depth": 7.0
+  },
+  "palette_speed": 0.02,
+  "rotation_speed": 0.002,
+  "brightness": 0.85,
+  "horizon": 0.3,
+  "fade_seconds": 6,
+  "melt": 0.6
+}

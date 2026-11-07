@@ -1,0 +1,8 @@
+{
+  "trigger": "#fundamentum:element/electric",
+  "aura": "#fundamentum:element/fire",
+  "priority": 8,
+  "burst": {"radius": 2.5, "damage": 2, "scale": 0.5, "damage_type": "minecraft:explosion"},
+  "knockback": {"strength": 0.8, "up": 0.3},
+  "fx": {"particle": {"type": "minecraft:explosion"}, "count": 1, "spread": 0, "sound": "minecraft:entity.generic.explode", "volume": 0.6, "pitch": 1.3}
+}

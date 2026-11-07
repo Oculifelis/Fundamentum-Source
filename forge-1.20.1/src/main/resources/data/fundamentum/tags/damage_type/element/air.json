@@ -1,0 +1,9 @@
+{
+  "values": [
+    "fundamentum:air",
+    {
+      "id": "minecraft:wind_charge",
+      "required": false
+    }
+  ]
+}

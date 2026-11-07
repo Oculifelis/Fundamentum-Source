@@ -1,0 +1,182 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+    id 'net.neoforged.moddev' version '2.0.148'
+}
+
+version = "${mod_version}+${minecraft_version}"
+group = mod_group_id
+
+base {
+    archivesName = "${mod_id}-neoforge"
+}
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(25)
+
+configurations {
+    localRuntime
+    runtimeClasspath.extendsFrom localRuntime
+}
+
+repositories {
+    mavenCentral()
+    maven {
+        name = 'Curios'
+        url = 'https://maven.theillusivec4.top/'
+        content { includeGroup 'top.theillusivec4.curios' }
+    }
+    maven {
+        name = 'JEI (BlameJared)'
+        url = 'https://maven.blamejared.com/'
+        content { includeGroup 'mezz.jei' }
+    }
+    maven {
+        name = 'Modrinth (Jade)'
+        url = 'https://api.modrinth.com/maven'
+        content { includeGroup 'maven.modrinth' }
+    }
+}
+
+// Curios is required (Oculifelis, 2026-10-25): the wings, mount and hook slots live in it. Dev runs always load it.
+dependencies {
+    compileOnly "top.theillusivec4.curios:curios-neoforge:${curios_version}:api"
+    localRuntime "top.theillusivec4.curios:curios-neoforge:${curios_version}"
+    // KubeJS, Rhino and Better Advanced Tooltips (KubeJS 8 crashes without it), when their jars are in libs/ (taken from an
+    // instance, gitignored), load in dev runs so scripts using Fundamentum's API (api/SoulFire) can be tried; never in the jar
+    localRuntime fileTree('libs') { include 'kubejs-*.jar', 'rhino-*.jar', 'better-advanced-tooltips-*.jar' }
+    // JEI is optional: compiled against its API only (the portal crafting category in compat/jei)
+    compileOnly "mezz.jei:jei-${minecraft_version}-common-api:${jei_version}"
+    compileOnly "mezz.jei:jei-${minecraft_version}-neoforge-api:${jei_version}"
+    // Jade is optional: compiled against its jar only (the jukebox progress line in compat/jade); never in the jar
+    compileOnly "maven.modrinth:jade:${jade_version}"
+    testImplementation platform('org.junit:junit-bom:5.13.4')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    // PoseStateTest builds pose clips from JSON (gson comes with Minecraft, which the test classpath does not have)
+    testImplementation 'com.google.code.gson:gson:2.11.0'
+}
+
+// Plain unit tests for code that needs no game (gradlew test); in-game checks live in Ostentum's SelfTest
+tasks.named('test') {
+    useJUnitPlatform()
+}
+
+neoForge {
+    version = project.neo_version
+    runs {
+        client {
+            client()
+            jvmArgument '-Xmx3G'
+            if (project.hasProperty('nofocus')) {
+                systemProperty 'fundamentum.nofocus', 'true'
+            }
+            // gradlew runClient -Pskyshot: sky/SkyShot screenshots the fractal skies and the melt off screen, then closes
+            if (project.hasProperty('skyshot')) {
+                systemProperty 'fundamentum.skyshot', 'true'
+                systemProperty 'fundamentum.nofocus', 'true'
+            }
+            // gradlew runClient -Ppageshot[=shaders]: client/PageShot takes the mod page's pictures at 1920x1080 off screen, in its own run-pageshot folder
+            if (project.hasProperty('pageshot')) {
+                systemProperty 'fundamentum.pageshot', project.property('pageshot').toString()
+                systemProperty 'fundamentum.nofocus', 'true'
+                gameDirectory = project.file('run-pageshot')
+                programArguments.addAll('--width', '1920', '--height', '1080')
+            }
+            // gradlew runClient -Psoulfireshot: soulfire/SoulFireShot screenshots soul-burning mobs and the screen fire off screen, then closes
+            if (project.hasProperty('soulfireshot')) {
+                systemProperty 'fundamentum.soulfireshot', 'true'
+                systemProperty 'fundamentum.nofocus', 'true'
+            }
+            // gradlew runClient -Pjukeboxshot: music/client/JukeboxShot plays a jukebox off screen, checks the tracker, screenshots the Jade line, then closes
+            if (project.hasProperty('jukeboxshot')) {
+                systemProperty 'fundamentum.jukeboxshot', 'true'
+                systemProperty 'fundamentum.nofocus', 'true'
+            }
+        }
+        server {
+            server()
+            programArgument '--nogui'
+            // gradlew runServer -Pwhiptest: the in-game whip test (whip/WhipSelfTest), which stops the server when done
+            if (project.hasProperty('whiptest')) {
+                systemProperty 'fundamentum.whiptest', 'true'
+            }
+            // gradlew runServer -Pportaltest: the in-game portal crafting test (portal/PortalSelfTest) with its recipes
+            if (project.hasProperty('portaltest')) {
+                systemProperty 'fundamentum.portaltest', 'true'
+            }
+            // gradlew runServer -Pskytest: the Psychedelic Moon's config, roll, command and sky data (sky/SkySelfTest)
+            if (project.hasProperty('skytest')) {
+                systemProperty 'fundamentum.skytest', 'true'
+            }
+            // gradlew runServer -Pelementtest: the elemental interaction test (element/ElementSelfTest) with its data
+            if (project.hasProperty('elementtest')) {
+                systemProperty 'fundamentum.elementtest', 'true'
+            }
+        }
+        configureEach {
+            logLevel = org.slf4j.event.Level.INFO
+        }
+    }
+    mods {
+        "${mod_id}" {
+            sourceSet(sourceSets.main)
+        }
+    }
+}
+
+var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {
+    var replaceProperties = [
+            minecraft_version      : minecraft_version,
+            minecraft_version_range: minecraft_version_range,
+            neo_version            : neo_version,
+            mod_id                 : mod_id,
+            mod_name               : mod_name,
+            mod_license            : mod_license,
+            mod_version            : mod_version,
+            curios_range           : curios_range,
+            jei_range              : jei_range,
+            jade_range             : jade_range,
+    ]
+    inputs.properties replaceProperties
+    expand replaceProperties
+    from "src/main/templates"
+    into "build/generated/sources/modMetadata"
+}
+sourceSets.main.resources.srcDir generateModMetadata
+// The portal test's recipes, only in -Pportaltest runs (never build a jar with -Pportaltest)
+if (project.hasProperty('portaltest')) {
+    sourceSets.main.resources.srcDir 'src/portaltest/resources'
+}
+// The sky test's plain moon and night event, only in -Pskytest runs (never build a jar with -Pskytest)
+if (project.hasProperty('skytest')) {
+    sourceSets.main.resources.srcDir 'src/skytest/resources'
+}
+// The element test's data, only in -Pelementtest runs (never build a jar with -Pelementtest)
+if (project.hasProperty('elementtest')) {
+    sourceSets.main.resources.srcDir 'src/elementtest/resources'
+}
+neoForge.ideSyncTask generateModMetadata
+
+// Mods that build on Fundamentum read it from this folder's repo/ (gradlew publish), see README.md
+publishing {
+    publications {
+        register('mavenJava', MavenPublication) {
+            artifactId = "${mod_id}-neoforge"
+            from components.java
+        }
+    }
+    repositories {
+        maven { url = 'H:/AI_MC_Modding/Fundamentum/repo' }
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+// LGPL-3.0-or-later: the licence texts and credits ship in the jar's META-INF
+tasks.named('jar') {
+    from([rootProject.file('../LICENSE'), rootProject.file('../COPYING'), rootProject.file('../CREDITS.md')]) {
+        into 'META-INF'
+    }
+}

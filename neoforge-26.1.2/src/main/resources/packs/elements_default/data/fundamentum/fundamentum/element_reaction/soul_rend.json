@@ -1,0 +1,7 @@
+{
+  "trigger": "#fundamentum:element/soul_fire",
+  "aura": "#fundamentum:element/shadow",
+  "priority": 8,
+  "damage": {"multiplier": 1.5},
+  "fx": {"particle": {"type": "minecraft:soul"}, "count": 14, "spread": 0.5, "sound": "minecraft:particle.soul_escape"}
+}

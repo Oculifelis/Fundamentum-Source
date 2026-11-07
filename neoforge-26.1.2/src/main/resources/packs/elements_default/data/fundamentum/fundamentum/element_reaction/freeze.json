@@ -1,0 +1,8 @@
+{
+  "trigger": "#fundamentum:element/ice",
+  "aura": "#fundamentum:element/water",
+  "priority": 9,
+  "damage": {"bonus": 2.0},
+  "effects": [{"id": "minecraft:slowness", "duration": 60, "amplifier": 3}],
+  "fx": {"particle": {"type": "minecraft:snowflake"}, "count": 20, "sound": "minecraft:block.glass.place"}
+}

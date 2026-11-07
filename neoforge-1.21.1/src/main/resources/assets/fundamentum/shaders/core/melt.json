@@ -1,0 +1,10 @@
+{
+    "vertex": "fundamentum:melt",
+    "fragment": "fundamentum:melt",
+    "samplers": [
+        { "name": "Sampler0" }
+    ],
+    "uniforms": [
+        { "name": "Melt", "type": "float", "count": 4, "values": [ 0.0, 0.0, 0.0, 0.0 ] }
+    ]
+}

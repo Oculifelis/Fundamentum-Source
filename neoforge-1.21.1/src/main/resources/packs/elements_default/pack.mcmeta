@@ -1,0 +1,6 @@
+{
+  "pack": {
+    "description": {"translate": "pack.fundamentum.elements_default.description", "fallback": "Fundamentum's vanilla elemental auras, reactions and affinities"},
+    "pack_format": 48
+  }
+}

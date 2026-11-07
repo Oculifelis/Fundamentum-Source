@@ -1,0 +1,27 @@
+{
+  "chance": 0.03,
+  "priority": -10,
+  "full_moon": "never",
+  "fog": {
+    "color": "#9B4DFF",
+    "strength": 0.22,
+    "shift": {
+      "color": "#2FE3C0",
+      "seconds": 16
+    }
+  },
+  "sky": {
+    "color": "#9B4DFF",
+    "strength": 0.18,
+    "shift": {
+      "color": "#2FE3C0",
+      "seconds": 16
+    }
+  },
+  "rise_message": {
+    "key": "message.fundamentum.psychedelic_rise",
+    "color": "fog",
+    "italic": true
+  },
+  "set_message": "message.fundamentum.psychedelic_set"
+}

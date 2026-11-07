@@ -1,0 +1,9 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.fundamentum.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "mixins": ["LivingEntityMixin", "MobMixin"],
+  "client": ["ClientLevelMixin", "DimensionSpecialEffectsMixin", "EntityGlowMixin"],
+  "injectors": {"defaultRequire": 1}
+}

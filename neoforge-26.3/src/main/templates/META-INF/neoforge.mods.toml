@@ -1,0 +1,50 @@
+license="${mod_license}"
+
+[[mods]]
+modId="${mod_id}"
+version="${mod_version}"
+displayName="${mod_name}"
+logoFile="fundamentum_logo.png"
+logoBlur=false
+enumExtensions="META-INF/enumextensions.json"
+authors="Oculifelis"
+credits="By Oculifelis, including all art. The whip cord code adapts Better Whips by my2167592261-cell (github.com/my2167592261-cell/Better-Whips, MIT License); none of Better Whips' art or sounds are used."
+description='''
+The shared groundwork under Oculifelis's mods: data tables, shared stats, creature types, use sickness, Curios slots, wings, cosmetic armor, 3D arrows, mounts, grappling hooks, summons, a mob showcase command, left-click triggers, data-driven item holds, pose clips and first-person arms, special moons, cord whips, portal crafting, and fractal skies.
+'''
+
+[[mixins]]
+config="fundamentum.mixins.json"
+
+[[dependencies.${mod_id}]]
+    modId="neoforge"
+    type="required"
+    versionRange="[${neo_version},)"
+    ordering="NONE"
+    side="BOTH"
+
+[[dependencies.${mod_id}]]
+    modId="minecraft"
+    type="required"
+    versionRange="${minecraft_version_range}"
+    ordering="NONE"
+    side="BOTH"
+
+[[dependencies.${mod_id}]]
+    modId="curios"
+    type="required"
+    versionRange="${curios_range}"
+    ordering="NONE"
+    side="BOTH"
+[[dependencies.${mod_id}]]
+    modId="jei"
+    type="optional"
+    versionRange="${jei_range}"
+    ordering="NONE"
+    side="CLIENT"
+[[dependencies.${mod_id}]]
+    modId="jade"
+    type="optional"
+    versionRange="${jade_range}"
+    ordering="NONE"
+    side="BOTH"

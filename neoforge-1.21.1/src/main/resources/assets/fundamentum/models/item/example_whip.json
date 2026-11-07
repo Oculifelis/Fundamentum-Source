@@ -1,0 +1,9 @@
+{
+  "loader": "neoforge:separate_transforms",
+  "base": { "parent": "fundamentum:item/example_whip_in_hand" },
+  "perspectives": {
+    "gui": { "parent": "fundamentum:item/example_whip_icon" },
+    "ground": { "parent": "fundamentum:item/example_whip_icon" },
+    "fixed": { "parent": "fundamentum:item/example_whip_icon" }
+  }
+}

@@ -1,0 +1,9 @@
+build/
+.gradle/
+run/
+*.log
+out/
+.idea/
+repo/
+branding/curseforge/*.jar
+libs/

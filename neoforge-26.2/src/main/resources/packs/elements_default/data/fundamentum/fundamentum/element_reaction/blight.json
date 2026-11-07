@@ -1,0 +1,8 @@
+{
+  "trigger": "#fundamentum:element/shadow",
+  "aura": "#fundamentum:element/arcane",
+  "priority": 4,
+  "damage": {"multiplier": 1.25},
+  "effects": [{"id": "minecraft:weakness", "duration": 100}],
+  "fx": {"particle": {"type": "minecraft:smoke"}, "count": 12}
+}

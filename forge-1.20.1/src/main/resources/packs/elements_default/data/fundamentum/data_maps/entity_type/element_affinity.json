@@ -1,0 +1,11 @@
+{
+  "values": {
+    "#fundamentum:creature/undead": {"resist": {"#fundamentum:element/shadow": 0.5, "#fundamentum:element/holy": -0.5}},
+    "minecraft:blaze": {"resist": {"#fundamentum:element/water": -1.0, "minecraft:drown": -1.0}},
+    "minecraft:enderman": {"resist": {"#fundamentum:element/water": -0.5}},
+    "minecraft:guardian": {"resist": {"#fundamentum:element/electric": -0.5}},
+    "minecraft:elder_guardian": {"resist": {"#fundamentum:element/electric": -0.5}},
+    "minecraft:polar_bear": {"resist": {"#fundamentum:element/ice": 0.5}},
+    "minecraft:snow_golem": {"resist": {"#fundamentum:element/ice": 1.0, "#fundamentum:element/fire": -0.5}}
+  }
+}

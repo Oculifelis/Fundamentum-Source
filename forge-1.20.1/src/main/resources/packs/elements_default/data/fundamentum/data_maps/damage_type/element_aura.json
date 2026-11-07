@@ -1,0 +1,13 @@
+{
+  "values": {
+    "#fundamentum:element/fire": {"aura": "#fundamentum:element/fire", "strength": 1, "duration": 120, "max_stacks": 3},
+    "#fundamentum:element/ice": {"aura": "#fundamentum:element/ice", "strength": 1, "duration": 160, "max_stacks": 3},
+    "#fundamentum:element/electric": {"aura": "#fundamentum:element/electric", "strength": 1, "duration": 100, "max_stacks": 2},
+    "#fundamentum:element/water": {"aura": "#fundamentum:element/water", "strength": 1, "duration": 200, "max_stacks": 3},
+    "minecraft:drown": {"aura": "#fundamentum:element/water", "strength": 1, "duration": 200, "max_stacks": 3},
+    "#fundamentum:element/arcane": {"aura": "#fundamentum:element/arcane", "strength": 1, "duration": 100, "max_stacks": 2},
+    "minecraft:magic": {"aura": "#fundamentum:element/arcane", "strength": 1, "duration": 100, "max_stacks": 2},
+    "minecraft:indirect_magic": {"aura": "#fundamentum:element/arcane", "strength": 1, "duration": 100, "max_stacks": 2},
+    "#fundamentum:element/shadow": {"aura": "#fundamentum:element/shadow", "strength": 1, "duration": 160, "decay": 0.1, "max_stacks": 3}
+  }
+}

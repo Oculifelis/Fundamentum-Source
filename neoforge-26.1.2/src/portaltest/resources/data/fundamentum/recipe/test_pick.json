@@ -1,0 +1,8 @@
+{
+  "type": "fundamentum:portal_crafting",
+  "ingredient": "minecraft:iron_pickaxe",
+  "portal": "minecraft:nether_portal",
+  "dimension": "minecraft:the_nether",
+  "result": { "id": "minecraft:golden_pickaxe" },
+  "keep_components": true
+}

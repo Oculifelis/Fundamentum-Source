@@ -1,0 +1,28 @@
+{
+  "entries": [
+    {
+      "enum": "net/minecraft/client/model/HumanoidModel$ArmPose",
+      "name": "FUNDAMENTUM_PISTOL",
+      "constructor": "(ZZLnet/neoforged/neoforge/client/IArmPoseTransformer;)V",
+      "parameters": {"class": "com/fundamentum/pose/ArmPoses", "field": "PISTOL"}
+    },
+    {
+      "enum": "net/minecraft/client/model/HumanoidModel$ArmPose",
+      "name": "FUNDAMENTUM_STAFF",
+      "constructor": "(ZZLnet/neoforged/neoforge/client/IArmPoseTransformer;)V",
+      "parameters": {"class": "com/fundamentum/pose/ArmPoses", "field": "STAFF"}
+    },
+    {
+      "enum": "net/minecraft/client/model/HumanoidModel$ArmPose",
+      "name": "FUNDAMENTUM_SUPPORT",
+      "constructor": "(ZZLnet/neoforged/neoforge/client/IArmPoseTransformer;)V",
+      "parameters": {"class": "com/fundamentum/pose/ArmPoses", "field": "SUPPORT"}
+    },
+    {
+      "enum": "net/minecraft/client/model/HumanoidModel$ArmPose",
+      "name": "FUNDAMENTUM_CLIP",
+      "constructor": "(ZZLnet/neoforged/neoforge/client/IArmPoseTransformer;)V",
+      "parameters": {"class": "com/fundamentum/pose/ArmPoses", "field": "CLIP"}
+    }
+  ]
+}

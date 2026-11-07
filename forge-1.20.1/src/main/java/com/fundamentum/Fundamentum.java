@@ -1,0 +1,89 @@
+package com.fundamentum;
+
+import com.fundamentum.attribute.HealthCap;
+import com.fundamentum.attribute.StatAttributes;
+import com.fundamentum.command.Showcase;
+import com.fundamentum.command.Tps;
+import com.fundamentum.cosmetic.CosmeticArmor;
+import com.fundamentum.creature.CreatureTypes;
+import com.fundamentum.damage.DamageClasses;
+import com.fundamentum.damage.Elements;
+import com.fundamentum.data.DataTables;
+import com.fundamentum.element.ElementInteractions;
+import com.fundamentum.glow.Glows;
+import com.fundamentum.hook.Hooks;
+import com.fundamentum.moon.Moons;
+import com.fundamentum.moon.NightEvents;
+import com.fundamentum.mount.Mounts;
+import com.fundamentum.portal.PortalCrafting;
+import com.fundamentum.portal.PortalSelfTest;
+import com.fundamentum.pose.Poses;
+import com.fundamentum.sickness.Sickness;
+import com.fundamentum.sky.FractalSkies;
+import com.fundamentum.sky.PsychedelicMoon;
+import com.fundamentum.sky.SkyConfig;
+import com.fundamentum.sky.SkySelfTest;
+import com.fundamentum.summon.Summons;
+import com.fundamentum.trigger.Triggers;
+import com.fundamentum.whip.Whips;
+import com.fundamentum.whip.WhipsConfig;
+import com.fundamentum.wings.Wings;
+import net.minecraftforge.fml.ModLoadingContext;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.config.ModConfig;
+import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.minecraftforge.fml.loading.FMLEnvironment;
+
+/**
+ * Fundamentum: the shared groundwork under Oculifelis's mods. Each piece lives in its own package (attribute: the health
+ * ceiling and shared combat stats; data: data tables; creature: creature types; sickness: use sickness; item: item
+ * matching; curios: the wings, mount, hook and summon slots; wings: Terraria-style wings;
+ * cosmetic: cosmetic armour; arrow: 3D arrows; mount: summoned mounts; hook: grappling hooks; client: the hotkeys and
+ * tooltips; command: /fundamentum showcase and tps; trigger: left click as a trigger; pose: how items are held, and pose
+ * clips; moon: special moons and night events; summon: minions; damage: damage classes and elements; whip: cord whips;
+ * glow: coloured Glowing outlines; portal: portal crafting, items thrown through a portal changing; element: elemental
+ * auras, reactions and affinities; compat.jei: the optional JEI categories; sky: fractal skies and the Psychedelic Moon;
+ * curve: shared curves; net: the 1.20.1 network channels);
+ * mods that rely on one list fundamentum as a required dependency.
+ */
+@Mod(Fundamentum.MODID)
+public final class Fundamentum {
+    public static final String MODID = "fundamentum";
+
+    public Fundamentum() {
+        var modBus = FMLJavaModLoadingContext.get().getModEventBus();
+        var context = ModLoadingContext.get();
+        HealthCap.lift();
+        DataTables.init();
+        StatAttributes.init(modBus);
+        Elements.init();
+        DamageClasses.init();
+        ElementInteractions.init(modBus);
+        CreatureTypes.init();
+        Sickness.init(modBus);
+        Wings.init();
+        CosmeticArmor.init(modBus);
+        Mounts.init(modBus);
+        Hooks.init(modBus);
+        Summons.init(modBus);
+        Showcase.init();
+        Tps.init();
+        Triggers.init(modBus);
+        Whips.init(modBus);
+        Glows.init(modBus);
+        context.registerConfig(ModConfig.Type.CLIENT, WhipsConfig.SPEC);
+        Poses.init(modBus);
+        Moons.init(modBus);
+        NightEvents.init(modBus);
+        PortalCrafting.init(modBus);
+        PortalSelfTest.init();
+        FractalSkies.init();
+        PsychedelicMoon.init();
+        SkySelfTest.init();
+        context.registerConfig(ModConfig.Type.COMMON, PsychedelicMoon.SPEC);
+        context.registerConfig(ModConfig.Type.CLIENT, SkyConfig.SPEC, "fundamentum-sky-client.toml");
+        if (FMLEnvironment.dist.isClient()) {
+            FundamentumClient.init();
+        }
+    }
+}

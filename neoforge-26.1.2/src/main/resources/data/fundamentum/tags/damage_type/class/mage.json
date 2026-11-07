@@ -1,0 +1,17 @@
+{
+  "values": [
+    "minecraft:magic",
+    "minecraft:indirect_magic",
+    "fundamentum:fire",
+    "fundamentum:soul_fire",
+    "fundamentum:ice",
+    "fundamentum:water",
+    "fundamentum:electric",
+    "fundamentum:earth",
+    "fundamentum:air",
+    "fundamentum:poison",
+    "fundamentum:holy",
+    "fundamentum:shadow",
+    "fundamentum:arcane"
+  ]
+}

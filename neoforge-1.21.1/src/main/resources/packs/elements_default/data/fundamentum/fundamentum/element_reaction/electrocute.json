@@ -1,0 +1,9 @@
+{
+  "trigger": "#fundamentum:element/electric",
+  "aura": "#fundamentum:element/water",
+  "priority": 8,
+  "consume": "none",
+  "apply_trigger_aura": true,
+  "burst": {"radius": 3, "damage": 1, "scale": 0.5, "damage_type": "fundamentum:electric"},
+  "fx": {"particle": {"type": "minecraft:electric_spark"}, "count": 20, "spread": 0.8, "speed": 0.2}
+}

@@ -1,0 +1,7 @@
+{
+  "trigger": ["#fundamentum:element/water", "minecraft:drown"],
+  "aura": "#fundamentum:element/fire",
+  "priority": 7,
+  "extinguish": true,
+  "fx": {"particle": {"type": "minecraft:white_smoke"}, "count": 12, "sound": "minecraft:block.fire.extinguish"}
+}

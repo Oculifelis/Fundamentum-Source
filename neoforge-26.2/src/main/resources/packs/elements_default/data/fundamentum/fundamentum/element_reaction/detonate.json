@@ -1,0 +1,9 @@
+{
+  "trigger": "#minecraft:is_explosion",
+  "aura": "#fundamentum:element/fire",
+  "priority": 5,
+  "consume": "one",
+  "apply_trigger_aura": true,
+  "damage": {"multiplier": 1.5},
+  "fx": {"particle": {"type": "minecraft:flame"}, "count": 20, "spread": 0.6, "speed": 0.05}
+}

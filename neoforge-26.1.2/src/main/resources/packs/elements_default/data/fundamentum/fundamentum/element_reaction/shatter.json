@@ -1,0 +1,8 @@
+{
+  "trigger": "#minecraft:is_explosion",
+  "aura": "#fundamentum:element/ice",
+  "priority": 6,
+  "damage": {"multiplier": 1.5},
+  "convert_to": "minecraft:magic",
+  "fx": {"particle": {"type": "minecraft:item_snowball"}, "count": 20, "spread": 0.5, "speed": 0.1, "sound": "minecraft:block.glass.break"}
+}
