@@ -51,6 +51,7 @@ public final class Fundamentum {
         DataTables.init(modBus);
         StatAttributes.init(modBus);
         Elements.init();
+        com.fundamentum.damage.DataElements.init();
         DamageClasses.init();
         ElementInteractions.init(modBus);
         com.fundamentum.soulfire.SoulFlames.init(modBus);

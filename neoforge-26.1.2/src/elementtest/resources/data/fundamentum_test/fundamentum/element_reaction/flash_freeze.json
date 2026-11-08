@@ -1,0 +1,5 @@
+{
+  "trigger": "#fundamentum_test:element/frost",
+  "aura": "#fundamentum:element/water",
+  "damage": {"multiplier": 3}
+}

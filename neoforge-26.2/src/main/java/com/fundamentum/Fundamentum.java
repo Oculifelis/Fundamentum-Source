@@ -51,6 +51,7 @@ public final class Fundamentum {
         DataTables.init(modBus);
         StatAttributes.init(modBus);
         Elements.init();
+        com.fundamentum.damage.DataElements.init();
         DamageClasses.init();
         ElementInteractions.init(modBus);
         com.fundamentum.soulfire.SoulFlames.init(modBus);
@@ -78,5 +79,6 @@ public final class Fundamentum {
         com.fundamentum.sky.SkySelfTest.init();
         container.registerConfig(ModConfig.Type.COMMON, PsychedelicMoon.SPEC);
         container.registerConfig(ModConfig.Type.CLIENT, SkyConfig.SPEC, "fundamentum-sky-client.toml");
+        container.registerConfig(ModConfig.Type.CLIENT, com.fundamentum.client.ItemHudConfig.SPEC, "fundamentum-hud-client.toml");
     }
 }

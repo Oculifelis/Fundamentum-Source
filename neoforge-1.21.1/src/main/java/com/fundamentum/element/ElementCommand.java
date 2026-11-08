@@ -4,6 +4,7 @@ import com.mojang.brigadier.arguments.FloatArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.DynamicCommandExceptionType;
+import com.fundamentum.damage.Elements;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -22,6 +23,7 @@ import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageType;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import org.jetbrains.annotations.Nullable;
@@ -35,6 +37,7 @@ import org.jetbrains.annotations.Nullable;
  * first, so hits in a row all land), then the health it took and the auras left;</li>
  * <li>{@code affinity <targets> <damage type>}: what they resist of that type, and from where;</li>
  * <li>{@code reactions}: the loaded reactions in the order they are tried;</li>
+ * <li>{@code list}: every named element, from code or datapacks, with its tag, parent and attributes;</li>
  * <li>{@code help}: the manual, from lang lines {@code fundamentum.element.help.1..8}.</li>
  * </ul>
  */
@@ -52,6 +55,7 @@ public final class ElementCommand {
             .then(Commands.literal("element")
                 .then(Commands.literal("help").executes(ElementCommand::help))
                 .then(Commands.literal("reactions").executes(ElementCommand::reactions))
+                .then(Commands.literal("list").executes(ElementCommand::list))
                 .then(Commands.literal("auras")
                     .then(Commands.argument("targets", EntityArgument.entities()).executes(ElementCommand::auras)))
                 .then(Commands.literal("clear")
@@ -87,6 +91,24 @@ public final class ElementCommand {
                 .append(Component.literal(": " + r.trigger() + " on " + r.aura()).withStyle(ChatFormatting.GRAY)), false);
         }
         return all.size();
+    }
+
+    private static int list(CommandContext<CommandSourceStack> context) {
+        List<Elements.Element> all = Elements.all();
+        context.getSource().sendSuccess(() -> Component.translatable("fundamentum.element.list", all.size()).withStyle(ChatFormatting.GOLD), false);
+        for (Elements.Element e : all) {
+            Elements.Element parent = e.parent();
+            context.getSource().sendSuccess(() -> Component.literal("  ").append(e.displayName())
+                .append(Component.literal(" " + e.id() + " #" + e.damageTypes().location()).withStyle(ChatFormatting.GRAY))
+                .append(Component.translatable(e.fromData() ? "fundamentum.element.from_data" : "fundamentum.element.from_code").withStyle(ChatFormatting.DARK_GRAY))
+                .append(parent == null ? Component.empty() : Component.translatable("fundamentum.element.variant_of", parent.id().toString()).withStyle(ChatFormatting.GRAY))
+                .append(Component.literal(" " + attribute(e.damage()) + " / " + attribute(e.resistance())).withStyle(ChatFormatting.DARK_GRAY)), false);
+        }
+        return all.size();
+    }
+
+    private static String attribute(@Nullable Holder<Attribute> attribute) {
+        return attribute == null ? "-" : attribute.getRegisteredName();
     }
 
     private static int auras(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {

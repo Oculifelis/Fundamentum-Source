@@ -21,6 +21,7 @@ import org.jspecify.annotations.Nullable;
 /**
  * An element, written the way JSON writes it: a damage type ({@code "minecraft:magic"}) or a damage type tag
  * ({@code "#fundamentum:element/fire"}). There is no element registry: an element is a damage type, or a set of them.
+ * The named {@link Elements} (from code or datapacks) are written as their damage type tag.
  * A tag that is one of Fundamentum's {@link Elements} ({@code #<ns>:element/<e>}) also matches hits that are of that
  * element through their weapon's item tag or a classifier (a Fire Aspect sword's plain hit counts as fire).
  */
@@ -107,10 +108,12 @@ public record ElementRef(Identifier id, boolean tag) {
 
     /**
      * The element's name: the lang key {@code element.<ns>.<path>} (slashes become dots, so
-     * {@code #fundamentum:element/fire} is {@code element.fundamentum.element.fire}), else the raw text.
+     * {@code #fundamentum:element/fire} is {@code element.fundamentum.element.fire}), else the raw text. A tag that is
+     * one of the {@link Elements} uses that element's name and colour (a datapack element may name its own lang key).
      */
     public MutableComponent name() {
-        return Component.translatableWithFallback(langKey(), toString());
+        Elements.Element element = element();
+        return element != null ? element.displayName() : Component.translatableWithFallback(langKey(), toString());
     }
 
     public String langKey() {

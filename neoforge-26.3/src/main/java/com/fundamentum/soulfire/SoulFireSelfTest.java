@@ -99,6 +99,11 @@ public final class SoulFireSelfTest {
             level.setBlock(BASE.offset(4, -1, 0), Blocks.NETHERRACK.defaultBlockState(), Block.UPDATE_CLIENTS);
             return;
         }
+        if (now - start == 19 && !level.isPositionEntityTicking(BASE)) {
+            // 26.3: a just-forced chunk can take a few seconds to tick its entities; hold the timeline until it does
+            start++;
+            return;
+        }
         int t = now - start;
         if (t == 20) {
             level.getEntitiesOfClass(Entity.class, new AABB(BASE).inflate(24), e -> e.entityTags().contains(TAG)).forEach(Entity::discard);
