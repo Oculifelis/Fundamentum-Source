@@ -49,7 +49,8 @@ public final class WhipCord {
     }
 
     public final int segments;
-    public final double rest;
+    /** Link length; a cord drawn in or let out changes it and the links follow over the next steps. */
+    public double rest;
     /** Points now, handle first. */
     public final WhipVec[] points;
     /** Points at the start of the last step. */

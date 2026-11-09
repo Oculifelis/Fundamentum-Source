@@ -7,3 +7,4 @@ out/
 repo/
 branding/curseforge/*.jar
 libs/
+run-biometest*/

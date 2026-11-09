@@ -17,6 +17,15 @@ public final class WhipsConfig {
         .translation("fundamentum.configuration.flatHandles")
         .define("whips.flatHandles", false);
 
+    /**
+     * Tooltips (1.25.3, kept here because this is the one fundamentum-client.toml spec): fold Fundamentum's tooltip
+     * lines behind "Hold [Shift] for details" ({@code com.fundamentum.client.Tooltips}).
+     */
+    public static final ForgeConfigSpec.BooleanValue SHIFT_FOR_DETAILS = BUILDER
+        .comment("Fold item descriptions and stats (Fundamentum's tooltip lines, for every mod) behind \"Hold [Shift] for details\". false shows them always.")
+        .translation("fundamentum.configuration.shiftForDetails")
+        .define("tooltips.shiftForDetails", true);
+
     public static final ForgeConfigSpec SPEC = BUILDER.build();
 
     private WhipsConfig() {

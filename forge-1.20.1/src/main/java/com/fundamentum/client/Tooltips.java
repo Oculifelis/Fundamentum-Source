@@ -2,19 +2,32 @@ package com.fundamentum.client;
 
 import com.fundamentum.element.ElementAffinities;
 import com.fundamentum.hook.Hooks;
+import com.fundamentum.summon.Summons;
 import com.fundamentum.whip.WhipDefinition;
 import com.fundamentum.whip.WhipTuning;
 import com.fundamentum.whip.Whips;
+import com.fundamentum.whip.WhipsConfig;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.CopyOnWriteArrayList;
 import net.minecraft.ChatFormatting;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.resources.language.I18n;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.tags.ItemTags;
+import net.minecraft.tags.TagKey;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.event.entity.player.ItemTooltipEvent;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Item tooltips (1.22.1), for every mod's items:
@@ -24,10 +37,52 @@ import net.minecraftforge.event.entity.player.ItemTooltipEvent;
  * <li>Whips: damage, reach, cooldown, the tip crack's crit, targets, strands, homing, a slam, and the summon tag.</li>
  * <li>Hooks: the hook slot and its key, range, shoot and pull speed, and how many can be out.</li>
  * <li>Items with the {@code fundamentum:element_affinity} component: what they resist, are weak to or immune to.</li>
+ * <li>Lines other mods add through {@link #details(DetailSource)}.</li>
  * </ul>
+ * Since 1.25.3 these lines fold behind one grey "Hold [Shift] for details" line until Shift is held ({@link TooltipRule}
+ * says which items fold; {@code fundamentum-client.toml [tooltips] shiftForDetails = false} shows them always). Recipe
+ * viewers ({@code TooltipFlag.shouldDisplayAllInformation()}) and the creative search tree (no player) always get the
+ * full text, so search still finds it. Vanilla's enchantment, durability and attribute lines are never touched.
  */
 @Mod.EventBusSubscriber(modid = "fundamentum", value = Dist.CLIENT)
 public final class Tooltips {
+    /** Items whose Fundamentum lines always show, whatever {@link TooltipRule} says. */
+    public static final TagKey<Item> ALWAYS = TagKey.create(Registries.ITEM, new ResourceLocation("fundamentum", "tooltip_always"));
+    /** Items whose Fundamentum lines always fold behind Shift. */
+    public static final TagKey<Item> FOLD = TagKey.create(Registries.ITEM, new ResourceLocation("fundamentum", "tooltip_fold"));
+
+    /** Adds another mod's detail lines for a stack to Fundamentum's block, which folds behind Shift with the rest. */
+    @FunctionalInterface
+    public interface DetailSource {
+        /** Appends the lines for this stack (none for stacks it does not know). Stat lines: see {@link Tooltips#stat}. */
+        void add(ItemStack stack, List<Component> lines);
+    }
+
+    private static final List<DetailSource> SOURCES = new CopyOnWriteArrayList<>();
+
+    /**
+     * Registers detail lines for other mods' items (client side, e.g. from FMLClientSetupEvent): they go under the
+     * description, fold behind "Hold [Shift] for details" like Fundamentum's own lines, and count toward
+     * {@link TooltipRule}. A mod with its own {@code appendHoverText} can instead ask {@link #showDetails}.
+     */
+    public static void details(DetailSource source) {
+        SOURCES.add(source);
+    }
+
+    /**
+     * Whether a tooltip should show its details now: Shift held, recipe viewers and search (all information, or no
+     * player), or {@code shiftForDetails} off. For mods that write their own tooltip lines and want the same rule.
+     */
+    public static boolean showDetails(TooltipFlag flag, @Nullable Player player) {
+        return !shiftForDetails() || player == null || shiftHeld();
+    }
+
+    /** The grey "Hold [Shift] for details" line, "Shift" in white. */
+    public static Component holdShift() {
+        return Component.translatable("tooltip.fundamentum.hold_shift",
+            Component.translatable("tooltip.fundamentum.key_shift").withStyle(ChatFormatting.WHITE)).withStyle(ChatFormatting.GRAY);
+    }
+
     @SubscribeEvent
     public static void tooltip(ItemTooltipEvent event) {
         ItemStack stack = event.getItemStack();
@@ -35,28 +90,72 @@ public final class Tooltips {
         if (lines.isEmpty()) {
             return;
         }
-        int at = 1;
+        List<Component> top = new ArrayList<>();
         String key = stack.getItem().getDescriptionId();
         for (String suffix : new String[] {".desc", ".desc2", ".desc3"}) {
             if (I18n.exists(key + suffix)) {
-                lines.add(at++, Component.translatable(key + suffix).withStyle(ChatFormatting.GRAY));
+                top.add(Component.translatable(key + suffix).withStyle(ChatFormatting.GRAY));
             }
         }
+        for (DetailSource source : SOURCES) {
+            source.add(stack, top);
+        }
+        boolean stats = false;
         WhipDefinition whip = Whips.definition(stack);
         if (whip != null) {
-            whip(whip, lines, at);
+            whip(whip, top);
+            stats = true;
         }
         Hooks.Def hook = Hooks.def(stack);
         if (hook != null) {
-            hook(hook, lines, at);
+            hook(hook, top);
+            stats = true;
         }
+        List<Component> bottom = new ArrayList<>();
         ElementAffinities.Affinity affinity = ElementAffinities.item(stack);
         if (affinity != null) {
-            affinity(affinity, lines);
+            affinity(affinity, bottom);
+            stats |= !bottom.isEmpty();
         }
+        if (top.isEmpty() && bottom.isEmpty()) {
+            return;
+        }
+        List<String> text = new ArrayList<>();
+        top.forEach(c -> text.add(c.getString()));
+        bottom.forEach(c -> text.add(c.getString()));
+        boolean folds = TooltipRule.folds(text, stats, gear(stack, whip != null || hook != null), stack.is(ALWAYS), stack.is(FOLD));
+        if (folds && !showDetails(event.getFlags(), event.getEntity())) {
+            lines.add(1, holdShift());
+            return;
+        }
+        lines.addAll(1, top);
+        lines.addAll(bottom);
     }
 
-    /** An item's element_affinity NBT tag (1.25.0; a data component on 1.21): resistances in blue, weaknesses in red, immunities. */
+    private static boolean shiftForDetails() {
+        return !WhipsConfig.SPEC.isLoaded() || WhipsConfig.SHIFT_FOR_DETAILS.get();
+    }
+
+    private static boolean shiftHeld() {
+        return Screen.hasShiftDown();
+    }
+
+    /** Weapons, tools, armour, anything equippable or worn in a Curios slot, whips, hooks, summons and ammo. */
+    private static boolean gear(ItemStack stack, boolean whipOrHook) {
+        if (whipOrHook || stack.isDamageableItem() || net.minecraft.world.item.Equipable.get(stack) != null
+            || stack.getItem() instanceof net.minecraft.world.item.TieredItem || stack.is(ItemTags.ARROWS) || Summons.def(stack) != null) {
+            return true;
+        }
+        for (net.minecraft.world.entity.EquipmentSlot slot : net.minecraft.world.entity.EquipmentSlot.values()) {
+            if (!stack.getAttributeModifiers(slot).isEmpty()) {
+                return true;
+            }
+        }
+        return stack.getTags().anyMatch(tag -> tag.location().getNamespace().equals("curios")
+            || tag.location().getPath().contains("ammo"));
+    }
+
+    /** An item's element_affinity component (1.25.0): resistances in blue, weaknesses in red, immunities. */
     private static void affinity(ElementAffinities.Affinity affinity, List<Component> lines) {
         affinity.resist().forEach((element, value) -> lines.add(Component.translatable(
             value >= 0 ? "tooltip.fundamentum.element.resist" : "tooltip.fundamentum.element.weak", element.name(), num(Math.abs(value) * 100))
@@ -65,9 +164,9 @@ public final class Tooltips {
             .withStyle(ChatFormatting.BLUE)));
     }
 
-    private static void whip(WhipDefinition whip, List<Component> lines, int at) {
+    private static void whip(WhipDefinition whip, List<Component> lines) {
         WhipTuning t = whip.tuning;
-        List<Component> add = new java.util.ArrayList<>();
+        List<Component> add = new ArrayList<>();
         add.add(Component.empty());
         add.add(Component.translatable("tooltip.fundamentum.whip.swung").withStyle(ChatFormatting.GRAY));
         add.add(stat("tooltip.fundamentum.whip.damage", num(t.damage())));
@@ -101,11 +200,11 @@ public final class Tooltips {
                 add.add(stat("tooltip.fundamentum.whip.tag_crit", num(tag.critChance() * 100)));
             }
         }
-        lines.addAll(at, add);
+        lines.addAll(add);
     }
 
-    private static void hook(Hooks.Def hook, List<Component> lines, int at) {
-        List<Component> add = new java.util.ArrayList<>();
+    private static void hook(Hooks.Def hook, List<Component> lines) {
+        List<Component> add = new ArrayList<>();
         add.add(Component.empty());
         add.add(Component.translatable("tooltip.fundamentum.hook.slot", Component.keybind("key.fundamentum.hook"))
             .withStyle(ChatFormatting.GRAY));
@@ -121,11 +220,11 @@ public final class Tooltips {
         if (hook.airSeconds() > 0) {
             add.add(stat("tooltip.fundamentum.hook.air", num(hook.airSeconds())));
         }
-        lines.addAll(at, add);
+        lines.addAll(add);
     }
 
-    /** A stat line in vanilla's attribute style: indented, dark green. */
-    private static Component stat(String key, Object... args) {
+    /** A stat line in vanilla's attribute style: indented, dark green. Public for {@link DetailSource}s. */
+    public static Component stat(String key, Object... args) {
         return Component.literal(" ").append(Component.translatable(key, args)).withStyle(ChatFormatting.DARK_GREEN);
     }
 

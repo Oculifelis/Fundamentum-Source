@@ -143,30 +143,75 @@ public final class PosePlayer {
         }
     }
 
-    /** Per-entity playback. */
+    /** What an entity's pose is doing: resting (on the item's hold clip, if any) or playing one kind of clip. */
+    enum Mode { REST, CHARGE, CUE, FIRE, RELOAD }
+
+    /** "No shot seen yet" for {@link State#lastFire}: older than any shot. */
+    static final float NO_FIRE = Float.NEGATIVE_INFINITY;
+
+    /**
+     * Per-entity playback. The mode only changes through {@link #play}, {@link #release} and {@link #hold}, so a charge
+     * never survives a shot or reload, and nothing (clip, blend, combo) carries over to the next item.
+     */
     static final class State {
         String item = "";
+        Mode mode = Mode.REST;
         PoseClip clip;
         float start;
         float speed = 1.0F;
-        boolean charging;
         /** What was showing when the current clip began (or ended), faded out from blendFrom over blendTicks. */
         Sample from;
         float blendFrom;
         float blendTicks;
-        /** The fire time last seen (game ticks), and when the last cue of a combo came. */
-        float lastFire = Float.NaN;
+        /** The fire time last seen (game ticks, {@link #NO_FIRE} for none), and when the last cue of a combo came. */
+        float lastFire = NO_FIRE;
         long lastReload;
         int combo;
         float lastCombo = -1000.0F;
         long frame = -1L;
         float framePt = -1.0F;
         Sample cached;
+
+        /** Starts {@code clip} as {@code mode} at {@code now}, fading in over {@code from} (what was showing). */
+        void play(Mode mode, PoseClip clip, Sample from, float now, float speed) {
+            this.mode = mode;
+            this.from = from;
+            this.blendFrom = now;
+            this.blendTicks = clip.blendIn;
+            this.clip = clip;
+            this.start = now;
+            this.speed = speed;
+        }
+
+        /** Back to rest from {@code at}, fading out {@code from} over {@code blendTicks}. */
+        void release(Sample from, float at, float blendTicks) {
+            this.mode = Mode.REST;
+            this.from = from;
+            this.blendFrom = at;
+            this.blendTicks = blendTicks;
+            this.clip = null;
+        }
+
+        /** A new item in hand: everything starts over, and the item's last shot and reload are not replayed. */
+        void hold(String item, float lastFire, long lastReload) {
+            this.item = item;
+            this.mode = Mode.REST;
+            this.clip = null;
+            this.from = null;
+            this.blendTicks = 0.0F;
+            this.speed = 1.0F;
+            this.combo = 0;
+            this.lastCombo = -1000.0F;
+            this.lastFire = Float.isNaN(lastFire) ? NO_FIRE : lastFire;
+            this.lastReload = lastReload;
+        }
     }
 
     private static final Map<String, Optional<Binding>> BINDINGS = new ConcurrentHashMap<>();
     private static final Map<String, Optional<PoseClip>> CLIPS = new ConcurrentHashMap<>();
     private static final Map<Integer, State> STATES = new ConcurrentHashMap<>();
+    /** The level STATES belong to: entity ids mean nothing in another one (a dimension change, a new world). */
+    private static @Nullable Object statesLevel;
 
     /** Drops everything loaded (resource reload) and every entity's playback. */
     public static void reset() {
@@ -273,13 +318,16 @@ public final class PosePlayer {
             return;
         }
         float now = level.getGameTime() + Minecraft.getInstance().getFrameTime();
+        forLevel(level);
         State st = STATES.computeIfAbsent(entityId, k -> new State());
         if ("charge".equals(cue)) {
-            st.charging = true;
-            play(st, clip(b, b.charge()), now, 1.0F);
+            play(st, Mode.CHARGE, clip(b, b.charge()), now, 1.0F);
             return;
         }
-        st.charging = false;
+        if (st.mode == Mode.CHARGE) {
+            // any other cue ends a charge, even one with no clip of its own
+            st.release(composite(st, now), now, 3.0F);
+        }
         List<String> list = b.cues().get(cue);
         if (list == null || list.isEmpty()) {
             return;
@@ -293,19 +341,20 @@ public final class PosePlayer {
         } else {
             name = list.get(0);
         }
-        play(st, clip(b, name), now, 1.0F);
+        play(st, Mode.CUE, clip(b, name), now, 1.0F);
     }
 
-    private static void play(State st, PoseClip clip, float now, float speed) {
-        if (clip == null) {
-            return;
+    private static void play(State st, Mode mode, PoseClip clip, float now, float speed) {
+        if (clip != null) {
+            st.play(mode, clip, composite(st, now), now, speed);
         }
-        st.from = composite(st, now);
-        st.blendFrom = now;
-        st.blendTicks = clip.blendIn;
-        st.clip = clip;
-        st.start = now;
-        st.speed = speed;
+    }
+
+    private static void forLevel(Object level) {
+        if (level != statesLevel) {
+            STATES.clear();
+            statesLevel = level;
+        }
     }
 
     // ------------------------------------------------------------------------------------------------ sampling
@@ -317,6 +366,7 @@ public final class PosePlayer {
         }
         ItemStack stack = entity.getMainHandItem();
         Binding b = binding(stack);
+        forLevel(level);
         State st = STATES.get(entity.getId());
         if (b == null || b.hold() == null && b.fire() == null && b.reload() == null && b.charge() == null && b.cues().isEmpty()) {
             if (st != null) {
@@ -339,18 +389,12 @@ public final class PosePlayer {
         float now = tick + pt;
         String item = itemKey(stack);
         if (!item.equals(st.item)) {
-            // a new item in hand: nothing carries over, and its last shot is not replayed
-            st.item = item;
-            st.clip = null;
-            st.from = null;
-            st.charging = false;
-            st.lastFire = fired(entity, stack, pt);
-            st.lastReload = reloadEnd(stack);
+            st.hold(item, fired(entity, stack, pt), reloadEnd(stack));
         }
         // a shot
         float fired = fired(entity, stack, pt);
-        if (b.fire() != null && !Float.isNaN(fired) && (Float.isNaN(st.lastFire) || fired - st.lastFire > 0.5F) && now - fired < 4.0F) {
-            play(st, clip(b, b.fire()), Math.max(fired, now - 1.0F), 1.0F);
+        if (b.fire() != null && !Float.isNaN(fired) && fired - st.lastFire > 0.5F && now - fired < 4.0F) {
+            play(st, Mode.FIRE, clip(b, b.fire()), Math.max(fired, now - 1.0F), 1.0F);
             st.start = fired;
         }
         if (!Float.isNaN(fired)) {
@@ -362,26 +406,19 @@ public final class PosePlayer {
         if (b.reload() != null && reload > 0 && end > 0L && end != st.lastReload && end > tick) {
             PoseClip rc = clip(b, b.reload());
             if (rc != null) {
-                play(st, rc, now, "reload".equals(rc.fit) ? rc.length * 20.0F / reload : 1.0F);
+                play(st, Mode.RELOAD, rc, now, "reload".equals(rc.fit) ? rc.length * 20.0F / reload : 1.0F);
                 st.start = end - reload;
             }
         }
         st.lastReload = end;
         // a charge with no word from the server for five seconds has been lost (the cue's player left range)
-        if (st.charging && now - st.start > 100.0F) {
-            st.charging = false;
-            st.from = composite(st, now);
-            st.blendFrom = now;
-            st.blendTicks = 3.0F;
-            st.clip = null;
+        if (st.mode == Mode.CHARGE && now - st.start > 100.0F) {
+            st.release(composite(st, now), now, 3.0F);
         }
         // a finished clip lets go
         if (st.clip != null && !st.clip.loop && (now - st.start) * st.speed / 20.0F >= st.clip.length) {
             float endAt = st.start + st.clip.length * 20.0F / st.speed;
-            st.from = layers(st.clip, st.clip.length, null);
-            st.blendFrom = endAt;
-            st.blendTicks = st.clip.blendOut;
-            st.clip = null;
+            st.release(layers(st.clip, st.clip.length, null), endAt, st.clip.blendOut);
         }
         Sample s = composite(st, now);
         s.rest = b.rest();

@@ -1,0 +1,5 @@
+{
+  "item": "fundamentum:example_round_shield",
+  "speed_while_blocking": 0.3,
+  "thrown": { "damage": 5, "throw_speed": 1.6, "returns": { "range": 14 } }
+}

@@ -1,0 +1,7 @@
+{
+  "item": "fundamentum:example_ember_shield",
+  "damage_reductions": [
+    { "type": ["minecraft:mob_attack", "minecraft:player_attack", "minecraft:arrow", "minecraft:trident"], "horizontal_blocking_angle": 90 }
+  ],
+  "element_resistance": { "fundamentum:fire": 0.5 }
+}

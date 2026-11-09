@@ -1,0 +1,46 @@
+{
+  "model": {
+    "type": "minecraft:condition",
+    "property": "minecraft:using_item",
+    "on_false": {
+      "type": "minecraft:special",
+      "base": "minecraft:item/shield",
+      "model": {
+        "type": "fundamentum:shield",
+        "texture": "fundamentum:example_ember_shield"
+      }
+    },
+    "on_true": {
+      "type": "minecraft:special",
+      "base": "minecraft:item/shield_blocking",
+      "model": {
+        "type": "fundamentum:shield",
+        "texture": "fundamentum:example_ember_shield"
+      }
+    },
+    "transformation": {
+      "left_rotation": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "right_rotation": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "scale": [
+        1.0,
+        -1.0,
+        -1.0
+      ],
+      "translation": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    }
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "item": "fundamentum:example_boomerang",
+  "returns": {
+    "range": 12
+  },
+  "pierce": 1,
+  "damage": 3
+}

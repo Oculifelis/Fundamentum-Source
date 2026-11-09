@@ -1,0 +1,13 @@
+{
+  "head_mass": 1.6,
+  "inertia": 1.5,
+  "stiffness": 0.15,
+  "damping": 0.07,
+  "bounce": 0.15,
+  "impact": {
+    "particle": "minecraft:crit"
+  },
+  "sound": "minecraft:block.stone.hit",
+  "head_color": "#7D7D7D",
+  "chain_color": "#5A5E66"
+}

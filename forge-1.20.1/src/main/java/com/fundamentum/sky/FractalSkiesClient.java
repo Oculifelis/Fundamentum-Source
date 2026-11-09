@@ -1,5 +1,6 @@
 package com.fundamentum.sky;
 
+import com.fundamentum.client.IrisSky;
 import com.fundamentum.moon.MoonsClient;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.pipeline.TextureTarget;
@@ -39,6 +40,9 @@ import org.slf4j.LoggerFactory;
  * the view direction. It fades in and out over the sky's {@code fade_seconds}, and blends into the vanilla sky toward
  * the horizon. A sky with {@code melt} also draws the melting vision over the world ({@code fundamentum:post/melt}),
  * scaled by {@link SkyConfig}. {@code /fundamentum_sky preview <id> | off} (client command) shows a sky by id.
+ *
+ * <p>Under a shader pack it is drawn at the same point into the pack's own sky buffer ({@link IrisSky}), so the pack
+ * composites it as its sky.
  *
  * <p>1.21.1: the two passes are core shaders ({@code fundamentum:fractal_sky}, {@code fundamentum:melt}) loaded in
  * {@link RegisterShadersEvent} and drawn with the Tesselator; the melt copies the main target with a framebuffer blit.
@@ -162,6 +166,10 @@ public final class FractalSkiesClient {
         skyShader.safeGetUniform("Params").set(params);
         skyShader.safeGetUniform("Tint").set((s.tint() >> 16 & 255) / 255.0F, (s.tint() >> 8 & 255) / 255.0F, (s.tint() & 255) / 255.0F, 1.0F);
         skyShader.safeGetUniform("Tour").set(s.tour() ? 1.0F : 0.0F, 0.0F, 0.0F);
+        // under a shader pack, into the pack's sky buffer, which it composites as its own sky (else its final pass
+        // would draw over it); its tone mapping keeps the colours close to the shaders-off sky, so they go in as
+        // they are
+        boolean pack = IrisSky.bind();
         // the sky stage runs before the level's view matrix is on the stack: put the camera's turn there for this draw
         PoseStack stack = RenderSystem.getModelViewStack();
         stack.pushPose();
@@ -181,6 +189,9 @@ public final class FractalSkiesClient {
         RenderSystem.disableBlend();
         stack.popPose();
         RenderSystem.applyModelViewMatrix();
+        if (pack) {
+            IrisSky.unbind();
+        }
     }
 
     private static void afterLevel() {

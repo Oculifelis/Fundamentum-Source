@@ -1,0 +1,100 @@
+package com.fundamentum.client;
+
+import com.fundamentum.api.ItemHud;
+import java.util.List;
+import net.minecraft.client.AttackIndicatorStatus;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.HumanoidArm;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.client.event.RegisterGuiOverlaysEvent;
+import net.minecraftforge.client.gui.overlay.ForgeGui;
+import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
+import net.minecraftforge.event.TickEvent;
+
+/**
+ * Draws {@link ItemHud}'s lines: asks the providers once a client tick and keeps the lines, then each frame draws them
+ * against the configured anchor ({@link ItemHudConfig}) in the game's font. Hidden with F1.
+ */
+@Mod.EventBusSubscriber(modid = "fundamentum", value = Dist.CLIENT)
+public final class ItemHudOverlay {
+    /** Line spacing; the last line is 8 high (7-pixel glyphs and their shadow). */
+    private static final int LINE = 10;
+    private static final int TEXT_H = 8;
+
+    private static List<Component> lines = List.of();
+
+    private ItemHudOverlay() {
+    }
+
+    /** The overlay registration, on the mod bus (1.20.1: a GUI overlay above the hotbar). */
+    @Mod.EventBusSubscriber(modid = "fundamentum", value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.MOD)
+    public static final class Layers {
+        private Layers() {
+        }
+
+        @SubscribeEvent
+        public static void layers(RegisterGuiOverlaysEvent event) {
+            event.registerAbove(VanillaGuiOverlay.HOTBAR.id(), "item_hud", (ForgeGui gui, GuiGraphics g, float partial, int width, int height) -> render(g));
+        }
+    }
+
+    @SubscribeEvent
+    public static void tick(TickEvent.ClientTickEvent event) {
+        if (event.phase != TickEvent.Phase.END) {
+            return;
+        }
+        Minecraft mc = Minecraft.getInstance();
+        lines = mc.player == null || !ItemHudConfig.ENABLED.get() ? List.of() : ItemHud.lines(mc.player);
+    }
+
+    /** The lines on screen now (as of the last tick). */
+    public static List<Component> lines() {
+        return lines;
+    }
+
+    private static void render(GuiGraphics g) {
+        List<Component> shown = lines;
+        Minecraft mc = Minecraft.getInstance();
+        if (shown.isEmpty() || mc.options.hideGui || mc.player == null) {
+            return;
+        }
+        Font font = mc.font;
+        int contentW = 0;
+        for (Component line : shown) {
+            contentW = Math.max(contentW, font.width(line));
+        }
+        // the backdrop sits 3 pixels out on the left and top, 2 on the right and bottom (the text shadow fills the rest)
+        int pad = ItemHudConfig.BACKGROUND.get() ? 3 : 0;
+        int w = pad + contentW + Math.max(0, pad - 1);
+        int h = pad + (shown.size() - 1) * LINE + TEXT_H + Math.max(0, pad - 1);
+        float s = ItemHudConfig.SCALE.get().floatValue();
+        HumanoidArm offArm = mc.player.getMainArm().getOpposite();
+        int hotbarX = HudBox.hotbarRight(g.guiWidth(), offArm == HumanoidArm.RIGHT && !mc.player.getOffhandItem().isEmpty(),
+            offArm == HumanoidArm.LEFT && mc.options.attackIndicator().get() == AttackIndicatorStatus.HOTBAR);
+        int[] at = HudBox.place(ItemHudConfig.ANCHOR.get(), g.guiWidth(), g.guiHeight(), (int) Math.ceil(w * s), (int) Math.ceil(h * s),
+            hotbarX, ItemHudConfig.X.get(), ItemHudConfig.Y.get());
+        g.pose().pushPose();
+        g.pose().translate(at[0], at[1], 0);
+        g.pose().scale(s, s, 1);
+        if (pad > 0) {
+            int alpha = (int) Math.round(ItemHudConfig.BACKGROUND_OPACITY.get() * 255);
+            if (alpha > 0) {
+                g.fill(0, 0, w, h, alpha << 24);
+            }
+        }
+        int color = HudBox.argb(ItemHudConfig.TEXT_COLOR.get(), ItemHudConfig.TEXT_OPACITY.get());
+        boolean shadow = ItemHudConfig.SHADOW.get();
+        int y = pad;
+        for (Component line : shown) {
+            g.drawString(font, line, pad, y, color, shadow);
+            y += LINE;
+        }
+        g.pose().popPose();
+    }
+}

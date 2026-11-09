@@ -1,0 +1,7 @@
+{
+  "item": "fundamentum:example_buckler",
+  "block_delay_seconds": 0.1,
+  "speed_while_blocking": 0.5,
+  "parry": { "window": 7, "rearm": 15, "stagger_ticks": 40 },
+  "bash": { "damage": 2, "reach": 2.25, "cooldown": 20 }
+}

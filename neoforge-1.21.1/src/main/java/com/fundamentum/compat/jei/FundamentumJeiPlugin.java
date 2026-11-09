@@ -40,6 +40,7 @@ public final class FundamentumJeiPlugin implements IModPlugin {
         shownGeneration = PortalCraftingClient.generation();
         shown = PortalCraftingClient.recipes();
         r.addRecipes(PortalCategory.TYPE, shown);
+        RelicsJei.info(r);
         if (!listening) {
             listening = true;
             PortalCraftingClient.listen(() -> Minecraft.getInstance().execute(FundamentumJeiPlugin::refresh));

@@ -1,0 +1,21 @@
+{
+  "replace": false,
+  "values": [
+    {
+      "id": "fundamentum:example_flail_pendulum",
+      "required": false
+    },
+    {
+      "id": "fundamentum:example_flail_links",
+      "required": false
+    },
+    {
+      "id": "fundamentum:example_flail_launch",
+      "required": false
+    },
+    {
+      "id": "fundamentum:example_flail_hybrid",
+      "required": false
+    }
+  ]
+}

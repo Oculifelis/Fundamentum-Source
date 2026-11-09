@@ -1,0 +1,4 @@
+{
+  "biome": "fundamentum_test:cave_biome",
+  "climate": {"temperature": [-1.0, 0.0], "humidity": [-1.0, -0.1], "continentalness": [-0.1, 1.0], "depth": [0.2, 0.9]}
+}

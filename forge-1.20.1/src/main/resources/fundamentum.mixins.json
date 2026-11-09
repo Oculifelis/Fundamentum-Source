@@ -3,7 +3,7 @@
   "minVersion": "0.8",
   "package": "com.fundamentum.mixin",
   "compatibilityLevel": "JAVA_17",
-  "mixins": ["LivingEntityMixin", "MobMixin"],
-  "client": ["ClientLevelMixin", "DimensionSpecialEffectsMixin", "EntityGlowMixin"],
+  "mixins": ["LivingEntityMixin", "LivingEntityShieldMixin", "MobMixin", "BiomeSourceMixin", "MultiNoiseBiomeSourceMixin", "NoiseGeneratorSettingsMixin", "ChunkGeneratorMixin"],
+  "client": ["SoulFlameMixin", "SoulScreenFireMixin", "ClientLevelMixin", "DimensionSpecialEffectsMixin", "EntityGlowMixin", "JukeboxEventsMixin"],
   "injectors": {"defaultRequire": 1}
 }

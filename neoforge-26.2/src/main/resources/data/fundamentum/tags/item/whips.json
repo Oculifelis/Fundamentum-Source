@@ -1,9 +1,4 @@
 {
   "replace": false,
-  "values": [
-    {
-      "id": "fundamentum:example_whip",
-      "required": false
-    }
-  ]
+  "values": []
 }

@@ -37,9 +37,9 @@ import net.neoforged.fml.common.Mod;
  * ceiling and shared combat stats; data: data tables; creature: creature types; sickness: use sickness; item: item
  * matching; curios: the wings, mount and hook slots; wings: Terraria-style wings;
  * cosmetic: cosmetic armour; arrow: 3D arrows; mount: summoned mounts; hook: grappling hooks; client: the hotkeys;
- * command: /fundamentum showcase; trigger: left click as a trigger; pose: how items are held, and pose clips; moon: special moons; whip: cord whips; glow: coloured Glowing outlines;
+ * command: /fundamentum showcase; trigger: left click as a trigger; pose: how items are held, and pose clips; moon: special moons; whip: cord whips; thrown: thrown weapons (the thrower class), returning or not; glow: coloured Glowing outlines;
  * portal: portal crafting, items thrown through a portal changing; element: elemental auras, reactions and affinities;
- * compat.jei: the optional JEI categories; sky: fractal skies and the Psychedelic Moon);
+ * compat.jei: the optional JEI categories; sky: fractal skies and the Psychedelic Moon; biome: data-driven biome slices);
  * mods that rely on one list fundamentum as a required dependency.
  */
 @Mod(Fundamentum.MODID)
@@ -63,16 +63,24 @@ public final class Fundamentum {
         Mounts.init(modBus);
         Hooks.init(modBus);
         Summons.init(modBus);
+        com.fundamentum.summon.Sentries.init(modBus);
+        com.fundamentum.spear.Spears.init(modBus);
+        com.fundamentum.gauntlet.Gauntlets.init(modBus);
+        TypesSelfTest.init();
         Showcase.init();
         Tps.init();
         Triggers.init(modBus);
         Whips.init(modBus);
+        com.fundamentum.thrown.ThrownWeapons.init(modBus);
+        com.fundamentum.shield.Shields.init(modBus);
+        com.fundamentum.flail.Flails.init(modBus);
         Glows.init(modBus);
         container.registerConfig(ModConfig.Type.CLIENT, WhipsConfig.SPEC);
         Poses.init(modBus);
         Moons.init(modBus);
         NightEvents.init(modBus);
         PortalCrafting.init(modBus);
+        com.fundamentum.relic.Relics.init(modBus);
         PortalSelfTest.init();
         FractalSkies.init();
         PsychedelicMoon.init();
@@ -80,5 +88,8 @@ public final class Fundamentum {
         container.registerConfig(ModConfig.Type.COMMON, PsychedelicMoon.SPEC);
         container.registerConfig(ModConfig.Type.CLIENT, SkyConfig.SPEC, "fundamentum-sky-client.toml");
         container.registerConfig(ModConfig.Type.CLIENT, com.fundamentum.client.ItemHudConfig.SPEC, "fundamentum-hud-client.toml");
+        // biome slices (biome/BiomeSlices)
+        com.fundamentum.biome.BiomeSlices.init();
+        container.registerConfig(ModConfig.Type.COMMON, com.fundamentum.biome.BiomeSlicesConfig.SPEC, "fundamentum-biomes.toml");
     }
 }

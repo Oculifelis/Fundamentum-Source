@@ -1,0 +1,12 @@
+{
+  "item": "fundamentum:example_flail_hybrid",
+  "physics": "hybrid",
+  "material": "fundamentum:stone",
+  "kind": "fundamentum:ball_and_chain",
+  "damage": 8,
+  "ground_slam": {
+    "radius": 3,
+    "damage": 6,
+    "min_charge": 0.3
+  }
+}

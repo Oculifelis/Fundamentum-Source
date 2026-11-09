@@ -394,8 +394,8 @@ public final class Summons {
         });
     }
 
-    /** True while spawn() adds a fresh minion, so the leftover check above lets it in. */
-    private static final ThreadLocal<Boolean> SPAWNING = ThreadLocal.withInitial(() -> false);
+    /** True while spawn() (or Sentries.place) adds a fresh minion, so the leftover check above lets it in. */
+    static final ThreadLocal<Boolean> SPAWNING = ThreadLocal.withInitial(() -> false);
 
     private Summons() {}
 }

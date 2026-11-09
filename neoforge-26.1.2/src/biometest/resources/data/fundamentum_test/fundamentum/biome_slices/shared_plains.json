@@ -1,0 +1,5 @@
+{
+  "biome": "fundamentum_test:shared_plains",
+  "share": {"with": ["minecraft:plains"], "axis": "weirdness", "side": "high"},
+  "weight": 0.5
+}

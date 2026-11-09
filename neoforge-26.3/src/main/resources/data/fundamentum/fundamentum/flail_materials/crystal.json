@@ -1,0 +1,13 @@
+{
+  "head_mass": 0.9,
+  "inertia": 0.9,
+  "stiffness": 0.3,
+  "damping": 0.05,
+  "bounce": 0.55,
+  "impact": {
+    "particle": "minecraft:end_rod"
+  },
+  "sound": "minecraft:block.amethyst_cluster.hit",
+  "head_color": "#9FE7F2",
+  "chain_color": "#6A9BB0"
+}

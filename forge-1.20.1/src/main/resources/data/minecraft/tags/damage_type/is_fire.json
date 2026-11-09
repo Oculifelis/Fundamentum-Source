@@ -1,5 +1,7 @@
 {
   "values": [
-    "fundamentum:fire"
+    "fundamentum:fire",
+    "fundamentum:soul_fire",
+    "fundamentum:on_soul_fire"
   ]
 }

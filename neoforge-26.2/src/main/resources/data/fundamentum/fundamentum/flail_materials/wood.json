@@ -1,0 +1,10 @@
+{
+  "head_mass": 0.8,
+  "inertia": 0.8,
+  "stiffness": 0.3,
+  "damping": 0.08,
+  "bounce": 0.45,
+  "sound": "minecraft:block.wood.hit",
+  "head_color": "#8A6A3F",
+  "chain_color": "#6B5030"
+}

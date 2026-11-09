@@ -107,7 +107,10 @@ public final class WhipShaders {
         }
 
         private static @Nullable ShaderInstance shader(WhipCordFx fx) {
-            ShaderInstance shader = SHADERS.get(fx);
+            // A shader pack replaces vanilla's programs but would draw this one as it is, flat (1.25.3): through vanilla's
+            // emissive entity shader instead, which the pack maps to its own emissive program; WhipsClient animates the
+            // cord's colours meanwhile.
+            ShaderInstance shader = com.fundamentum.client.Emissive.shadersOn() ? null : SHADERS.get(fx);
             return shader != null ? shader : net.minecraft.client.renderer.GameRenderer.getRendertypeEntityTranslucentEmissiveShader();
         }
     }

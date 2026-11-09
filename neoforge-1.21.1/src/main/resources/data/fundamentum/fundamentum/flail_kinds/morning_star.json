@@ -1,0 +1,7 @@
+{
+  "head_count": 1,
+  "chain_length": 1.4,
+  "chain_segments": 5,
+  "impact_radius": 0.45,
+  "armor_pierce": 0.25
+}

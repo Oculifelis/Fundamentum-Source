@@ -103,10 +103,8 @@ public final class Whips {
     private record Resolved(@Nullable JsonObject data, WhipDefinition def) {}
     private static final Map<ResourceLocation, Resolved> RESOLVED = new ConcurrentHashMap<>();
 
-    private static final DeferredRegister.Items ITEMS = DeferredRegister.createItems("fundamentum");
-    /** The example whip, registered in development runs only (it shows the API; players never see it). */
-    public static final @Nullable DeferredItem<Item> EXAMPLE_WHIP = FMLEnvironment.production ? null
-        : ITEMS.registerSimpleItem("example_whip", new Item.Properties().stacksTo(1));
+    /** The example whip; set only in -Pwhiptest runs (see WhipExamples there), null otherwise. */
+    public static @Nullable DeferredItem<Item> EXAMPLE_WHIP;
 
     /** Makes {@code item} a whip. */
     public static void register(Item item, WhipDefinition whip) {
@@ -391,7 +389,7 @@ public final class Whips {
         }
     }
 
-    /** Told why a contact was not hit (spared, rule, behind a block), when set; for {@link WhipSelfTest}. */
+    /** Told why a contact was not hit (spared, rule, behind a block), when set; for the whip test (WhipSelfTest). */
     static java.util.function.@Nullable Consumer<String> trace;
 
     /** One contact: the rules, the hooks, then the damage. */
@@ -473,12 +471,19 @@ public final class Whips {
     };
 
     public static void init(IEventBus modBus) {
-        ITEMS.register(modBus);
         Triggers.register(stack -> definition(stack) != null, TRIGGER);
+        // The cord is a simulation Better Combat data can't describe: whips keep their left click (and get no weapon attributes).
+        com.fundamentum.compat.BetterCombat.register("whip", com.fundamentum.compat.BetterCombat.tag("whips"), null,
+            com.fundamentum.compat.BetterCombat.LeftClick.OWN);
         WhipTags.init();
-        if (EXAMPLE_WHIP != null) {
-            register(EXAMPLE_WHIP.getId(), ExampleWhip.definition());
-            WhipSelfTest.init();
+        // The example whip and its in-game test: WhipExamples is in src/whiptest, built only with -Pwhiptest.
+        // It never ships: Fundamentum is a library and registers no items of its own.
+        try {
+            Class.forName("com.fundamentum.whip.WhipExamples").getMethod("init", IEventBus.class).invoke(null, modBus);
+        } catch (ClassNotFoundException absent) {
+            // a normal build
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException(e);
         }
         modBus.addListener(Whips::payloads);
         WhipSlam.init(modBus);

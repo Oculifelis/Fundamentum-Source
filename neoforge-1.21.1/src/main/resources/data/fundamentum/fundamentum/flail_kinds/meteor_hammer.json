@@ -1,0 +1,8 @@
+{
+  "head_count": 2,
+  "double_ended": true,
+  "chain_length": 5.0,
+  "chain_segments": 16,
+  "impact_radius": 0.4,
+  "wraps_target": 40
+}

@@ -1,0 +1,20 @@
+{
+  "head_mass": 0.7,
+  "inertia": 0.6,
+  "stiffness": 0.35,
+  "damping": 0.04,
+  "bounce": 0.4,
+  "impact": {
+    "effects": [
+      {
+        "id": "minecraft:glowing",
+        "seconds": 4,
+        "amplifier": 0
+      }
+    ],
+    "particle": "minecraft:enchant"
+  },
+  "sound": "minecraft:block.amethyst_block.hit",
+  "head_color": "#A86BE0",
+  "chain_color": "#5B3F8C"
+}

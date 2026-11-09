@@ -54,6 +54,20 @@ minecraft {
             if (project.hasProperty('elementtest')) {
                 property 'fundamentum.elementtest', 'true'
             }
+            // gradlew runServer -Ptypestest: sentries, gauntlets, spears and the Better Combat seam (TypesSelfTest) with their data
+            if (project.hasProperty('typestest')) {
+                property 'fundamentum.typestest', 'true'
+            }
+            // gradlew runServer -Pflailtest: flails and scythes used on husks (flail/FlailSelfTest) with its data
+            if (project.hasProperty('flailtest')) {
+                property 'fundamentum.flailtest', 'true'
+            }
+            // gradlew runServer -Pbiometest: the biome slice test (biome/BiomeSliceSelfTest) in a fresh world, own injector;
+            // -Pbiometest=tb runs it with TerraBlender on the run classpath (run-biometest-tb)
+            if (project.hasProperty('biometest')) {
+                property 'fundamentum.biometest', project.property('biometest') == 'tb' ? 'tb' : 'own'
+                workingDirectory project.file(project.property('biometest') == 'tb' ? 'run-biometest-tb' : 'run-biometest')
+            }
         }
     }
 }
@@ -69,6 +83,11 @@ repositories {
         url = 'https://maven.blamejared.com/'
         content { includeGroup 'mezz.jei' }
     }
+    maven {
+        name = 'Modrinth (Jade)'
+        url = 'https://api.modrinth.com/maven'
+        content { includeGroup 'maven.modrinth' }
+    }
 }
 
 dependencies {
@@ -79,9 +98,16 @@ dependencies {
     // JEI is optional: compiled against its API only (the portal crafting category in compat/jei)
     compileOnly fg.deobf("mezz.jei:jei-${minecraft_version}-common-api:${jei_version}")
     compileOnly fg.deobf("mezz.jei:jei-${minecraft_version}-forge-api:${jei_version}")
+    // Jade is optional: compiled against its jar only (the jukebox progress line in compat/jade); never in the jar
+    compileOnly fg.deobf("maven.modrinth:jade:${jade_version}")
+    // TerraBlender is optional: biome slices register a region subclass when it is loaded (biome/TerraBlenderRegion); never in the jar
+    compileOnly fg.deobf("maven.modrinth:terrablender:zGconCHG")
+    if (project.findProperty('biometest') == 'tb') runtimeOnly fg.deobf("maven.modrinth:terrablender:zGconCHG")
     testImplementation platform('org.junit:junit-bom:5.13.4')
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    // PoseStateTest builds pose clips from JSON (gson comes with Minecraft, which the test classpath does not have)
+    testImplementation 'com.google.code.gson:gson:2.11.0'
 }
 
 // Plain unit tests for code that needs no game (gradlew test)
@@ -99,6 +125,30 @@ if (project.hasProperty('skytest')) {
 if (project.hasProperty('elementtest')) {
     sourceSets.main.resources.srcDir 'src/elementtest/resources'
 }
+// The weapon type test's data, only in -Ptypestest runs (never build a jar with -Ptypestest)
+if (project.hasProperty('typestest')) {
+    sourceSets.main.resources.srcDir 'src/typestest/resources'
+    // the test's spear tag replaces the empty one in main (the test folder comes last, so its copy wins)
+    tasks.named('processResources').configure { duplicatesStrategy = DuplicatesStrategy.INCLUDE }
+}
+if (project.hasProperty('flailtest')) {
+    sourceSets.main.resources.srcDir 'src/flailtest/resources'
+    sourceSets.main.java.srcDir 'src/flailtest/java'
+    // the test's tags replace the emptied ones in main (the test folder comes last, so its copy wins)
+    tasks.named('processResources').configure { duplicatesStrategy = DuplicatesStrategy.INCLUDE }
+}
+// The biome slice test's code and data, only in -Pbiometest runs (never build a jar with -Pbiometest)
+if (project.hasProperty('biometest')) {
+    sourceSets.main.resources.srcDir 'src/biometest/resources'
+    sourceSets.main.java.srcDir 'src/biometest/java'
+}
+// The whip test's example whip (code, art and data), only in -Pwhiptest runs (never build a jar with -Pwhiptest)
+if (project.hasProperty('whiptest')) {
+    sourceSets.main.resources.srcDir 'src/whiptest/resources'
+    sourceSets.main.java.srcDir 'src/whiptest/java'
+    // the test's tags replace the emptied ones in main (the test folder comes last, so its copy wins)
+    tasks.named('processResources').configure { duplicatesStrategy = DuplicatesStrategy.INCLUDE }
+}
 
 tasks.named('processResources', ProcessResources).configure {
     var replaceProperties = [
@@ -112,6 +162,7 @@ tasks.named('processResources', ProcessResources).configure {
             mod_version            : mod_version,
             curios_range           : curios_range,
             jei_range              : jei_range,
+            jade_range             : jade_range,
     ]
     inputs.properties replaceProperties
     filesMatching(['META-INF/mods.toml']) {
@@ -136,7 +187,8 @@ publishing {
         }
     }
     repositories {
-        maven { url = 'H:/AI_MC_Modding/Fundamentum/repo' }
+        // -Pfundamentum_publish_repo=<dir> publishes elsewhere (a worktree's own repo/)
+        maven { url = project.findProperty('fundamentum_publish_repo') ?: 'H:/AI_MC_Modding/Fundamentum/repo' }
     }
 }
 

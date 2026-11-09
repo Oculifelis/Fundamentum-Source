@@ -1,0 +1,13 @@
+{
+  "item": "fundamentum:example_flail_launch",
+  "physics": "launch",
+  "material": "fundamentum:ice",
+  "kind": "fundamentum:single",
+  "damage": 6,
+  "launch": {
+    "range": 7,
+    "speed": 1.6,
+    "reel_ticks": 10,
+    "pull": 0.6
+  }
+}

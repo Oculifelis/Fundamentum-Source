@@ -1,0 +1,14 @@
+{
+  "head_mass": 1.3,
+  "inertia": 1.2,
+  "stiffness": 0.2,
+  "damping": 0.06,
+  "bounce": 0.2,
+  "impact": {
+    "fire_seconds": 4,
+    "particle": "minecraft:flame"
+  },
+  "sound": "minecraft:item.firecharge.use",
+  "head_color": "#E8701A",
+  "chain_color": "#4A2E22"
+}

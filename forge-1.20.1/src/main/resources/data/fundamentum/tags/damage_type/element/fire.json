@@ -1,6 +1,7 @@
 {
   "values": [
     "#minecraft:is_fire",
-    "fundamentum:fire"
+    "fundamentum:fire",
+    "#fundamentum:element/soul_fire"
   ]
 }

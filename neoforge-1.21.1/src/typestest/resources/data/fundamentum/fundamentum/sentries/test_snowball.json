@@ -1,0 +1,10 @@
+{
+  "item": "minecraft:snowball",
+  "entity": "minecraft:snow_golem",
+  "slots": 1,
+  "placement": "ground",
+  "damage": 3,
+  "range": 12,
+  "fire_rate": 2,
+  "projectile": "minecraft:arrow"
+}

@@ -41,3 +41,10 @@ The shared groundwork under Oculifelis's mods: data tables, shared stats, creatu
     versionRange="${jei_range}"
     ordering="NONE"
     side="CLIENT"
+
+[[dependencies.${mod_id}]]
+    modId="jade"
+    mandatory=false
+    versionRange="${jade_range}"
+    ordering="NONE"
+    side="BOTH"

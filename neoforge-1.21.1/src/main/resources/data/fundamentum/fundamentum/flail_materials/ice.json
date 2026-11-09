@@ -1,0 +1,21 @@
+{
+  "head_mass": 1.0,
+  "inertia": 1.0,
+  "stiffness": 0.25,
+  "damping": 0.04,
+  "bounce": 0.35,
+  "impact": {
+    "freeze_ticks": 140,
+    "effects": [
+      {
+        "id": "minecraft:slowness",
+        "seconds": 3,
+        "amplifier": 1
+      }
+    ],
+    "particle": "minecraft:snowflake"
+  },
+  "sound": "minecraft:block.glass.hit",
+  "head_color": "#A9D8F5",
+  "chain_color": "#6E8FA8"
+}

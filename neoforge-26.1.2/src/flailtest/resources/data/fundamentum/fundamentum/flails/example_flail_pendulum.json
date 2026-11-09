@@ -1,0 +1,7 @@
+{
+  "item": "fundamentum:example_flail_pendulum",
+  "physics": "pendulum",
+  "material": "fundamentum:molten",
+  "kind": "fundamentum:morning_star",
+  "damage": 7
+}

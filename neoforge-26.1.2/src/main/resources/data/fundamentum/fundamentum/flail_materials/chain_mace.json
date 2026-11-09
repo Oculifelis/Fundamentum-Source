@@ -1,0 +1,10 @@
+{
+  "head_mass": 2.2,
+  "inertia": 1.8,
+  "stiffness": 0.1,
+  "damping": 0.06,
+  "bounce": 0.2,
+  "sound": "minecraft:item.mace.smash_ground",
+  "head_color": "#6E727A",
+  "chain_color": "#4A4E56"
+}

@@ -42,7 +42,7 @@ import net.minecraftforge.fml.loading.FMLEnvironment;
  * tooltips; command: /fundamentum showcase and tps; trigger: left click as a trigger; pose: how items are held, and pose
  * clips; moon: special moons and night events; summon: minions; damage: damage classes and elements; whip: cord whips;
  * glow: coloured Glowing outlines; portal: portal crafting, items thrown through a portal changing; element: elemental
- * auras, reactions and affinities; compat.jei: the optional JEI categories; sky: fractal skies and the Psychedelic Moon;
+ * auras, reactions and affinities; compat.jei: the optional JEI categories; sky: fractal skies and the Psychedelic Moon; biome: data-driven biome slices;
  * curve: shared curves; net: the 1.20.1 network channels);
  * mods that rely on one list fundamentum as a required dependency.
  */
@@ -57,8 +57,12 @@ public final class Fundamentum {
         DataTables.init();
         StatAttributes.init(modBus);
         Elements.init();
+        com.fundamentum.damage.DataElements.init();
         DamageClasses.init();
         ElementInteractions.init(modBus);
+        com.fundamentum.soulfire.SoulFlames.init(modBus);
+        com.fundamentum.shield.Shields.init(modBus);
+        context.registerConfig(ModConfig.Type.COMMON, com.fundamentum.soulfire.SoulFireConfig.SPEC, "fundamentum-soulfire.toml");
         CreatureTypes.init();
         Sickness.init(modBus);
         Wings.init();
@@ -66,22 +70,31 @@ public final class Fundamentum {
         Mounts.init(modBus);
         Hooks.init(modBus);
         Summons.init(modBus);
+        com.fundamentum.summon.Sentries.init(modBus);
+        com.fundamentum.spear.Spears.init(modBus);
+        com.fundamentum.gauntlet.Gauntlets.init(modBus);
+        TypesSelfTest.init();
         Showcase.init();
         Tps.init();
         Triggers.init(modBus);
         Whips.init(modBus);
+        com.fundamentum.flail.Flails.init(modBus);
         Glows.init(modBus);
         context.registerConfig(ModConfig.Type.CLIENT, WhipsConfig.SPEC);
         Poses.init(modBus);
         Moons.init(modBus);
         NightEvents.init(modBus);
         PortalCrafting.init(modBus);
+        com.fundamentum.relic.Relics.init(modBus);
         PortalSelfTest.init();
         FractalSkies.init();
         PsychedelicMoon.init();
         SkySelfTest.init();
         context.registerConfig(ModConfig.Type.COMMON, PsychedelicMoon.SPEC);
         context.registerConfig(ModConfig.Type.CLIENT, SkyConfig.SPEC, "fundamentum-sky-client.toml");
+        context.registerConfig(ModConfig.Type.CLIENT, com.fundamentum.client.ItemHudConfig.SPEC, "fundamentum-hud-client.toml");
+        com.fundamentum.biome.BiomeSlices.init();
+        context.registerConfig(ModConfig.Type.COMMON, com.fundamentum.biome.BiomeSlicesConfig.SPEC, "fundamentum-biomes.toml");
         if (FMLEnvironment.dist.isClient()) {
             FundamentumClient.init();
         }

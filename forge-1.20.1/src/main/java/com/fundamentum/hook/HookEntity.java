@@ -18,6 +18,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
+import com.fundamentum.state.BossStateMachine;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -25,16 +26,23 @@ import org.jetbrains.annotations.Nullable;
  * comes back (is removed) past its range; latched, it stays until released, its block goes or its owner moves too far.
  */
 public class HookEntity extends Projectile {
-    private static final EntityDataAccessor<String> ITEM = SynchedEntityData.defineId(HookEntity.class, EntityDataSerializers.STRING);
-    private static final EntityDataAccessor<Boolean> LATCHED = SynchedEntityData.defineId(HookEntity.class, EntityDataSerializers.BOOLEAN);
+    /** Flying out; latched on a block; anchored in the air where its chain ran out (for {@link Hooks.Def#airSeconds}). */
+    public enum State { FLYING, LATCHED, ANCHORED }
 
+
+    private static final EntityDataAccessor<String> ITEM = SynchedEntityData.defineId(HookEntity.class, EntityDataSerializers.STRING);
+    private static final EntityDataAccessor<Integer> STATE = SynchedEntityData.defineId(HookEntity.class, EntityDataSerializers.INT);
+
+    /** Only ever leaves FLYING: a latched or anchored hook stays put until it is removed. */
+    private final BossStateMachine<State> state = new BossStateMachine<>(State.class, State.FLYING).allow((from, to) -> from == State.FLYING);
     private @Nullable BlockPos latchedOn;
-    /** Ticks left on an anchor in the air ({@link Hooks.Def#airSeconds}); 0 when latched on a block. */
+    /** How long an anchor in the air holds ({@link Hooks.Def#airSeconds}), counted by the state's clock. */
     private int airTicks;
 
     public HookEntity(EntityType<? extends HookEntity> type, Level level) {
         super(type, level);
         noPhysics = true;
+        state.syncTo(entityData, STATE);
     }
 
     HookEntity(Level level, Player owner, ResourceLocation item) {
@@ -55,7 +63,15 @@ public class HookEntity extends Projectile {
     @Override
     protected void defineSynchedData() {
         entityData.define(ITEM, "");
-        entityData.define(LATCHED, false);
+        entityData.define(STATE, State.FLYING.ordinal());
+    }
+
+    @Override
+    public void onSyncedDataUpdated(EntityDataAccessor<?> key) {
+        super.onSyncedDataUpdated(key);
+        if (STATE.equals(key) && level().isClientSide()) {
+            state.onSynced(entityData.get(STATE));
+        }
     }
 
     /** The hook item that fired it; its definition is {@code Hooks.HOOKS.get(item())}. */
@@ -69,8 +85,13 @@ public class HookEntity extends Projectile {
         return def == null ? Hooks.Def.DEFAULT : def;
     }
 
+    public State state() {
+        return state.state();
+    }
+
+    /** Latched on a block or anchored in the air: no longer flying. */
     public boolean isLatched() {
-        return entityData.get(LATCHED);
+        return !state.is(State.FLYING);
     }
 
     @Override
@@ -85,25 +106,31 @@ public class HookEntity extends Projectile {
         }
         Hooks.Def def = def();
         double reach = distanceTo(owner);
-        if (isLatched()) {
-            if (airTicks > 0) {
-                if (--airTicks == 0 || reach > def.range() + 4) {
+        state.tick();
+        switch (state.state()) {
+            case ANCHORED -> {
+                if (state.ticks() >= airTicks || reach > def.range() + 4) {
                     discard();
-                } else if (airTicks % 4 == 0 && level() instanceof ServerLevel server) {
+                } else if ((airTicks - state.ticks()) % 4 == 0 && level() instanceof ServerLevel server) {
                     server.sendParticles(ParticleTypes.CLOUD, getX(), getY(), getZ(), 1, 0.1, 0.1, 0.1, 0.01);
                 }
-            } else if (latchedOn == null || level().getBlockState(latchedOn).getCollisionShape(level(), latchedOn).isEmpty()
-                || reach > def.range() + 4) {
-                discard();
+                return;
             }
-            return;
+            case LATCHED -> {
+                if (latchedOn == null || level().getBlockState(latchedOn).getCollisionShape(level(), latchedOn).isEmpty()
+                    || reach > def.range() + 4) {
+                    discard();
+                }
+                return;
+            }
+            case FLYING -> {}
         }
         if (reach > def.range()) {
             if (def.airSeconds() > 0) {
                 // Anchors in the air where it ran out of chain.
                 setDeltaMovement(Vec3.ZERO);
                 airTicks = Math.max(1, (int) Math.round(def.airSeconds() * 20));
-                entityData.set(LATCHED, true);
+                state.to(State.ANCHORED);
                 playSound(SoundEvents.CHAIN_PLACE, 1.0F, 1.8F);
             } else {
                 discard();
@@ -117,7 +144,7 @@ public class HookEntity extends Projectile {
             setPos(hit.getLocation());
             setDeltaMovement(Vec3.ZERO);
             latchedOn = hit.getBlockPos();
-            entityData.set(LATCHED, true);
+            state.to(State.LATCHED);
             playSound(SoundEvents.CHAIN_PLACE, 1.0F, 1.3F);
         } else {
             setPos(to);
@@ -134,6 +161,7 @@ public class HookEntity extends Projectile {
         return false;
     }
 
+    /** Never saved: a hook is removed when its chunk or owner goes, so it has no state to load. */
     @Override
     public boolean shouldBeSaved() {
         return false;

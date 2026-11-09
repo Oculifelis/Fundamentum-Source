@@ -343,4 +343,52 @@ class WhipPhysicsTest {
             assertTrue(hit[0], "a chicken dead ahead was missed on side " + side);
         }
     }
+
+    /**
+     * After a swing the held whip's cord carries on from where the swing left it and draws in to the idle length over
+     * ten ticks (WhipsClient's Idle), instead of jumping to a fresh cord hanging straight down. The tip still swings
+     * down fast (a long cord falling), but its speed changes from tick to tick by less than half what the jump did, and
+     * the cord ends at the idle length.
+     */
+    @Test
+    void cordDrawsBackInAfterASwing() {
+        WhipTuning t = WhipTuning.DEFAULT;
+        double idleLength = 0.35;
+        WhipSwing swing = new WhipSwing(t, LOOK, 1);
+        swing.start(HAND);
+        WhipVec[] tip = {swing.cords[0].tip()};
+        double[] lastMove = {0};
+        while (swing.tick(HAND, HAND, (k, cord, tick, dt) -> {})) {
+            lastMove[0] = swing.cords[0].tip().distanceTo(tip[0]);
+            tip[0] = swing.cords[0].tip();
+        }
+        WhipCord cord = swing.cords[0];
+        double jump = Math.abs(cord.tip().distanceTo(HAND.add(new WhipVec(0, -t.length() * idleLength, 0))) - lastMove[0]);
+        WhipVec reach = cord.points[0].sub(HAND);
+        WhipVec reachDir = cord.points[1].sub(cord.points[0]).normalize();
+        WhipVec hang = new WhipVec(0, -1, 0);
+        double fullRest = cord.rest, idleRest = cord.rest * idleLength;
+        double worst = 0, move = lastMove[0];
+        int n = 4, ticks = 10;
+        for (int tick = 0; tick < ticks + 20; tick++) {
+            WhipVec tipBefore = cord.tip();
+            for (int i = 1; i <= n; i++) {
+                double f = Math.min(1.0, (tick + (double) i / n) / ticks);
+                f = f * f * (3.0 - 2.0 * f);
+                cord.rest = fullRest + (idleRest - fullRest) * f;
+                cord.step(HAND.addScaled(reach, 1.0 - f), reachDir.lerp(hang, f).normalize(hang), 0.05 / n, WhipCord.IDLE_GUIDE,
+                    t.lag(), t.stiffness(), Math.pow(0.86, 1.0 / n), t.gravity(), null);
+            }
+            double now = cord.tip().distanceTo(tipBefore);
+            worst = Math.max(worst, Math.abs(now - move));
+            move = now;
+        }
+        double len = 0;
+        for (int i = 0; i < cord.segments; i++) {
+            len += cord.points[i].distanceTo(cord.points[i + 1]);
+        }
+        System.out.println("return: old jump " + jump + ", worst change " + worst + ", length " + len);
+        assertTrue(worst < jump * 0.5, "the tip's speed changed by " + worst + " in a tick; the old jump changed it by " + jump);
+        assertEquals(t.length() * idleLength, len, 0.05);
+    }
 }

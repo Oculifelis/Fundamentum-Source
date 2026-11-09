@@ -93,7 +93,7 @@ public final class WhipsClient {
         final WhipDefinition whip;
         final WhipCord[] cords;
         /** The fraction of the cord's length these cords are (1 for a swing). */
-        final double span;
+        double span;
         final WhipVec[][] prev, now;
         Vec3 hand;
 
@@ -130,8 +130,37 @@ public final class WhipsClient {
 
     /** The loose cord of a held whip between swings: plain physics from the hand, no guide. */
     private static final class Idle extends Shown {
+        /** Ticks a finished swing's cord takes to draw back in to the idle length and settle into the hand. */
+        static final int RETURN_TICKS = 10;
+        private final double fullRest, idleRest;
+        /** Where a finished swing left the handle, from the hand, and which way it pointed. */
+        private WhipVec reach = WhipVec.ZERO, reachDir;
+        private int returned = RETURN_TICKS;
+        /** Set for the tick a swing hands its cord over: the swing already stepped it, so this tick draws its last step. */
+        private boolean carried;
+
         Idle(ResourceLocation item, WhipDefinition whip, Vec3 hand) {
-            super(item, whip, new WhipCord[] {cord(whip, hand)}, whip.idleLength, hand);
+            this(item, whip, cord(whip, hand), whip.idleLength, hand);
+        }
+
+        /**
+         * Carries on from a finished swing with its first strand as it is (shape and speed), drawing it back in to the
+         * idle length over {@link #RETURN_TICKS}, so the cord doesn't jump from the swing to hanging straight down.
+         */
+        Idle(Swing swing, Vec3 hand) {
+            this(swing.item, swing.whip, swing.cords[0], 1.0, hand);
+            WhipVec[] p = cords[0].points;
+            reach = p[0].sub(Whips.vec(hand));
+            reachDir = p[1].sub(p[0]).normalize(new WhipVec(0, -1, 0));
+            returned = 0;
+            prev[0] = swing.prev[0];
+            carried = true;
+        }
+
+        private Idle(ResourceLocation item, WhipDefinition whip, WhipCord cord, double span, Vec3 hand) {
+            super(item, whip, new WhipCord[] {cord}, span, hand);
+            fullRest = cord.rest;
+            idleRest = cord.rest * whip.idleLength / span;
         }
 
         private static WhipCord cord(WhipDefinition whip, Vec3 hand) {
@@ -142,14 +171,31 @@ public final class WhipsClient {
         }
 
         void tick(Vec3 to, Vec3 look, WhipCord.Solids solids) {
+            if (carried) {
+                carried = false;
+                hand = to;
+                return;
+            }
             snapshot(prev);
             // The handle hangs a little forward of straight down; the rest is gravity, drag and the blocks.
-            WhipVec dir = new WhipVec(look.x * 0.35, -1, look.z * 0.35).normalize(new WhipVec(0, -1, 0));
+            WhipVec hang = new WhipVec(look.x * 0.35, -1, look.z * 0.35).normalize(new WhipVec(0, -1, 0));
             WhipTuning t = whip.tuning;
             int n = 4;
             for (int i = 1; i <= n; i++) {
                 WhipVec root = Whips.vec(hand.lerp(to, (double) i / n));
+                WhipVec dir = hang;
+                if (returned < RETURN_TICKS) {
+                    double f = Math.min(1.0, (returned + (double) i / n) / RETURN_TICKS);
+                    f = f * f * (3.0 - 2.0 * f);
+                    span = Mth.lerp(f, 1.0, whip.idleLength);
+                    cords[0].rest = Mth.lerp(f, fullRest, idleRest);
+                    root = root.addScaled(reach, 1.0 - f);
+                    dir = reachDir.lerp(hang, f).normalize(hang);
+                }
                 cords[0].step(root, dir, 0.05 / n, WhipCord.IDLE_GUIDE, t.lag(), t.stiffness(), Math.pow(0.86, 1.0 / n), t.gravity(), solids);
+            }
+            if (returned < RETURN_TICKS) {
+                returned++;
             }
             hand = to;
             snapshot(now);
@@ -359,6 +405,9 @@ public final class WhipsClient {
             }
             if (!more) {
                 it.remove();
+                if (s.whip.idleLength > 0) {
+                    IDLE.put(entry.getKey(), new Idle(s, hand));
+                }
             }
         }
         // Idle cords: every near player holding a whip that has one, and not swinging it.
@@ -464,9 +513,12 @@ public final class WhipsClient {
             poseStack.mulPose(Axis.YP.rotationDegrees(180.0F));
             int invert = state.getMainArm() == HumanoidArm.LEFT ? -1 : 1;
             poseStack.translate(invert / 16.0F, 2 / 16.0F, -10 / 16.0F);
-            // Then minecraft:item/handheld's third-person transform, to the end of the handle sprite.
+            // Then minecraft:item/handheld's third-person transform, to the end of the handle sprite. The left hand's
+            // entry is the right's mirrored ([0, 90, -55]), and vanilla negates its y and z turns again for a left hand
+            // (ItemTransform.apply), so either hand is drawn turned [0, -90, 55] (1.25.4; before, the left hand's cord
+            // started beside the handle).
             poseStack.translate(0, 4.0F / 16.0F, 0.5F / 16.0F);
-            poseStack.mulPose(new Quaternionf().rotationXYZ(0, invert * -90.0F * Mth.DEG_TO_RAD, invert * 55.0F * Mth.DEG_TO_RAD));
+            poseStack.mulPose(new Quaternionf().rotationXYZ(0, -90.0F * Mth.DEG_TO_RAD, 55.0F * Mth.DEG_TO_RAD));
             poseStack.scale(0.85F, 0.85F, 0.85F);
             Matrix4f pose = new Matrix4f(poseStack.last().pose());
             poseStack.popPose();
@@ -493,8 +545,30 @@ public final class WhipsClient {
         @SubscribeEvent
         public static void setup(FMLClientSetupEvent event) {
             registerProperties(event);
+            com.fundamentum.pose.FirstPersonHands.registerFrame(new com.fundamentum.pose.FirstPersonHands.Frame() {
+                @Override
+                public boolean place(PoseStack pose, net.minecraft.client.player.AbstractClientPlayer player, net.minecraft.world.item.ItemStack stack,
+                                     HumanoidArm arm, float pt, float equip) {
+                    return false;
+                }
+
+                @Override
+                public com.fundamentum.pose.PosePlayer.FirstPerson firstPerson(net.minecraft.world.item.ItemStack stack) {
+                    return Whips.definition(stack) != null ? FIRST_PERSON : null;
+                }
+            });
         }
     }
+
+    /**
+     * The player's own arm holding a whip in first person (1.25.4), through
+     * {@link com.fundamentum.pose.FirstPersonHands}: the fist closed on the middle of the grip of a 3D handle held as
+     * {@code minecraft:item/handheld} (Ostentum's handle3d handles; a flat handle sprite's grip is about there too),
+     * pushed 2 pixels on so the handle runs through the fist. A whip item's own player_pose binding with a
+     * "first_person" block wins over this.
+     */
+    public static final com.fundamentum.pose.PosePlayer.FirstPerson FIRST_PERSON =
+        new com.fundamentum.pose.PosePlayer.FirstPerson("grip", new float[] {1.13F, -0.86F, -0.35F}, null, null, true, 2.0F);
 
     /**
      * Where the handle is drawn: the end of the held handle sprite ({@link #HANDLE_END_U}). In first person from
@@ -536,8 +610,10 @@ public final class WhipsClient {
         pose.mulPose(Axis.ZP.rotationDegrees(invert * Mth.sin(root * Mth.PI) * -20.0F));
         pose.mulPose(Axis.XP.rotationDegrees(Mth.sin(root * Mth.PI) * -80.0F));
         pose.mulPose(Axis.YP.rotationDegrees(invert * -45.0F));
-        pose.translate(1.13F / 16.0F, 3.2F / 16.0F, 1.13F / 16.0F);
-        pose.mulPose(new Quaternionf().rotationXYZ(0, invert * -90.0F * Mth.DEG_TO_RAD, invert * 25.0F * Mth.DEG_TO_RAD));
+        // A left hand: vanilla negates the x shift and the y and z turns of the (already mirrored) left-hand entry, so
+        // the shift is mirrored and the turn is the right hand's (1.25.4).
+        pose.translate(invert * 1.13F / 16.0F, 3.2F / 16.0F, 1.13F / 16.0F);
+        pose.mulPose(new Quaternionf().rotationXYZ(0, -90.0F * Mth.DEG_TO_RAD, 25.0F * Mth.DEG_TO_RAD));
         pose.scale(0.68F, 0.68F, 0.68F);
         return pose.last().pose().transformPosition(endU - 0.5F, 0.5F - endV, 0, new Vector3f());
     }
@@ -803,6 +879,9 @@ public final class WhipsClient {
         int n = p.length;
         Vec3[] left = new Vec3[n], right = new Vec3[n];
         Vec3[] normal = new Vec3[n];
+        // Under a shader pack the cord shader is replaced: animate the colours (and the lightning's jag) here (1.25.3).
+        boolean pack = whip.cordFx != WhipCordFx.NONE && whip.cordFx != WhipCordFx.GLOW && com.fundamentum.client.Emissive.shadersOn();
+        double secs = net.minecraft.Util.getMillis() / 1000.0;
         for (int i = 0; i < n; i++) {
             Vec3 tangent = p[Math.min(n - 1, i + 1)].subtract(p[Math.max(0, i - 1)]);
             Vec3 toEye = p[i].scale(-1);
@@ -810,13 +889,18 @@ public final class WhipsClient {
             side = side.lengthSqr() < 1.0E-10 ? new Vec3(0, 1, 0) : side.normalize();
             float t = (float) (span * i / (n - 1));
             double half = Mth.lerp(t, whip.width, whip.tipWidth) * 0.5;
-            left[i] = p[i].add(side.scale(half));
-            right[i] = p[i].subtract(side.scale(half));
+            Vec3 mid = pack ? p[i].add(side.scale(WhipCordShade.jag(whip.cordFx, t, secs) * half * 2)) : p[i];
+            left[i] = mid.add(side.scale(half));
+            right[i] = mid.subtract(side.scale(half));
             normal[i] = toEye.lengthSqr() < 1.0E-10 ? new Vec3(0, 1, 0) : toEye.normalize();
         }
         for (int i = 0; i < n - 1; i++) {
             float v0 = (float) (span * i / (n - 1)), v1 = (float) (span * (i + 1) / (n - 1));
             int c0 = Argb.srgbLerp(v0, whip.color, whip.tipColor), c1 = Argb.srgbLerp(v1, whip.color, whip.tipColor);
+            if (pack) {
+                c0 = WhipCordShade.shade(whip.cordFx, c0, v0, secs);
+                c1 = WhipCordShade.shade(whip.cordFx, c1, v1, secs);
+            }
             vertex(at, buffer, left[i], c0, 0, v0, light[i], normal[i]);
             vertex(at, buffer, right[i], c0, 1, v0, light[i], normal[i]);
             vertex(at, buffer, right[i + 1], c1, 1, v1, light[i + 1], normal[i + 1]);
@@ -881,6 +965,7 @@ public final class WhipsClient {
      * glow along their own geometry.
      */
     public static void halo(PoseStack.Pose at, VertexConsumer buffer, Vec3[] p, double span, double width, double tipWidth, int argb) {
+        argb = com.fundamentum.client.Emissive.packGlow(argb);
         int n = p.length;
         for (int i = 0; i < n - 1; i++) {
             Vec3[] edge = new Vec3[4];
@@ -903,6 +988,7 @@ public final class WhipsClient {
 
     /** A round soft glow facing the camera at camera-relative {@code c} (1.22.2), for {@link WhipShaders#halo}. */
     public static void glowDot(PoseStack.Pose at, VertexConsumer buffer, Vec3 c, double radius, int argb) {
+        argb = com.fundamentum.client.Emissive.packGlow(argb);
         Vec3 toEye = c.lengthSqr() < 1.0E-10 ? new Vec3(0, 0, 1) : c.scale(-1).normalize();
         Vec3 a = toEye.cross(Math.abs(toEye.y) < 0.95 ? new Vec3(0, 1, 0) : new Vec3(1, 0, 0)).normalize().scale(radius);
         Vec3 b = toEye.cross(a).normalize().scale(radius);

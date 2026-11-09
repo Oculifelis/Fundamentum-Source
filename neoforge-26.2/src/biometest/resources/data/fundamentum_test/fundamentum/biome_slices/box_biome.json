@@ -1,0 +1,6 @@
+{
+  "biome": "fundamentum_test:box_biome",
+  "climate": {"temperature": [0.55, 1.0], "humidity": [-1.0, -0.35], "continentalness": [0.03, 1.0]},
+  "share": {"with": ["#c:is_desert", "minecraft:desert"], "axis": "weirdness", "side": "low"},
+  "weight": 0.4
+}

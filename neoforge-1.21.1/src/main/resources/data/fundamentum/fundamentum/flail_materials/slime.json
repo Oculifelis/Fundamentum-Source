@@ -1,0 +1,20 @@
+{
+  "head_mass": 0.8,
+  "inertia": 0.9,
+  "stiffness": 0.05,
+  "damping": 0.03,
+  "bounce": 0.9,
+  "impact": {
+    "effects": [
+      {
+        "id": "minecraft:slowness",
+        "seconds": 2,
+        "amplifier": 0
+      }
+    ],
+    "particle": "minecraft:item_slime"
+  },
+  "sound": "minecraft:block.slime_block.hit",
+  "head_color": "#7CC86A",
+  "chain_color": "#5A9A4C"
+}

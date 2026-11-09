@@ -99,7 +99,7 @@ public final class WhipsClient {
         final WhipDefinition whip;
         final WhipCord[] cords;
         /** The fraction of the cord's length these cords are (1 for a swing). */
-        final double span;
+        double span;
         final WhipVec[][] prev, now;
         Vec3 hand;
 
@@ -136,8 +136,37 @@ public final class WhipsClient {
 
     /** The loose cord of a held whip between swings: plain physics from the hand, no guide. */
     private static final class Idle extends Shown {
+        /** Ticks a finished swing's cord takes to draw back in to the idle length and settle into the hand. */
+        static final int RETURN_TICKS = 10;
+        private final double fullRest, idleRest;
+        /** Where a finished swing left the handle, from the hand, and which way it pointed. */
+        private WhipVec reach = WhipVec.ZERO, reachDir;
+        private int returned = RETURN_TICKS;
+        /** Set for the tick a swing hands its cord over: the swing already stepped it, so this tick draws its last step. */
+        private boolean carried;
+
         Idle(Identifier item, WhipDefinition whip, Vec3 hand) {
-            super(item, whip, new WhipCord[] {cord(whip, hand)}, whip.idleLength, hand);
+            this(item, whip, cord(whip, hand), whip.idleLength, hand);
+        }
+
+        /**
+         * Carries on from a finished swing with its first strand as it is (shape and speed), drawing it back in to the
+         * idle length over {@link #RETURN_TICKS}, so the cord doesn't jump from the swing to hanging straight down.
+         */
+        Idle(Swing swing, Vec3 hand) {
+            this(swing.item, swing.whip, swing.cords[0], 1.0, hand);
+            WhipVec[] p = cords[0].points;
+            reach = p[0].sub(Whips.vec(hand));
+            reachDir = p[1].sub(p[0]).normalize(new WhipVec(0, -1, 0));
+            returned = 0;
+            prev[0] = swing.prev[0];
+            carried = true;
+        }
+
+        private Idle(Identifier item, WhipDefinition whip, WhipCord cord, double span, Vec3 hand) {
+            super(item, whip, new WhipCord[] {cord}, span, hand);
+            fullRest = cord.rest;
+            idleRest = cord.rest * whip.idleLength / span;
         }
 
         private static WhipCord cord(WhipDefinition whip, Vec3 hand) {
@@ -148,14 +177,31 @@ public final class WhipsClient {
         }
 
         void tick(Vec3 to, Vec3 look, WhipCord.Solids solids) {
+            if (carried) {
+                carried = false;
+                hand = to;
+                return;
+            }
             snapshot(prev);
             // The handle hangs a little forward of straight down; the rest is gravity, drag and the blocks.
-            WhipVec dir = new WhipVec(look.x * 0.35, -1, look.z * 0.35).normalize(new WhipVec(0, -1, 0));
+            WhipVec hang = new WhipVec(look.x * 0.35, -1, look.z * 0.35).normalize(new WhipVec(0, -1, 0));
             WhipTuning t = whip.tuning;
             int n = 4;
             for (int i = 1; i <= n; i++) {
                 WhipVec root = Whips.vec(hand.lerp(to, (double) i / n));
+                WhipVec dir = hang;
+                if (returned < RETURN_TICKS) {
+                    double f = Math.min(1.0, (returned + (double) i / n) / RETURN_TICKS);
+                    f = f * f * (3.0 - 2.0 * f);
+                    span = Mth.lerp(f, 1.0, whip.idleLength);
+                    cords[0].rest = Mth.lerp(f, fullRest, idleRest);
+                    root = root.addScaled(reach, 1.0 - f);
+                    dir = reachDir.lerp(hang, f).normalize(hang);
+                }
                 cords[0].step(root, dir, 0.05 / n, WhipCord.IDLE_GUIDE, t.lag(), t.stiffness(), Math.pow(0.86, 1.0 / n), t.gravity(), solids);
+            }
+            if (returned < RETURN_TICKS) {
+                returned++;
             }
             hand = to;
             snapshot(now);
@@ -386,6 +432,9 @@ public final class WhipsClient {
             }
             if (!more) {
                 it.remove();
+                if (s.whip.idleLength > 0) {
+                    IDLE.put(entry.getKey(), new Idle(s, hand));
+                }
             }
         }
         // Idle cords: every near player holding a whip that has one, and not swinging it.

@@ -1,0 +1,11 @@
+{
+  "item": "minecraft:brick",
+  "combo_length": 3,
+  "combo_window": 20,
+  "finisher": {
+    "damage_multiplier": 2.0,
+    "effect": "minecraft:slowness",
+    "effect_duration": 40,
+    "knockback": 0
+  }
+}

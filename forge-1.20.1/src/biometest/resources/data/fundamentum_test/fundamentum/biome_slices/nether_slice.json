@@ -1,0 +1,5 @@
+{
+  "biome": "fundamentum_test:nether_slice",
+  "dimension": "minecraft:the_nether",
+  "share": {"with": "minecraft:nether_wastes", "axis": "humidity", "side": "low", "shift": 0.2}
+}

@@ -46,6 +46,8 @@ dependencies {
     compileOnly "mezz.jei:jei-${minecraft_version}-neoforge-api:${jei_version}"
     // Jade is optional: compiled against its jar only (the jukebox progress line in compat/jade); never in the jar
     compileOnly "maven.modrinth:jade:${jade_version}"
+    // TerraBlender 4.1.0.8 (Modrinth version id), only for biome/TerraBlenderRegion, which loads only when TerraBlender is installed
+    compileOnly "maven.modrinth:terrablender:6e8GCrLb"
     testImplementation platform('org.junit:junit-bom:5.13.4')
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
@@ -107,6 +109,21 @@ neoForge {
             if (project.hasProperty('elementtest')) {
                 systemProperty 'fundamentum.elementtest', 'true'
             }
+            // gradlew runServer -Ptypestest: sentries, gauntlets, spears and the Better Combat seam (TypesSelfTest) with their data
+            if (project.hasProperty('typestest')) {
+                systemProperty 'fundamentum.typestest', 'true'
+            }
+            // gradlew runServer -Pflailtest: flails and scythes used on husks (flail/FlailSelfTest) with its data
+            if (project.hasProperty('flailtest')) {
+                systemProperty 'fundamentum.flailtest', 'true'
+            }
+            // gradlew runServer -Pbiometest (own injector) or -Pbiometest=tb (TerraBlender): the biome slice test
+            // (biome/BiomeSliceSelfTest), each in its own fresh world, which stops the server when done
+            if (project.hasProperty('biometest')) {
+                var biomeMode = project.property('biometest').toString() == 'tb' ? 'tb' : 'true'
+                systemProperty 'fundamentum.biometest', biomeMode
+                gameDirectory = project.file(biomeMode == 'tb' ? 'run-biometest-tb' : 'run-biometest')
+            }
         }
         configureEach {
             logLevel = org.slf4j.event.Level.INFO
@@ -150,6 +167,37 @@ if (project.hasProperty('skytest')) {
 if (project.hasProperty('elementtest')) {
     sourceSets.main.resources.srcDir 'src/elementtest/resources'
 }
+// The weapon type test's data, only in -Ptypestest runs (never build a jar with -Ptypestest)
+if (project.hasProperty('typestest')) {
+    sourceSets.main.resources.srcDir 'src/typestest/resources'
+    // the test's spear tag replaces the empty one in main (the test folder comes last, so its copy wins)
+    tasks.named('processResources').configure { duplicatesStrategy = DuplicatesStrategy.INCLUDE }
+}
+// The flail test's example flails and scythe and its data (a broken scythe file, a wave scythe on the iron hoe), only in -Pflailtest runs (never build a jar with -Pflailtest)
+if (project.hasProperty('flailtest')) {
+    sourceSets.main.resources.srcDir 'src/flailtest/resources'
+    sourceSets.main.java.srcDir 'src/flailtest/java'
+    // the test's tags replace the emptied ones in main (the test folder comes last, so its copy wins)
+    tasks.named('processResources').configure { duplicatesStrategy = DuplicatesStrategy.INCLUDE }
+}
+// The whip test's example whip (code, art and data), only in -Pwhiptest runs (never build a jar with -Pwhiptest)
+if (project.hasProperty('whiptest')) {
+    sourceSets.main.resources.srcDir 'src/whiptest/resources'
+    sourceSets.main.java.srcDir 'src/whiptest/java'
+    // the test's tags replace the emptied ones in main (the test folder comes last, so its copy wins)
+    tasks.named('processResources').configure { duplicatesStrategy = DuplicatesStrategy.INCLUDE }
+}
+// The biome slice test's code and data, only in -Pbiometest runs (never build a jar with -Pbiometest);
+// -Pbiometest=tb also puts TerraBlender on the run classpath (-Ptbjar=<path> to use another jar)
+if (project.hasProperty('biometest')) {
+    sourceSets.main.java.srcDir 'src/biometest/java'
+    sourceSets.main.resources.srcDir 'src/biometest/resources'
+    if (project.property('biometest').toString() == 'tb') {
+        dependencies {
+            localRuntime files(project.findProperty('tbjar') ?: 'H:/PrismLauncher/instances/All the Magic - Arcana/minecraft/mods/TerraBlender-neoforge-1.21.1-4.1.0.8.jar')
+        }
+    }
+}
 neoForge.ideSyncTask generateModMetadata
 
 // Mods that build on Fundamentum read it from this folder's repo/ (gradlew publish), see README.md
@@ -161,7 +209,7 @@ publishing {
         }
     }
     repositories {
-        maven { url = 'H:/AI_MC_Modding/Fundamentum/repo' }
+        maven { url = project.findProperty('fundamentum_publish_repo') ?: 'H:/AI_MC_Modding/Fundamentum/repo' }
     }
 }
 

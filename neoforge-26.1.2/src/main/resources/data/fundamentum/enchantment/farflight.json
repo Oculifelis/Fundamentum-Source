@@ -1,0 +1,34 @@
+{
+  "description": {
+    "translate": "enchantment.fundamentum.farflight"
+  },
+  "supported_items": "#fundamentum:enchantable/boomerang",
+  "weight": 5,
+  "max_level": 3,
+  "min_cost": {
+    "base": 10,
+    "per_level_above_first": 9
+  },
+  "max_cost": {
+    "base": 60,
+    "per_level_above_first": 9
+  },
+  "anvil_cost": 2,
+  "slots": [
+    "hand"
+  ],
+  "effects": {
+    "minecraft:attributes": [
+      {
+        "id": "fundamentum:enchantment.farflight",
+        "attribute": "fundamentum:boomerang_range",
+        "amount": {
+          "type": "minecraft:linear",
+          "base": 0.25,
+          "per_level_above_first": 0.25
+        },
+        "operation": "add_multiplied_base"
+      }
+    ]
+  }
+}

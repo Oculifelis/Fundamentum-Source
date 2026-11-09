@@ -1,0 +1,19 @@
+{
+  "head_mass": 0.7,
+  "inertia": 0.8,
+  "stiffness": 0.25,
+  "damping": 0.07,
+  "bounce": 0.35,
+  "impact": {
+    "effects": [
+      {
+        "id": "minecraft:weakness",
+        "seconds": 3,
+        "amplifier": 0
+      }
+    ]
+  },
+  "sound": "minecraft:entity.skeleton.hurt",
+  "head_color": "#E3DCC2",
+  "chain_color": "#B8B094"
+}

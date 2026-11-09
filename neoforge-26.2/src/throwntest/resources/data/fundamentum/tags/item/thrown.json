@@ -1,0 +1,10 @@
+{
+  "replace": false,
+  "values": [
+    "#fundamentum:boomerangs",
+    {
+      "id": "fundamentum:example_knife",
+      "required": false
+    }
+  ]
+}

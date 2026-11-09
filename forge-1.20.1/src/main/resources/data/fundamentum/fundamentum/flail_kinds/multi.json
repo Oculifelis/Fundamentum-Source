@@ -1,0 +1,7 @@
+{
+  "head_count": 3,
+  "chain_length": 1.6,
+  "chain_segments": 6,
+  "impact_radius": 0.3,
+  "spread": 25
+}

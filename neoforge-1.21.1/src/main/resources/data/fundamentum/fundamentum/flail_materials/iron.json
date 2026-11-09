@@ -1,0 +1,10 @@
+{
+  "head_mass": 1.0,
+  "inertia": 1.0,
+  "stiffness": 0.2,
+  "damping": 0.06,
+  "bounce": 0.3,
+  "sound": "minecraft:entity.player.attack.strong",
+  "head_color": "#8A8F96",
+  "chain_color": "#5A5E66"
+}

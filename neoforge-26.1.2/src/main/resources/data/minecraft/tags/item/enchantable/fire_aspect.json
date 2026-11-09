@@ -1,6 +1,10 @@
 {
   "replace": false,
   "values": [
-    "#fundamentum:whips"
+    "#fundamentum:whips",
+    "#fundamentum:thrown",
+    "#fundamentum:gauntlets",
+    "#fundamentum:flails",
+    "#fundamentum:scythes"
   ]
 }

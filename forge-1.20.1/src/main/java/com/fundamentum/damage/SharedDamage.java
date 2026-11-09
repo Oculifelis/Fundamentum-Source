@@ -21,6 +21,8 @@ import org.jetbrains.annotations.Nullable;
  */
 public final class SharedDamage {
     public static final ResourceKey<DamageType> FIRE = key("fire");
+    /** Soul fire (1.25.6): fire too (the element is a variant of fire), and it sets what it hits soul-burning. */
+    public static final ResourceKey<DamageType> SOUL_FIRE = key("soul_fire");
     public static final ResourceKey<DamageType> ICE = key("ice");
     public static final ResourceKey<DamageType> WATER = key("water");
     public static final ResourceKey<DamageType> ELECTRIC = key("electric");

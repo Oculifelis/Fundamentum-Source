@@ -1,0 +1,20 @@
+Fundamentum 1.25.8+1.20.1 (Forge 47): API differences from 1.21.1 that other mods see
+
+music/JukeboxProgress
+  record Track(BlockPos pos, RecordItem record, double elapsedTicks)   (1.21.1: Holder<JukeboxSong> song)
+    name(), lengthTicks(), lengthSeconds(), elapsedSeconds(), progress(), timeText(), hearingRange(), finished()
+  Optional<Track> of(JukeboxBlockEntity)          server side
+  Optional<RecordItem> record(ItemStack)          (1.21.1: song(registries, stack))
+  int lengthTicks(RecordItem), float hearingRange(RecordItem)
+  write(FriendlyByteBuf, Track) / read(FriendlyByteBuf), toTag(Track) / fromTag(CompoundTag)   (1.21.1: TRACK_STREAM_CODEC)
+  clock(double), timeText(double, double)         unchanged
+
+music/client/JukeboxTracker
+  at(BlockPos), audible(Vec3), nearest(Vec3), playing()     unchanged
+  sync(BlockPos, RecordItem, double), started(BlockPos, RecordItem), stopped(BlockPos)
+
+soulfire/SoulFlames (api/SoulFire unchanged)
+  SOUL_BURNING is the persistent-data key "fundamentum:soul_burning" (1.21.1: an attachment type)
+  flag(Entity): the stored flag alone
+
+api/ItemHud, client/Cloth and the rest of api/ match 1.21.1.

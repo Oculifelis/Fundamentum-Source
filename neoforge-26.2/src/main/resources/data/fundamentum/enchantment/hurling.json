@@ -1,0 +1,44 @@
+{
+  "description": {
+    "translate": "enchantment.fundamentum.hurling"
+  },
+  "supported_items": "#fundamentum:enchantable/thrown",
+  "weight": 5,
+  "max_level": 3,
+  "min_cost": {
+    "base": 8,
+    "per_level_above_first": 10
+  },
+  "max_cost": {
+    "base": 58,
+    "per_level_above_first": 10
+  },
+  "anvil_cost": 2,
+  "slots": [
+    "hand"
+  ],
+  "effects": {
+    "minecraft:attributes": [
+      {
+        "id": "fundamentum:enchantment.hurling",
+        "attribute": "fundamentum:thrown_speed",
+        "amount": {
+          "type": "minecraft:linear",
+          "base": 0.15,
+          "per_level_above_first": 0.15
+        },
+        "operation": "add_multiplied_base"
+      },
+      {
+        "id": "fundamentum:enchantment.hurling_return",
+        "attribute": "fundamentum:boomerang_return_speed",
+        "amount": {
+          "type": "minecraft:linear",
+          "base": 0.15,
+          "per_level_above_first": 0.15
+        },
+        "operation": "add_multiplied_base"
+      }
+    ]
+  }
+}
