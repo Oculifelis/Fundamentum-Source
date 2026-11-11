@@ -4,11 +4,15 @@ import com.fundamentum.attribute.StatAttributes;
 import com.fundamentum.curios.Slots;
 import com.fundamentum.data.DataTable;
 import com.fundamentum.data.DataTables;
+import com.fundamentum.net.IPayloadContext;
+import com.fundamentum.net.Net;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import java.util.Set;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Supplier;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
@@ -17,11 +21,9 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.network.NetworkDirection;
-import net.minecraftforge.network.NetworkEvent;
-import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.simple.SimpleChannel;
 import net.minecraftforge.registries.ForgeRegistries;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Terraria-style wings, worn in the {@code wings} Curios slot. Holding jump in the air rises until the flight time runs
@@ -29,9 +31,15 @@ import net.minecraftforge.registries.ForgeRegistries;
  * {@code data/<namespace>/fundamentum/wings/<name>.json} keyed by its "item" field (default: the file id):
  * <pre>{"item": "mymod:angel_wings", "flight_ticks": 50, "rise_speed": 0.45, "rise_acceleration": 0.12,
  *  "horizontal_speed": 1.25, "glide_fall_speed": 0.12}</pre>
- * Every field is optional ({@link Stats#DEFAULT}). Flight time scales with the {@code fundamentum:wing_flight_time}
- * attribute and is capped at {@link #MAX_FLIGHT_TICKS}, below vanilla's 80-tick "flying is not enabled" kick. The wearer's
- * own mod draws the wings; Fundamentum only moves the player. Movement runs on the client (see WingsClient); the server
+ * Every field is optional ({@link Stats#DEFAULT}). An optional {@code "fx"} block adds particles and sounds (see {@link Fx}, 1.28.0):
+ * <pre>"fx": {"burst": ["minecraft:cherry_leaves"], "burst_count": 12, "flap": ["minecraft:cherry_leaves"], "flap_count": 4,
+ *  "trail": ["minecraft:cherry_leaves"], "trail_rate": 0.4, "flap_sound": "minecraft:entity.phantom.flap",
+ *  "takeoff_sound": "minecraft:item.elytra.flying", "volume": 0.5, "pitch": 1.2, "flap_speed": 1.0}</pre>
+ * Every wearer's flight phase (folded, rising, gliding) is sent to the players who can see them, so the wings spread and
+ * flap for everyone (see WingsAnim, 1.28.0). Flight time scales with the {@code fundamentum:wing_flight_time}
+ * attribute and is capped at {@link #MAX_FLIGHT_TICKS}, below vanilla's 80-tick "flying is not enabled" kick. Wings whose data names a
+ * {@code texture} are drawn by Fundamentum on the elytra model (see WingsRender, 1.28.0); otherwise the wearer's own mod
+ * draws them. Movement runs on the client (see WingsClient); the server
  * only clears fall damage for players who report flying and actually wear wings.
  */
 public final class Wings {
@@ -40,12 +48,57 @@ public final class Wings {
     /** Slowest glide; vanilla counts anything slower than 0.03125 blocks per tick down as floating. */
     public static final double MIN_GLIDE_FALL_SPEED = 0.04;
 
-    private static final String VERSION = "1";
-    static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
-        new ResourceLocation("fundamentum", "wings"), () -> VERSION, VERSION::equals, VERSION::equals);
+    private static final String VERSION = "2";
+    static final SimpleChannel CHANNEL = Net.channel("wings", VERSION);
 
-    public record Stats(int flightTicks, double riseSpeed, double riseAcceleration, double horizontalSpeed, double glideFallSpeed) {
-        public static final Stats DEFAULT = new Stats(40, 0.4, 0.1, 1.0, 0.15);
+    /** Flight phases, as sent between client and server: wings folded (grounded or not holding jump), rising, gliding. */
+    public static final byte FOLDED = 0, RISING = 1, GLIDING = 2;
+
+    /**
+     * Particles and sounds for one pair of wings (1.28.0). Particle fields list plain particle ids (a string or an array);
+     * every listed type is spawned. {@code burst} on take-off, {@code flap} on every downstroke while rising,
+     * {@code trail} while gliding ({@code trail_rate} per tick, fractions allowed; half that while rising). Sounds play
+     * on each downstroke and on take-off, at {@code volume} and {@code pitch}. {@code flap_speed} scales the flap rate.
+     * Particles default to none, sounds to silence.
+     */
+    public record Fx(List<String> burst, int burstCount, List<String> flap, int flapCount, List<String> trail, double trailRate,
+                     @Nullable String flapSound, @Nullable String takeoffSound, float volume, float pitch, float flapSpeed) {
+        static Fx fromJson(JsonObject json) {
+            return new Fx(ids(json.get("burst")), json.has("burst_count") ? json.get("burst_count").getAsInt() : 12,
+                ids(json.get("flap")), json.has("flap_count") ? json.get("flap_count").getAsInt() : 4,
+                ids(json.get("trail")), json.has("trail_rate") ? json.get("trail_rate").getAsDouble() : 0.4,
+                json.has("flap_sound") ? json.get("flap_sound").getAsString() : null,
+                json.has("takeoff_sound") ? json.get("takeoff_sound").getAsString() : null,
+                json.has("volume") ? json.get("volume").getAsFloat() : 0.5F,
+                json.has("pitch") ? json.get("pitch").getAsFloat() : 1.0F,
+                json.has("flap_speed") ? Math.max(0.1F, json.get("flap_speed").getAsFloat()) : 1.0F);
+        }
+
+        private static List<String> ids(@Nullable JsonElement element) {
+            if (element == null || element.isJsonNull()) {
+                return List.of();
+            }
+            if (element instanceof JsonArray array) {
+                List<String> out = new java.util.ArrayList<>();
+                array.forEach(e -> out.add(e.getAsString()));
+                return List.copyOf(out);
+            }
+            return List.of(element.getAsString());
+        }
+    }
+
+    /**
+     * {@code fx} is null when the data has no fx block: the wings still spread and flap, silently. {@code texture}
+     * (1.28.0, this version only: it has no equipment assets) is the elytra-shaped texture Fundamentum draws the
+     * wings with, e.g. {@code "mymod:textures/entity/wings/angel.png"}; without it the owning mod draws them.
+     */
+    public record Stats(int flightTicks, double riseSpeed, double riseAcceleration, double horizontalSpeed, double glideFallSpeed, @Nullable Fx fx, @Nullable String texture) {
+        public static final Stats DEFAULT = new Stats(40, 0.4, 0.1, 1.0, 0.15, null, null);
+
+        /** Kept from 1.27: no fx and no texture. */
+        public Stats(int flightTicks, double riseSpeed, double riseAcceleration, double horizontalSpeed, double glideFallSpeed) {
+            this(flightTicks, riseSpeed, riseAcceleration, horizontalSpeed, glideFallSpeed, null, null);
+        }
 
         static Stats fromJson(JsonObject json) {
             return new Stats(
@@ -53,7 +106,9 @@ public final class Wings {
                 json.has("rise_speed") ? json.get("rise_speed").getAsDouble() : DEFAULT.riseSpeed,
                 json.has("rise_acceleration") ? json.get("rise_acceleration").getAsDouble() : DEFAULT.riseAcceleration,
                 json.has("horizontal_speed") ? json.get("horizontal_speed").getAsDouble() : DEFAULT.horizontalSpeed,
-                Math.max(MIN_GLIDE_FALL_SPEED, json.has("glide_fall_speed") ? json.get("glide_fall_speed").getAsDouble() : DEFAULT.glideFallSpeed));
+                Math.max(MIN_GLIDE_FALL_SPEED, json.has("glide_fall_speed") ? json.get("glide_fall_speed").getAsDouble() : DEFAULT.glideFallSpeed),
+                json.has("fx") ? Fx.fromJson(json.getAsJsonObject("fx")) : null,
+                json.has("texture") ? json.get("texture").getAsString() : null);
         }
     }
 
@@ -62,8 +117,8 @@ public final class Wings {
         .keyField("item")
         .synced();
 
-    /** Players (server side) whose client says they are flying or gliding. */
-    private static final Set<UUID> AIRBORNE = ConcurrentHashMap.newKeySet();
+    /** Players (server side) whose client says they are rising or gliding, with that phase. */
+    private static final Map<UUID, Byte> AIRBORNE = new ConcurrentHashMap<>();
 
     /** The wings a player wears, or empty. */
     public static ItemStack worn(Player player) {
@@ -76,6 +131,11 @@ public final class Wings {
         return wings.isEmpty() ? null : STATS.getOrDefault(ForgeRegistries.ITEMS.getKey(wings.getItem()), Stats.DEFAULT);
     }
 
+    /** The data for one wings item ({@link Stats#DEFAULT} when its item has none). */
+    public static Stats stats(ItemStack wings) {
+        return STATS.getOrDefault(ForgeRegistries.ITEMS.getKey(wings.getItem()), Stats.DEFAULT);
+    }
+
     /** Flight time in ticks for this player and these wings, after the wing_flight_time attribute and the cap. */
     public static int flightTicks(Player player, Stats stats) {
         var attribute = StatAttributes.WING_FLIGHT_TIME.get();
@@ -84,42 +144,76 @@ public final class Wings {
     }
 
     public static void init() {
-        CHANNEL.messageBuilder(StatePayload.class, 0, NetworkDirection.PLAY_TO_SERVER)
-            .encoder(StatePayload::encode).decoder(StatePayload::decode).consumerMainThread(StatePayload::handle).add();
+        Net.toServer(CHANNEL, 0, StatePayload.class, StatePayload::encode, StatePayload::decode, StatePayload::handle);
+        Net.toClient(CHANNEL, 1, PhasePayload.class, PhasePayload::encode, PhasePayload::decode, PhasePayload::handle);
         MinecraftForge.EVENT_BUS.addListener(Wings::tick);
         MinecraftForge.EVENT_BUS.addListener((PlayerEvent.PlayerLoggedOutEvent e) -> AIRBORNE.remove(e.getEntity().getUUID()));
+        MinecraftForge.EVENT_BUS.addListener(Wings::startTracking);
+    }
+
+    /** The flight phase the server last heard from this player ({@link #FOLDED} when none). */
+    public static byte phase(Player player) {
+        return AIRBORNE.getOrDefault(player.getUUID(), FOLDED);
+    }
+
+    private static void setPhase(ServerPlayer player, byte phase) {
+        Byte old = phase == FOLDED ? AIRBORNE.remove(player.getUUID()) : AIRBORNE.put(player.getUUID(), phase);
+        if ((old == null ? FOLDED : old) != phase) {
+            Net.sendTracking(CHANNEL, player, new PhasePayload(player.getId(), phase));
+        }
+    }
+
+    /** A player who starts seeing a flying wearer learns its phase at once. */
+    private static void startTracking(PlayerEvent.StartTracking event) {
+        if (event.getTarget() instanceof Player target && event.getEntity() instanceof ServerPlayer tracker) {
+            byte phase = phase(target);
+            if (phase != FOLDED) {
+                Net.sendTo(CHANNEL, tracker, new PhasePayload(target.getId(), phase));
+            }
+        }
     }
 
     private static void tick(TickEvent.PlayerTickEvent event) {
-        if (event.phase == TickEvent.Phase.END && event.player instanceof ServerPlayer player && AIRBORNE.contains(player.getUUID())) {
+        if (event.phase == TickEvent.Phase.END && event.player instanceof ServerPlayer player && AIRBORNE.containsKey(player.getUUID())) {
             if (worn(player).isEmpty()) {
-                AIRBORNE.remove(player.getUUID());
+                setPhase(player, FOLDED);
             } else {
                 player.resetFallDistance();
             }
         }
     }
 
-    /** Client to server: this player started (true) or stopped (false) flying or gliding on wings. */
-    public record StatePayload(boolean airborne) {
+    /** Client to server: this player's flight phase changed ({@link #FOLDED}, {@link #RISING} or {@link #GLIDING}). */
+    public record StatePayload(byte phase) {
         void encode(FriendlyByteBuf buf) {
-            buf.writeBoolean(this.airborne);
+            buf.writeByte(this.phase);
         }
 
         static StatePayload decode(FriendlyByteBuf buf) {
-            return new StatePayload(buf.readBoolean());
+            return new StatePayload(buf.readByte());
         }
 
-        void handle(Supplier<NetworkEvent.Context> context) {
-            ServerPlayer player = context.get().getSender();
-            if (player == null) {
-                return;
+        static void handle(StatePayload payload, IPayloadContext context) {
+            if (context.player() instanceof ServerPlayer player) {
+                byte phase = payload.phase >= RISING && payload.phase <= GLIDING && !worn(player).isEmpty() ? payload.phase : FOLDED;
+                setPhase(player, phase);
             }
-            if (this.airborne && !worn(player).isEmpty()) {
-                AIRBORNE.add(player.getUUID());
-            } else {
-                AIRBORNE.remove(player.getUUID());
-            }
+        }
+    }
+
+    /** Server to clients: a player they can see changed flight phase, so its wings move for them too. */
+    public record PhasePayload(int entity, byte phase) {
+        void encode(FriendlyByteBuf buf) {
+            buf.writeVarInt(this.entity);
+            buf.writeByte(this.phase);
+        }
+
+        static PhasePayload decode(FriendlyByteBuf buf) {
+            return new PhasePayload(buf.readVarInt(), buf.readByte());
+        }
+
+        static void handle(PhasePayload payload, IPayloadContext context) {
+            WingsAnim.remotePhase(payload.entity(), payload.phase());
         }
     }
 

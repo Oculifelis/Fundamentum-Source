@@ -156,9 +156,9 @@ final class FlailSelfTest {
             cases = cases();
             index = 0;
             tick = 0;
-            // The data checks: the broken scythe file is left out, the good ones are in, every example flail resolved.
+            // The data checks: the conflicting scythe file is left out, the good ones are in, every example flail resolved.
             boolean bad = Scythes.spec(new ItemStack(Items.GOLDEN_HOE)) == null;
-            report("whirl + backswing scythe file is rejected", bad, bad ? "left out" : "it loaded");
+            report("two scythe moves on use are rejected", bad, bad ? "left out" : "it loaded");
             boolean good = Scythes.spec(new ItemStack(item("example_scythe"))) != null && Scythes.spec(new ItemStack(Items.IRON_HOE)) != null;
             report("good scythe files load", good, "example and wave scythe");
             int flails = 0;
@@ -177,6 +177,10 @@ final class FlailSelfTest {
             return;
         }
         Case c = cases.get(index);
+        // In a fresh world the chunk forced above is not ticking entities yet, so a husk added now would never be hit.
+        if (tick == 0 && !level.isPositionEntityTicking(AT.offset(0, 0, 3))) {
+            return;
+        }
         FakePlayer p = player;
         tick++;
         try {

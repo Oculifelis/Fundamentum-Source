@@ -1,0 +1,11 @@
+{
+  "replace": false,
+  "values": [
+    "#minecraft:enchantable/melee_weapon",
+    "#fundamentum:whips",
+    "#fundamentum:thrown",
+    "#fundamentum:gauntlets",
+    "#fundamentum:flails",
+    "#fundamentum:scythes"
+  ]
+}

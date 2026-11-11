@@ -1,0 +1,12 @@
+{
+  "dimension": "minecraft:overworld",
+  "material_rule": {
+    "type": "minecraft:condition",
+    "if_true": {"type": "minecraft:biome", "biome_is": "fundamentum_test:box_biome"},
+    "then_run": {
+      "type": "minecraft:condition",
+      "if_true": "minecraft:on_floor",
+      "then_run": {"type": "minecraft:block", "result_state": "minecraft:mud"}
+    }
+  }
+}

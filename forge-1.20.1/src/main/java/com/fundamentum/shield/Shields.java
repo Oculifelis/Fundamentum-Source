@@ -1,6 +1,10 @@
 package com.fundamentum.shield;
 
+import com.fundamentum.attribute.StatAttributes;
 import com.fundamentum.damage.Elements;
+import com.fundamentum.thrown.ThrownStats;
+import com.fundamentum.thrown.ThrownWeapon;
+import com.fundamentum.thrown.ThrownWeapons;
 import com.fundamentum.data.DataTable;
 import com.fundamentum.data.DataTables;
 import com.google.gson.JsonObject;
@@ -30,9 +34,15 @@ import net.minecraft.world.entity.projectile.AbstractArrow;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.RecipeSerializer;
+import net.minecraft.world.item.crafting.SimpleCraftingRecipeSerializer;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.registries.DeferredRegister;
+import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraftforge.registries.RegistryObject;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.entity.living.LivingEntityUseItemEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
@@ -55,7 +65,8 @@ import org.slf4j.LoggerFactory;
  * by a data entry, but keeps its own blocking rules for whether it can raise.</li>
  * <li><b>Stats:</b> {@link #register} in code, laid over by {@code data/<ns>/fundamentum/shields/<name>.json} keyed by
  * {@code "item"}.</li>
- * <li><b>Not on this version:</b> {@code thrown} (no thrown-weapon type here; logged once), {@code block_sound} and
+ * <li><b>Throw:</b> {@code thrown} makes sneak-use throw the shield as a returning thrown weapon ({@link ThrownWeapons}).</li>
+ * <li><b>Not on this version:</b> {@code block_sound} and
  * {@code disabled_sound} (vanilla's sounds play), {@code can_sprint} (vanilla stops sprinting while an item is used).</li>
  * <li><b>Better Combat:</b> nothing here is on left click, never swings with it, never uses its attack cooldown.</li>
  * </ul>
@@ -65,6 +76,11 @@ public final class Shields {
 
     /** Item tag of every Fundamentum shield. */
     public static final TagKey<Item> SHIELDS = TagKey.create(Registries.ITEM, new ResourceLocation("fundamentum", "shields"));
+
+    private static final DeferredRegister<RecipeSerializer<?>> SERIALIZERS = DeferredRegister.create(ForgeRegistries.RECIPE_SERIALIZERS, "fundamentum");
+    /** The banner-on-a-Fundamentum-shield crafting recipe ({@link ShieldTypeDecorationRecipe}). */
+    public static final RegistryObject<RecipeSerializer<ShieldTypeDecorationRecipe>> DECORATION =
+        SERIALIZERS.register("shield_decoration", () -> new SimpleCraftingRecipeSerializer<>(ShieldTypeDecorationRecipe::new));
 
     /** Per-item stats in data, keyed by item id (see {@link ShieldStats#withJson} for the fields). */
     public static final DataTable<JsonObject> DATA = DataTables
@@ -88,7 +104,6 @@ public final class Shields {
     private static final List<Reflection> REFLECTIONS = new ArrayList<>();
     private static final List<Player> UNDISABLE = new ArrayList<>();
     private static final Map<Player, ShieldStats> RESCALE = new HashMap<>();
-    private static boolean warnedThrown;
 
     /** Makes the item with this id a shield with these code defaults (data still lays over them). */
     public static void register(ResourceLocation item, ShieldStats stats) {
@@ -416,10 +431,10 @@ public final class Shields {
         if (stats == null || player.getCooldowns().isOnCooldown(stack.getItem())) {
             return;
         }
-        if (stats.throwable() && !warnedThrown) {
-            warnedThrown = true;
-            LOG.info("{} has a \"thrown\" entry; thrown shields need Minecraft 26.x, so it is a bash or a raise here",
-                BuiltInRegistries.ITEM.getKey(stack.getItem()));
+        if (stats.throwable()) {
+            event.setCanceled(true);
+            event.setCancellationResult(throwShield(player.level(), player, event.getHand(), stats));
+            return;
         }
         if (stats.bash() != null && ShieldStats.Bash.USE.equals(stats.bash().trigger())) {
             event.setCanceled(true);
@@ -428,6 +443,42 @@ public final class Shields {
             }
             event.setCancellationResult(InteractionResult.SUCCESS);
         }
+    }
+
+    // ---- throw ----------------------------------------------------------------------------------------------------
+
+    /** The throw of a throwable shield: its {@code thrown} fields over a boomerang's, changed by the thrower's stats. */
+    public static ThrownStats thrownStats(ShieldStats stats, @Nullable LivingEntity thrower) {
+        ThrownStats base = ThrownStats.BOOMERANG.withJson(stats.thrown() == null ? new JsonObject() : stats.thrown());
+        if (thrower == null) {
+            return base;
+        }
+        return base.modified(thrower.getAttributeValue(ThrownWeapons.SPEED.get()) * thrower.getAttributeValue(StatAttributes.PROJECTILE_SPEED.get()),
+            (int) Math.round(thrower.getAttributeValue(ThrownWeapons.PIERCE.get())), thrower.getAttributeValue(ThrownWeapons.RANGE.get()),
+            thrower.getAttributeValue(ThrownWeapons.RETURN_SPEED.get()), (int) Math.round(thrower.getAttributeValue(ThrownWeapons.BOUNCES.get())));
+    }
+
+    /** Throws the shield in {@code hand} as a returning thrown weapon (one durability; it comes back to its slot). */
+    public static InteractionResult throwShield(Level level, Player player, InteractionHand hand, ShieldStats stats) {
+        ItemStack stack = player.getItemInHand(hand);
+        if (level instanceof ServerLevel server) {
+            ThrownStats thrown = thrownStats(stats, player);
+            stack.hurtAndBreak(1, player, p -> p.broadcastBreakEvent(hand));
+            if (stack.isEmpty()) {
+                return InteractionResult.SUCCESS;
+            }
+            ItemStack copy = stack.copyWithCount(1);
+            ThrownWeapon entity = new ThrownWeapon(ThrownWeapons.THROWN_WEAPON.get(), level);
+            entity.launch(player, copy, thrown, ThrownWeapons.slotOf(player, hand));
+            server.addFreshEntity(entity);
+            entity.onThrown(server);
+            if (!player.getAbilities().instabuild) {
+                player.setItemInHand(hand, ItemStack.EMPTY);
+            } else {
+                entity.pickup = false;
+            }
+        }
+        return InteractionResult.SUCCESS;
     }
 
     // ---- wiring ---------------------------------------------------------------------------------------------------
@@ -446,6 +497,16 @@ public final class Shields {
         MinecraftForge.EVENT_BUS.addListener(Shields::onPlayerTick);
         MinecraftForge.EVENT_BUS.addListener(Shields::onRightClick);
         ShieldTextures.init();
+        SERIALIZERS.register(modBus);
+        // The example shields and the shield test: ShieldExamples is in src/shieldtest, built only with -Pshieldtest, never
+        // shipped: Fundamentum is a library and registers no items of its own
+        try {
+            Class.forName("com.fundamentum.shield.ShieldExamples").getMethod("init", IEventBus.class).invoke(null, modBus);
+        } catch (ClassNotFoundException absent) {
+            // a normal build
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     private Shields() {}

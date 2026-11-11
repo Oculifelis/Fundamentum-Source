@@ -26,7 +26,6 @@ import java.util.TreeSet;
  * <li>{@code crescent_wave} (tap): send a crescent of air out along the look that cuts what it passes through.</li>
  * <li>{@code harvest_souls} (passive): kills with the scythe gather souls that make it hit harder and heal you.</li>
  * </ul>
- * Whirl and backswing can't share a scythe: the whirl spins on through the follow-through the backswing turns back on.
  * Two held or tapped moves can't share an input.
  */
 public final class ScytheSpec {
@@ -77,10 +76,6 @@ public final class ScytheSpec {
             if (!MOVES.contains(m)) {
                 throw new IllegalArgumentException("unknown move \"" + m + "\"; known moves: " + new TreeSet<>(MOVES));
             }
-        }
-        if (moves.has("whirl") && moves.has("backswing")) {
-            throw new IllegalArgumentException("\"whirl\" and \"backswing\" can't share one scythe: the whirl spins on through the "
-                + "follow-through the backswing turns back on. Keep one of them");
         }
         R m = new R("moves", moves);
         this.sweetSpot = sweetSpot(m.object("sweet_spot"));

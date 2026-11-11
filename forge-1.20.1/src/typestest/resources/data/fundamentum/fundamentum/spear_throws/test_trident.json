@@ -1,0 +1,6 @@
+{
+  "item": "minecraft:trident",
+  "damage": 8,
+  "velocity": 2.5,
+  "charge_ticks": 10
+}

@@ -101,10 +101,17 @@ public final class BiomeSliceSelfTest {
         ServerLevel overworld = server.overworld();
         ServerLevel nether = server.getLevel(Level.NETHER);
         BlockPos plains = find(overworld, key("shared_plains"), 64);
-        find(overworld, key("box_biome"), 64);
+        BlockPos box = find(overworld, key("box_biome"), 64);
         find(overworld, key("cave_biome"), 16);
         find(nether, key("nether_slice"), 64);
-        // 26.3: no surface rules (material rules replaced them), so the moss check is not run
+        // 26.3: the surface rule files go in as material rules; moss_floor is 26.1.2's surface rule form, mud_floor_material
+        // is 26.3's own material rule form (with a reference to the registered condition minecraft:on_floor)
+        check(BiomeSlices.surfaceRules().stream().anyMatch(r -> r.startsWith("fundamentum_test:moss_floor: minecraft:overworld")),
+            "surface rule moss_floor (26.1.2 form) loaded");
+        check(BiomeSlices.surfaceRules().stream().anyMatch(r -> r.startsWith("fundamentum_test:mud_floor_material: minecraft:overworld")),
+            "surface rule mud_floor_material (26.3 material rule form) loaded");
+        if (plains != null) floor(overworld, plains, "shared_plains", Blocks.MOSS_BLOCK, "moss");
+        if (box != null) floor(overworld, box, "box_biome", Blocks.MUD, "mud");
 
         benchmark(server, overworld, tb);
     }
@@ -123,6 +130,31 @@ public final class BiomeSliceSelfTest {
         check(placed.is(biome), biome.identifier() + " generates at " + pos.toShortString() + " in " + level.dimension().identifier()
             + " (search " + ms + " ms, chunk biome " + placed.getRegisteredName() + ")");
         return pos;
+    }
+
+    /** Counts the given biome's columns in the chunk at {@code near} with the rule's block in their top four blocks. */
+    private static void floor(ServerLevel level, BlockPos near, String biome, net.minecraft.world.level.block.Block block, String what) {
+        ChunkAccess chunk = level.getChunk(near);
+        int biomeColumns = 0, hitColumns = 0, otherHits = 0;
+        int x0 = chunk.getPos().getMinBlockX(), z0 = chunk.getPos().getMinBlockZ();
+        for (int dx = 0; dx < 16; dx++) {
+            for (int dz = 0; dz < 16; dz++) {
+                int y = chunk.getHeight(Heightmap.Types.OCEAN_FLOOR_WG, dx, dz);
+                BlockPos top = new BlockPos(x0 + dx, y, z0 + dz);
+                boolean inBiome = level.getBiome(top).is(key(biome));
+                if (inBiome) biomeColumns++;
+                for (int down = 0; down < 4; down++) {
+                    if (level.getBlockState(top.below(down)).is(block)) {
+                        if (inBiome) hitColumns++;
+                        else otherHits++;
+                        break;
+                    }
+                }
+            }
+        }
+        check(biomeColumns > 0 && hitColumns > 0, "surface rule: " + what + " on " + hitColumns + " of " + biomeColumns
+            + " " + biome + " columns in chunk " + chunk.getPos());
+        note(what + " on " + otherHits + " of " + (256 - biomeColumns) + " columns of other biomes in that chunk");
     }
 
     private static void benchmark(MinecraftServer server, ServerLevel level, boolean tb) {

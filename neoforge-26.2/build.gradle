@@ -75,6 +75,11 @@ neoForge {
                 systemProperty 'fundamentum.skyshot', 'true'
                 systemProperty 'fundamentum.nofocus', 'true'
             }
+            // gradlew runClient -Pcosmeticshot: cosmetic/CosmeticShot clicks through the cosmetic armour off screen, then closes
+            if (project.hasProperty('cosmeticshot')) {
+                systemProperty 'fundamentum.cosmeticshot', 'true'
+                systemProperty 'fundamentum.nofocus', 'true'
+            }
             // gradlew runClient -Ppageshot[=shaders]: client/PageShot takes the mod page's pictures at 1920x1080 off screen, in its own run-pageshot folder
             if (project.hasProperty('pageshot')) {
                 systemProperty 'fundamentum.pageshot', project.property('pageshot').toString()
@@ -85,6 +90,11 @@ neoForge {
             // gradlew runClient -Psoulfireshot: soulfire/SoulFireShot screenshots soul-burning mobs and the screen fire off screen, then closes
             if (project.hasProperty('soulfireshot')) {
                 systemProperty 'fundamentum.soulfireshot', 'true'
+                systemProperty 'fundamentum.nofocus', 'true'
+            }
+            // gradlew runClient -Pshieldshot -Pshieldtest: shield/ShieldShot shows the example shields blocking, parrying and bashing off screen, then closes
+            if (project.hasProperty('shieldshot')) {
+                systemProperty 'fundamentum.shieldshot', 'true'
                 systemProperty 'fundamentum.nofocus', 'true'
             }
             // gradlew runClient -Pjukeboxshot: music/client/JukeboxShot plays a jukebox off screen, checks the tracker, screenshots the Jade line, then closes

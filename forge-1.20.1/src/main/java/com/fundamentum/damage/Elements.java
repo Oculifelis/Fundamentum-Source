@@ -266,9 +266,16 @@ public final class Elements {
 
     /**
      * The weapon behind a hit, standing in for 1.21's {@code DamageSource.getWeaponItem()}: the attacker's main hand item.
-     * 1.20.1 projectiles don't remember the weapon that fired them, so for those it is what the shooter holds now.
+     * 1.20.1 projectiles don't remember the weapon that fired them, so for those it is what the shooter holds now; a
+     * thrown weapon or thrown spear is its own weapon (it has left the hand), as {@code getWeaponItem} gives on 1.21.
      */
     public static @Nullable ItemStack weapon(DamageSource source) {
+        if (source.getDirectEntity() instanceof com.fundamentum.thrown.ThrownWeapon thrown) {
+            return thrown.getItem();
+        }
+        if (source.getDirectEntity() instanceof com.fundamentum.spear.ThrownSpear spear) {
+            return spear.getItem();
+        }
         if (source.getDirectEntity() instanceof LivingEntity direct) {
             return direct.getMainHandItem();
         }

@@ -2,6 +2,6 @@
   "item": "minecraft:golden_hoe",
   "moves": {
     "whirl": {},
-    "backswing": {}
+    "reap_pull": {}
   }
 }

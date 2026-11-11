@@ -137,7 +137,7 @@ public final class PortalRecipe implements Recipe<Container> {
                 ? Optional.of(ResourceKey.create(Registries.DIMENSION, new ResourceLocation(GsonHelper.getAsString(json, "dimension"))))
                 : Optional.empty();
             boolean keep = GsonHelper.getAsBoolean(json, "keep_components", GsonHelper.getAsBoolean(json, "keep_nbt", false));
-            return new PortalRecipe(id, ingredient, result, portal, dimension, keep);
+            return new PortalRecipe(id, ingredient, result, portal, dimension, keep, GsonHelper.getAsBoolean(json, "show_notification", true));
         }
 
         @Override
@@ -146,7 +146,8 @@ public final class PortalRecipe implements Recipe<Container> {
             ItemStack result = buf.readItem();
             Optional<Blocks> portal = buf.readOptional(Blocks::read);
             Optional<ResourceKey<Level>> dimension = buf.readOptional(b -> b.readResourceKey(Registries.DIMENSION));
-            return new PortalRecipe(id, ingredient, result, portal, dimension, buf.readBoolean());
+            boolean keep = buf.readBoolean();
+            return new PortalRecipe(id, ingredient, result, portal, dimension, keep, buf.readBoolean());
         }
 
         @Override
@@ -156,6 +157,7 @@ public final class PortalRecipe implements Recipe<Container> {
             buf.writeOptional(recipe.portal, (b, p) -> p.write(b));
             buf.writeOptional(recipe.dimension, FriendlyByteBuf::writeResourceKey);
             buf.writeBoolean(recipe.keepComponents);
+            buf.writeBoolean(recipe.showNotification);
         }
     };
 
@@ -165,9 +167,17 @@ public final class PortalRecipe implements Recipe<Container> {
     private final Optional<Blocks> portal;
     private final Optional<ResourceKey<Level>> dimension;
     private final boolean keepComponents;
+    private final boolean showNotification;
 
     public PortalRecipe(ResourceLocation id, Ingredient ingredient, ItemStack result, Optional<Blocks> portal,
             Optional<ResourceKey<Level>> dimension, boolean keepComponents) {
+        this(id, ingredient, result, portal, dimension, keepComponents, true);
+    }
+
+    /** With {@code show_notification} (vanilla's recipe field: whether unlocking it shows a toast; default true). */
+    public PortalRecipe(ResourceLocation id, Ingredient ingredient, ItemStack result, Optional<Blocks> portal,
+            Optional<ResourceKey<Level>> dimension, boolean keepComponents, boolean showNotification) {
+        this.showNotification = showNotification;
         this.id = id;
         this.ingredient = ingredient;
         this.result = result;
@@ -208,8 +218,8 @@ public final class PortalRecipe implements Recipe<Container> {
     @Override public boolean canCraftInDimensions(int width, int height) { return true; }
     @Override public ItemStack getResultItem(RegistryAccess registries) { return result; }
     @Override public NonNullList<Ingredient> getIngredients() { return NonNullList.of(Ingredient.EMPTY, ingredient); }
-    /** Kept out of the recipe book (no custom book categories here). */
-    @Override public boolean isSpecial() { return true; }
+    /** Filed under {@link PortalRecipeBook}'s category, which is in no book tab (as on 26). */
+    @Override public boolean showNotification() { return showNotification; }
     @Override public ResourceLocation getId() { return id; }
     @Override public RecipeSerializer<PortalRecipe> getSerializer() { return SERIALIZER; }
     @Override public RecipeType<PortalRecipe> getType() { return PortalCrafting.TYPE.get(); }

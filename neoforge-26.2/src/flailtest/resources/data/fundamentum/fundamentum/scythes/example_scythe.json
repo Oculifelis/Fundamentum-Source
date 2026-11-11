@@ -3,6 +3,7 @@
   "damage": 7,
   "reach": 3.5,
   "moves": {
+    "backswing": {},
     "sweet_spot": {
       "min": 2.4,
       "max": 3.5,

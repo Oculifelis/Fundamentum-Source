@@ -71,7 +71,10 @@ public class ThrownWeapon extends ThrowableItemProjectile {
         flight = new ThrownFlight(stats);
         origin = slot;
         setPos(thrower.getX(), thrower.getEyeY() - 0.1, thrower.getZ());
-        shootFromRotation(thrower, thrower.getXRot(), thrower.getYRot(), 0.0F, (float) stats.throwSpeed(), 0.0F);
+        // Straight along the look at the stat speed. shootFromRotation would add the thrower's own movement, so a
+        // running or falling throw would fly faster, slower or off line.
+        Vec3 look = thrower.getViewVector(1.0F);
+        shoot(look.x, look.y, look.z, (float) stats.throwSpeed(), 0.0F);
     }
 
     public ThrownFlight flight() {

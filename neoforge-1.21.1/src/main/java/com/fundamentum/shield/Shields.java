@@ -1,8 +1,12 @@
 package com.fundamentum.shield;
 
+import com.fundamentum.attribute.StatAttributes;
 import com.fundamentum.damage.Elements;
 import com.fundamentum.data.DataTable;
 import com.fundamentum.data.DataTables;
+import com.fundamentum.thrown.ThrownStats;
+import com.fundamentum.thrown.ThrownWeapon;
+import com.fundamentum.thrown.ThrownWeapons;
 import com.google.gson.JsonObject;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -30,6 +34,9 @@ import net.minecraft.world.entity.projectile.AbstractArrow;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.RecipeSerializer;
+import net.minecraft.world.item.crafting.SimpleCraftingRecipeSerializer;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.IEventBus;
@@ -40,9 +47,9 @@ import net.neoforged.neoforge.event.entity.living.LivingShieldBlockEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
+import net.neoforged.neoforge.registries.DeferredHolder;
+import net.neoforged.neoforge.registries.DeferredRegister;
 import org.jetbrains.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Shields as a data-driven weapon type, 1.21.1 backport of the 26.x one. The same JSON ({@link ShieldStats}); where 26.x
@@ -56,14 +63,17 @@ import org.slf4j.LoggerFactory;
  * by a data entry, but keeps its own blocking rules for whether it can raise.</li>
  * <li><b>Stats:</b> {@link #register} in code, laid over by {@code data/<ns>/fundamentum/shields/<name>.json} keyed by
  * {@code "item"}.</li>
- * <li><b>Not on this version:</b> {@code thrown} (no thrown-weapon type here; logged once), {@code block_sound} and
+ * <li><b>Throw:</b> a shield with a {@code thrown} block is thrown on sneak-use as a returning thrown weapon
+ * ({@link ThrownWeapons}): its {@code thrown} fields over a boomerang's, changed by the thrower's thrown attributes.</li>
+ * <li><b>Banners:</b> any {@link ShieldTypeItem} takes a banner in the crafting grid like vanilla's shield, through
+ * Fundamentum's own {@code fundamentum:shield_decoration} recipe (vanilla's decoration recipe here only takes
+ * {@code minecraft:shield}).</li>
+ * <li><b>Not on this version:</b> {@code block_sound} and
  * {@code disabled_sound} (vanilla's sounds play), {@code can_sprint} (vanilla stops sprinting while an item is used).</li>
  * <li><b>Better Combat:</b> nothing here is on left click, never swings with it, never uses its attack cooldown.</li>
  * </ul>
  */
 public final class Shields {
-    private static final Logger LOG = LoggerFactory.getLogger("Fundamentum/Shields");
-
     /** Item tag of every Fundamentum shield. */
     public static final TagKey<Item> SHIELDS = TagKey.create(Registries.ITEM, ResourceLocation.fromNamespaceAndPath("fundamentum", "shields"));
 
@@ -72,6 +82,11 @@ public final class Shields {
         .registerJson(ResourceLocation.fromNamespaceAndPath("fundamentum", "shields"), "fundamentum/shields")
         .keyField("item")
         .synced();
+
+    private static final DeferredRegister<RecipeSerializer<?>> SERIALIZERS = DeferredRegister.create(Registries.RECIPE_SERIALIZER, "fundamentum");
+    /** The banner-on-a-Fundamentum-shield crafting recipe ({@link ShieldTypeDecorationRecipe}). */
+    public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<ShieldTypeDecorationRecipe>> DECORATION =
+        SERIALIZERS.register("shield_decoration", () -> new SimpleCraftingRecipeSerializer<>(ShieldTypeDecorationRecipe::new));
 
     private static final Map<ResourceLocation, ShieldStats> REGISTERED = new ConcurrentHashMap<>();
     private record Resolved(JsonObject data, ShieldStats code, ShieldStats stats) {}
@@ -89,7 +104,6 @@ public final class Shields {
     private static final List<Reflection> REFLECTIONS = new ArrayList<>();
     private static final List<Player> UNDISABLE = new ArrayList<>();
     private static final Map<Player, ShieldStats> RESCALE = new HashMap<>();
-    private static boolean warnedThrown;
 
     /** Makes the item with this id a shield with these code defaults (data still lays over them). */
     public static void register(ResourceLocation item, ShieldStats stats) {
@@ -414,18 +428,52 @@ public final class Shields {
         if (stats == null || player.getCooldowns().isOnCooldown(stack.getItem())) {
             return;
         }
-        if (stats.throwable() && !warnedThrown) {
-            warnedThrown = true;
-            LOG.info("{} has a \"thrown\" entry; thrown shields need Minecraft 26.x, so it is a bash or a raise here",
-                BuiltInRegistries.ITEM.getKey(stack.getItem()));
-        }
-        if (stats.bash() != null && ShieldStats.Bash.USE.equals(stats.bash().trigger())) {
+        if (stats.throwable()) {
+            event.setCanceled(true);
+            event.setCancellationResult(throwShield(player.level(), player, event.getHand(), stats));
+        } else if (stats.bash() != null && ShieldStats.Bash.USE.equals(stats.bash().trigger())) {
             event.setCanceled(true);
             if (!player.level().isClientSide()) {
                 bash(player, event.getHand());
             }
             event.setCancellationResult(InteractionResult.SUCCESS);
         }
+    }
+
+    // ---- throw ----------------------------------------------------------------------------------------------------
+
+    /** The throw of a throwable shield: its {@code thrown} fields over a boomerang's, changed by the thrower's stats. */
+    public static ThrownStats thrownStats(ShieldStats stats, @Nullable LivingEntity thrower) {
+        ThrownStats base = ThrownStats.BOOMERANG.withJson(stats.thrown() == null ? new JsonObject() : stats.thrown());
+        if (thrower == null) {
+            return base;
+        }
+        return base.modified(thrower.getAttributeValue(ThrownWeapons.SPEED) * thrower.getAttributeValue(StatAttributes.PROJECTILE_SPEED),
+            (int) Math.round(thrower.getAttributeValue(ThrownWeapons.PIERCE)), thrower.getAttributeValue(ThrownWeapons.RANGE),
+            thrower.getAttributeValue(ThrownWeapons.RETURN_SPEED), (int) Math.round(thrower.getAttributeValue(ThrownWeapons.BOUNCES)));
+    }
+
+    /** Throws the shield in {@code hand} as a returning thrown weapon (one durability; it comes back to its slot). */
+    public static InteractionResult throwShield(Level level, Player player, InteractionHand hand, ShieldStats stats) {
+        ItemStack stack = player.getItemInHand(hand);
+        if (level instanceof ServerLevel server) {
+            ThrownStats thrown = thrownStats(stats, player);
+            stack.hurtAndBreak(1, player, LivingEntity.getSlotForHand(hand));
+            if (stack.isEmpty()) {
+                return InteractionResult.SUCCESS;
+            }
+            ItemStack copy = stack.copyWithCount(1);
+            ThrownWeapon entity = new ThrownWeapon(ThrownWeapons.THROWN_WEAPON.get(), level);
+            entity.launch(player, copy, thrown, ThrownWeapons.slotOf(player, hand));
+            server.addFreshEntity(entity);
+            entity.onThrown(server);
+            if (!player.hasInfiniteMaterials()) {
+                player.setItemInHand(hand, ItemStack.EMPTY);
+            } else {
+                entity.pickup = false;
+            }
+        }
+        return InteractionResult.SUCCESS;
     }
 
     // ---- wiring ---------------------------------------------------------------------------------------------------
@@ -437,6 +485,7 @@ public final class Shields {
     }
 
     public static void init(IEventBus modBus) {
+        SERIALIZERS.register(modBus);
         NeoForge.EVENT_BUS.addListener(Shields::onUseStart);
         NeoForge.EVENT_BUS.addListener(Shields::onBlock);
         NeoForge.EVENT_BUS.addListener(Shields::onIncoming);
@@ -444,6 +493,15 @@ public final class Shields {
         NeoForge.EVENT_BUS.addListener(Shields::onPlayerTick);
         NeoForge.EVENT_BUS.addListener(Shields::onRightClick);
         ShieldTextures.init();
+        // the example shields and their in-game test are in src/shieldtest, compiled only with -Pshieldtest and never
+        // shipped: Fundamentum is a library and registers no items of its own
+        try {
+            Class.forName("com.fundamentum.shield.ShieldExamples").getMethod("init", IEventBus.class).invoke(null, modBus);
+        } catch (ClassNotFoundException absent) {
+            // a normal build
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     private Shields() {}

@@ -262,5 +262,16 @@
   "jei.fundamentum.relic": "A trophy of %s: its likeness floats over the base and slowly turns. Give it a redstone signal and it stops, facing the way it was placed.",
   "jei.fundamentum.relic.drops": "Dropped by %s.",
   "jei.fundamentum.relic.killer": "Given to the player who defeats %s.",
-  "jei.fundamentum.relic.grand": "Takes a 3x3 space, and the layer above it must be clear."
+  "jei.fundamentum.relic.grand": "Takes a 3x3 space, and the layer above it must be clear.",
+  "entity.fundamentum.thrown_spear": "Thrown Spear",
+  "attribute.name.fundamentum.boomerang_range": "Boomerang Range",
+  "attribute.name.fundamentum.boomerang_return_speed": "Boomerang Return Speed",
+  "attribute.name.fundamentum.boomerang_bounces": "Boomerang Ricochets",
+  "enchantment.fundamentum.farflight": "Farflight",
+  "enchantment.fundamentum.ricochet": "Ricochet",
+  "attribute.name.fundamentum.thrower_damage": "Thrower Damage",
+  "attribute.name.fundamentum.thrown_speed": "Throw Speed",
+  "attribute.name.fundamentum.thrown_pierce": "Throw Pierce",
+  "enchantment.fundamentum.hurling": "Hurling",
+  "entity.fundamentum.thrown_weapon": "Thrown Weapon"
 }

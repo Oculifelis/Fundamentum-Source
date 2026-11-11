@@ -73,6 +73,7 @@ public final class Fundamentum {
         com.fundamentum.summon.Sentries.init(modBus);
         com.fundamentum.spear.Spears.init(modBus);
         com.fundamentum.gauntlet.Gauntlets.init(modBus);
+        com.fundamentum.thrown.ThrownWeapons.init(modBus);
         TypesSelfTest.init();
         Showcase.init();
         Tps.init();

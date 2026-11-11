@@ -1,0 +1,10 @@
+{
+  "replace": false,
+  "values": [
+    "#minecraft:enchantable/durability",
+    "#fundamentum:whips",
+    "#fundamentum:thrown",
+    "#fundamentum:flails",
+    "#fundamentum:scythes"
+  ]
+}

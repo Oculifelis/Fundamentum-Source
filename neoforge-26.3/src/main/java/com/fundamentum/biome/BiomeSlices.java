@@ -35,6 +35,8 @@ import net.minecraft.world.level.biome.MultiNoiseBiomeSourceParameterList;
 import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.dimension.LevelStem;
 import net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator;
+import net.minecraft.world.level.levelgen.material.rule.MaterialRule;
+import net.minecraft.world.level.levelgen.material.rule.SequenceRule;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.common.NeoForge;
@@ -315,13 +317,83 @@ public final class BiomeSlices {
     }
 
     // ---- fundamentum:surface_rules ----
-    // Not on 26.3: NoiseGeneratorSettings holds material rules there (Holder<MaterialRule> materialRule), not surface
-    // rules, so rule files are listed as skipped and the world generates with its own surface.
+    // 26.3: NoiseGeneratorSettings holds a material rule (Holder<MaterialRule> materialRule) where 26.1.2 had a surface
+    // rule. Its rule types (block, sequence, condition, bandlands) and condition types (biome, stone_depth, y_above,
+    // water, noise_threshold, vertical_gradient, temperature, steep, hole, above_preliminary_surface, not) keep 26.1.2's
+    // names and fields, so a 26.1.2 "rule" parses with 26.3's codec once its block states are upgraded: 26.3 writes a
+    // state as {"id", "properties"} where 26.1.2 wrote {"Name", "Properties"} (upgradeStates). "material_rule" takes 26.3's own form too
+    // (the same codec, plus references to registered rules and conditions such as "minecraft:on_floor"). The rules go
+    // before the dimension's own through mixin/NoiseGeneratorSettingsMixin, with or without TerraBlender (no
+    // TerraBlender build exists for 26.3, so there is no TerraBlender rule API to hand them to).
 
     private static void surfaceRules(MinecraftServer server, boolean tb) {
-        for (Identifier id : read(server.getResourceManager(), SURFACE_PATH).keySet()) {
-            SURFACE.add(id + ": skipped, surface rules are not supported on 26.3");
+        Map<Identifier, JsonObject> files = read(server.getResourceManager(), SURFACE_PATH);
+        Registry<LevelStem> stems = server.registryAccess().lookupOrThrow(Registries.LEVEL_STEM);
+        // clear what the last load put on every noise dimension, so a rule file removed by /reload stops applying
+        for (LevelStem stem : stems) {
+            if (stem.generator() instanceof NoiseBasedChunkGenerator noise) {
+                ((SlicedSurfaceRules) (Object) noise.generatorSettings().value()).fundamentum$prependSurfaceRule(null);
+            }
         }
-        if (!SURFACE.isEmpty()) LOG.info("Biome slices: {} surface rule file(s) skipped, not supported on 26.3", SURFACE.size());
+        RegistryOps<com.google.gson.JsonElement> ops = RegistryOps.create(JsonOps.INSTANCE, server.registryAccess());
+        // dimension -> rules, in file order
+        Map<String, List<MaterialRule>> rules = new TreeMap<>();
+        for (Map.Entry<Identifier, JsonObject> file : files.entrySet()) {
+            Identifier id = file.getKey();
+            JsonObject json = file.getValue();
+            String dimension = json.has("dimension") ? json.get("dimension").getAsString() : SliceSpec.OVERWORLD;
+            String missing = null;
+            if (json.has("requires")) {
+                for (var r : json.getAsJsonArray("requires")) if (!ModList.get().isLoaded(r.getAsString())) missing = r.getAsString();
+            }
+            if (missing != null) {
+                SURFACE.add(id + ": skipped, needs mod " + missing);
+                continue;
+            }
+            String field = json.has("material_rule") ? "material_rule" : "rule";
+            var result = MaterialRule.CODEC.parse(ops, "rule".equals(field) && json.has(field) ? upgradeStates(json.get(field)) : json.get(field));
+            if (!json.has(field) || result.error().isPresent() || result.result().isEmpty()) {
+                String why = json.has(field) ? result.error().map(e -> e.message()).orElse("no rule") : "no \"rule\" or \"material_rule\"";
+                LOG.warn("Biome slices: surface rule {} is not valid ({}), skipped", id, why);
+                SURFACE.add(id + ": invalid, " + why);
+                continue;
+            }
+            rules.computeIfAbsent(dimension, k -> new ArrayList<>()).add(result.result().get());
+            SURFACE.add(id + ": " + dimension + ("material_rule".equals(field) ? " (material rule)" : ""));
+        }
+        for (Map.Entry<String, List<MaterialRule>> dim : rules.entrySet()) {
+            String dimension = dim.getKey();
+            LevelStem stem = stems.getValue(ResourceKey.create(Registries.LEVEL_STEM, Identifier.parse(dimension)));
+            if (stem == null || !(stem.generator() instanceof NoiseBasedChunkGenerator noise)) {
+                LOG.info("Biome slices: surface rules for {} skipped, {}", dimension,
+                    stem == null ? "no such dimension" : "its generator " + stem.generator().getClass().getName() + " has no material rule");
+                continue;
+            }
+            List<MaterialRule> all = dim.getValue();
+            MaterialRule rule = all.size() == 1 ? all.getFirst() : new SequenceRule(List.copyOf(all));
+            ((SlicedSurfaceRules) (Object) noise.generatorSettings().value()).fundamentum$prependSurfaceRule(rule);
+            LOG.info("Biome slices: {} surface rule file(s) put before {}'s own material rule{}", all.size(), dimension,
+                tb ? " (TerraBlender loaded; it has no 26.3 rule API, so they go in directly)" : "");
+        }
+    }
+
+    /** A copy of a 26.1.2 surface rule with every {"Name", "Properties"} block state rewritten to 26.3's {"id", "properties"}. */
+    private static com.google.gson.JsonElement upgradeStates(com.google.gson.JsonElement element) {
+        if (element.isJsonArray()) {
+            var out = new com.google.gson.JsonArray();
+            for (var e : element.getAsJsonArray()) out.add(upgradeStates(e));
+            return out;
+        }
+        if (!element.isJsonObject()) return element;
+        JsonObject in = element.getAsJsonObject();
+        boolean oldState = in.has("Name") && !in.has("id") && in.get("Name").isJsonPrimitive();
+        JsonObject out = new JsonObject();
+        for (Map.Entry<String, com.google.gson.JsonElement> e : in.entrySet()) {
+            String key = e.getKey();
+            if (oldState && key.equals("Name")) key = "id";
+            else if (oldState && key.equals("Properties")) key = "properties";
+            out.add(key, upgradeStates(e.getValue()));
+        }
+        return out;
     }
 }

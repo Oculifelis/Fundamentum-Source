@@ -17,6 +17,8 @@ import net.minecraft.world.entity.monster.Zombie;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.enchantment.Enchantment;
+import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.util.FakePlayer;
@@ -159,9 +161,9 @@ final class FlailSelfTest {
             cases = cases();
             index = 0;
             tick = 0;
-            // The data checks: the broken scythe file is left out, the good ones are in, every example flail resolved.
+            // The data checks: the conflicting scythe file is left out, the good ones are in, every example flail resolved.
             boolean bad = Scythes.spec(new ItemStack(Items.GOLDEN_HOE)) == null;
-            report("whirl + backswing scythe file is rejected", bad, bad ? "left out" : "it loaded");
+            report("two scythe moves on use are rejected", bad, bad ? "left out" : "it loaded");
             boolean good = Scythes.spec(new ItemStack(item("example_scythe"))) != null && Scythes.spec(new ItemStack(Items.IRON_HOE)) != null;
             report("good scythe files load", good, "example and wave scythe");
             int flails = 0;
@@ -172,14 +174,33 @@ final class FlailSelfTest {
                 }
             }
             report("every example flail resolves", flails == 4 && Flails.errors().isEmpty(), flails + "/4, errors " + Flails.errors());
+            // Enchantability from the 1.21-style enchantable tags: flails and scythes are melee weapons with durability.
+            StringBuilder missing = new StringBuilder();
+            for (String path : List.of("example_flail_links", "example_scythe")) {
+                ItemStack stack = new ItemStack(item(path));
+                for (Enchantment e : List.of(Enchantments.SHARPNESS, Enchantments.SMITE, Enchantments.KNOCKBACK, Enchantments.FIRE_ASPECT,
+                    Enchantments.MOB_LOOTING, Enchantments.UNBREAKING, Enchantments.MENDING, Enchantments.VANISHING_CURSE)) {
+                    if (!e.canEnchant(stack)) {
+                        missing.append(' ').append(path).append(':').append(e.getDescriptionId());
+                    }
+                }
+                if (!Enchantments.SHARPNESS.canApplyAtEnchantingTable(stack) || !Enchantments.UNBREAKING.canApplyAtEnchantingTable(stack)) {
+                    missing.append(' ').append(path).append(":table");
+                }
+            }
+            report("flails and scythes take the melee weapon enchantments", missing.length() == 0, missing.length() == 0 ? "all" : "missing" + missing);
         }
         if (index >= cases.size()) {
-            LOG.info("FLAILTEST DONE {}/{}", passed, cases.size() + 3);
+            LOG.info("FLAILTEST DONE {}/{}", passed, cases.size() + 4);
             server.halt(false);
             index = Integer.MAX_VALUE / 2;
             return;
         }
         Case c = cases.get(index);
+        // In a fresh world the chunk forced above is not ticking entities yet, so a husk added now would never be hit.
+        if (tick == 0 && !level.isPositionEntityTicking(AT.offset(0, 0, 3))) {
+            return;
+        }
         FakePlayer p = player;
         tick++;
         try {

@@ -1,0 +1,11 @@
+{
+  "replace": false,
+  "values": [
+    "#minecraft:enchantable/sharp_weapon",
+    "#fundamentum:whips",
+    "#fundamentum:gauntlets",
+    "#fundamentum:spears",
+    "#fundamentum:flails",
+    "#fundamentum:scythes"
+  ]
+}

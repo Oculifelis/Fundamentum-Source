@@ -3,6 +3,7 @@ package com.fundamentum;
 import com.fundamentum.compat.BetterCombat;
 import com.fundamentum.gauntlet.Gauntlets;
 import com.fundamentum.spear.Spears;
+import com.fundamentum.spear.ThrownSpear;
 import com.fundamentum.summon.Sentries;
 import com.fundamentum.summon.Summons;
 import com.mojang.authlib.GameProfile;
@@ -29,6 +30,7 @@ import net.minecraftforge.common.ForgeMod;
 import net.minecraft.world.entity.projectile.AbstractArrow;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.AABB;
 import net.minecraftforge.common.MinecraftForge;
@@ -312,6 +314,28 @@ final class TypesSelfTest {
             && Math.abs(charged - 6.0F) < 0.01F, "charging " + using + ", plain " + plain + ", charged " + charged);
         p.getAttribute(Spears.SPEAR_CHARGE_DAMAGE.get()).setBaseValue(1.0);
         cow.discard();
+
+        // Enchantability from the 1.21-style enchantable tags: a spear is in #minecraft:enchantable/weapon and durability.
+        boolean anvil = Enchantments.SMITE.canEnchant(spear) && Enchantments.BANE_OF_ARTHROPODS.canEnchant(spear)
+            && Enchantments.UNBREAKING.canEnchant(spear);
+        boolean notOthers = !Enchantments.SHARPNESS.canEnchant(spear) && !Enchantments.KNOCKBACK.canEnchant(spear)
+            && !Enchantments.SMITE.canApplyAtEnchantingTable(spear);
+        report("a spear takes Smite, Bane and Unbreaking by book, not Sharpness or Knockback, and no Smite at the table",
+            anvil && notOthers, "anvil " + anvil + ", others refused " + notOthers);
+        report("vanilla enchanting stays as it was", Enchantments.SHARPNESS.canEnchant(new ItemStack(Items.IRON_SWORD))
+            && Enchantments.SHARPNESS.canEnchant(new ItemStack(Items.IRON_AXE)) && !Enchantments.SMITE.canEnchant(new ItemStack(Items.BOW)), "");
+
+        Spears.SpearThrow def = Spears.throwOf(spear);
+        report("the spear throw data file loads", def != null && def.damage() == 8.0 && def.chargeTicks() == 10 && def.sneak(), "def " + def);
+        if (def != null) {
+            ThrownSpear thrown = Spears.throwSpear(p, spear, def, 20);
+            report("a drawn spear is thrown as a spear entity and leaves the hand", thrown != null && thrown.isAlive()
+                && thrown.getOwner() == p && thrown.getItem().is(Items.TRIDENT) && spear.isEmpty(),
+                thrown == null ? "none" : "damage " + thrown.spearDamage() + ", hand " + spear.getCount());
+            if (thrown != null) {
+                thrown.discard();
+            }
+        }
     }
 
     private static float hurt(ServerLevel level, FakePlayer p, LivingEntity victim) {

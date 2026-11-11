@@ -13,7 +13,12 @@ import net.minecraftforge.fml.common.Mod;
 @Mod.EventBusSubscriber(modid = "fundamentum", value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class WingsClient {
     private static int flightLeft;
-    private static boolean airborne;
+    private static byte phase;
+
+    /** The local player's flight phase ({@link Wings#FOLDED}, {@link Wings#RISING} or {@link Wings#GLIDING}). */
+    public static byte phase() {
+        return phase;
+    }
 
     @SubscribeEvent
     public static void tick(TickEvent.ClientTickEvent event) {
@@ -27,16 +32,17 @@ public final class WingsClient {
             if (stats != null && grounded) {
                 flightLeft = Wings.flightTicks(player, stats);
             }
-            setAirborne(false);
+            setPhase(Wings.FOLDED);
             return;
         }
         if (!Minecraft.getInstance().options.keyJump.isDown()) {
-            setAirborne(false);
+            setPhase(Wings.FOLDED);
             return;
         }
         Vec3 v = player.getDeltaMovement();
         double vy;
-        if (flightLeft > 0) {
+        boolean rising = flightLeft > 0;
+        if (rising) {
             vy = Math.min(v.y + stats.riseAcceleration(), stats.riseSpeed());
             flightLeft--;
         } else {
@@ -53,12 +59,12 @@ public final class WingsClient {
         }
         player.setDeltaMovement(vx, vy, vz);
         player.resetFallDistance();
-        setAirborne(true);
+        setPhase(rising ? Wings.RISING : Wings.GLIDING);
     }
 
-    private static void setAirborne(boolean now) {
-        if (now != airborne) {
-            airborne = now;
+    private static void setPhase(byte now) {
+        if (now != phase) {
+            phase = now;
             Wings.CHANNEL.sendToServer(new Wings.StatePayload(now));
         }
     }

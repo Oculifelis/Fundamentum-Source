@@ -120,6 +120,16 @@ public final class ThrownSelfTest {
             thrower3.getAttribute(DamageClasses.THROWER.damage()).setBaseValue(2);
             knife = launch(level, thrower3, knifeStack, ThrownWeapons.stats(knifeStack, thrower3));
             bottle = launch(level, thrower4, knifeStack, knifeBase.withJson(json("breaks_on_hit", true)));
+            // A running thrower must not add their own speed to the throw.
+            net.minecraft.world.phys.Vec3 run = thrower4.getDeltaMovement();
+            thrower4.setDeltaMovement(3, 0, 0);
+            ThrownWeapon probe = new ThrownWeapon(ThrownWeapons.THROWN_WEAPON.get(), level);
+            probe.launch(thrower4, knifeStack.copy(), knifeBase, ThrownWeapons.NO_SLOT);
+            thrower4.setDeltaMovement(run);
+            net.minecraft.world.phys.Vec3 expect = thrower4.getViewVector(1.0F).normalize().scale(knifeBase.throwSpeed());
+            report("a running thrower's own speed does not carry into the throw", probe.getDeltaMovement().distanceTo(expect) < 1.0E-3,
+                probe.getDeltaMovement() + " vs " + expect);
+            probe.discard();
 
             var enchantments = level.registryAccess().lookupOrThrow(Registries.ENCHANTMENT);
             boolean all = true;

@@ -34,7 +34,9 @@ import net.neoforged.neoforge.client.renderstate.RegisterRenderStateModifiersEve
  * names an equipment asset with a {@code wings} layer is drawn on the vanilla elytra model with that asset's texture,
  * like an elytra in the chest slot; the cosmetic wings slot wins over the real one, and a glider in the chest slot is
  * left to vanilla. Give the item an equippable with {@code "slot": "body"} and no allowed entities, so nothing can wear
- * it anywhere but the slot. Wings without such a component are still the owning mod's to draw.
+ * it anywhere but the slot. Wings without such a component are still the owning mod's to draw. Since 1.28.0 the
+ * drawn wings take their pose from {@link WingsAnim} (folded, rising with beats, gliding) instead of vanilla's elytra
+ * swing, which only knows fall-flying.
  */
 @EventBusSubscriber(modid = "fundamentum", value = Dist.CLIENT)
 public final class WingsRender {
@@ -56,6 +58,12 @@ public final class WingsRender {
                 Equippable equippable = wings.get(DataComponents.EQUIPPABLE);
                 if (equippable != null && equippable.assetId().isPresent()) {
                     state.setRenderData(WORN, wings);
+                    WingsAnim.Pose pose = WingsAnim.pose(player, state.partialTick);
+                    if (pose != null) {
+                        state.elytraRotX = pose.xRot();
+                        state.elytraRotY = pose.yRot();
+                        state.elytraRotZ = pose.zRot();
+                    }
                 }
             }
         });

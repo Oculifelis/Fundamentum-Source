@@ -20,13 +20,14 @@ import java.util.function.Supplier;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Damage classes shared by every mod: melee, ranger (bows and crossbows), marksman (guns) and mage (magic). A hit is of a
+ * Damage classes shared by every mod: melee, ranger (bows and crossbows), marksman (guns), mage (magic) and thrower
+ * (thrown weapons: javelins, knives, shuriken, molotovs, boomerangs; see {@code com.fundamentum.thrown}). A hit is of a
  * class when its damage type is in the damage type tag {@code #fundamentum:class/<c>}. A projectile's class can come from
  * the weapon that fired it instead: when that bow, gun or staff is in an item tag {@code #fundamentum:class/<c>}, that
  * decides (so a gun firing vanilla arrows is marksman, not ranger). Direct hits always go by damage type, so bashing with
  * a gun is still melee. {@code fundamentum:<c>_damage} (base 1) multiplies that class's hits a creature deals, and
  * Fundamentum applies it. It stacks with {@code fundamentum:ranged_damage}, which the firing mod applies itself.
- * Vanilla player and mob attacks are melee, arrows and thrown tridents ranger, magic and indirect magic mage; marksman
+ * Vanilla player and mob attacks are melee, arrows and thrown tridents ranger, magic and indirect magic mage, snowballs and eggs thrower; marksman
  * has no vanilla members. A summoned minion's hits go by the minion's own stats (and the owner's summon_damage), not
  * the owner's class stats. Mods add classes with {@link #add} while they construct.
  */
@@ -39,6 +40,7 @@ public final class DamageClasses {
     public static final DamageClass RANGER = builtIn("ranger");
     public static final DamageClass MARKSMAN = builtIn("marksman");
     public static final DamageClass MAGE = builtIn("mage");
+    public static final DamageClass THROWER = builtIn("thrower");
 
     private static DamageClass builtIn(String name) {
         return add(new ResourceLocation("fundamentum", name), StatAttributes.add(name + "_damage", 1, 0, 1024));

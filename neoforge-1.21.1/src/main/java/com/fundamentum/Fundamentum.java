@@ -72,6 +72,7 @@ public final class Fundamentum {
         Tps.init();
         Triggers.init(modBus);
         Whips.init(modBus);
+        com.fundamentum.thrown.ThrownWeapons.init(modBus);
         com.fundamentum.flail.Flails.init(modBus);
         Glows.init(modBus);
         container.registerConfig(ModConfig.Type.CLIENT, WhipsConfig.SPEC);

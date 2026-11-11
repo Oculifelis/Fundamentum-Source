@@ -40,7 +40,8 @@ public final class PortalRecipe implements Recipe<SingleRecipeInput> {
             ItemStack.STRICT_CODEC.fieldOf("result").forGetter(PortalRecipe::result),
             RegistryCodecs.homogeneousList(Registries.BLOCK).optionalFieldOf("portal").forGetter(PortalRecipe::portal),
             ResourceKey.codec(Registries.DIMENSION).optionalFieldOf("dimension").forGetter(PortalRecipe::dimension),
-            Codec.BOOL.optionalFieldOf("keep_components", false).forGetter(PortalRecipe::keepComponents)
+            Codec.BOOL.optionalFieldOf("keep_components", false).forGetter(PortalRecipe::keepComponents),
+            Codec.BOOL.optionalFieldOf("show_notification", true).forGetter(PortalRecipe::showNotification)
     ).apply(i, PortalRecipe::new));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, PortalRecipe> STREAM_CODEC = StreamCodec.composite(
@@ -49,6 +50,7 @@ public final class PortalRecipe implements Recipe<SingleRecipeInput> {
             ByteBufCodecs.optional(ByteBufCodecs.holderSet(Registries.BLOCK)), PortalRecipe::portal,
             ByteBufCodecs.optional(ResourceKey.streamCodec(Registries.DIMENSION)), PortalRecipe::dimension,
             ByteBufCodecs.BOOL, PortalRecipe::keepComponents,
+            ByteBufCodecs.BOOL, PortalRecipe::showNotification,
             PortalRecipe::new);
 
     public static final RecipeSerializer<PortalRecipe> SERIALIZER = new RecipeSerializer<>() {
@@ -61,9 +63,16 @@ public final class PortalRecipe implements Recipe<SingleRecipeInput> {
     private final Optional<HolderSet<Block>> portal;
     private final Optional<ResourceKey<Level>> dimension;
     private final boolean keepComponents;
+    private final boolean showNotification;
 
     public PortalRecipe(Ingredient ingredient, ItemStack result, Optional<HolderSet<Block>> portal,
             Optional<ResourceKey<Level>> dimension, boolean keepComponents) {
+        this(ingredient, result, portal, dimension, keepComponents, true);
+    }
+
+    public PortalRecipe(Ingredient ingredient, ItemStack result, Optional<HolderSet<Block>> portal,
+            Optional<ResourceKey<Level>> dimension, boolean keepComponents, boolean showNotification) {
+        this.showNotification = showNotification;
         this.ingredient = ingredient;
         this.result = result;
         this.portal = portal;
@@ -96,8 +105,8 @@ public final class PortalRecipe implements Recipe<SingleRecipeInput> {
     @Override public boolean canCraftInDimensions(int width, int height) { return true; }
     @Override public ItemStack getResultItem(HolderLookup.Provider registries) { return result; }
     @Override public NonNullList<Ingredient> getIngredients() { return NonNullList.of(Ingredient.EMPTY, ingredient); }
-    /** Kept out of the recipe book (1.21.1 has no custom book categories). */
-    @Override public boolean isSpecial() { return true; }
+    /** Shown on unlock unless the recipe says {@code "show_notification": false} (as 26.x reads it). */
+    @Override public boolean showNotification() { return showNotification; }
     @Override public RecipeSerializer<PortalRecipe> getSerializer() { return SERIALIZER; }
     @Override public RecipeType<PortalRecipe> getType() { return PortalCrafting.TYPE.get(); }
 }

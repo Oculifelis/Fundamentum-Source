@@ -4,6 +4,6 @@
   "package": "com.fundamentum.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": ["LivingEntityMixin", "LivingEntityShieldMixin", "MobMixin", "SoulBurnMixin", "BiomeSourceMixin", "MultiNoiseBiomeSourceMixin", "NoiseGeneratorSettingsMixin"],
-  "client": ["SoulFlameMixin", "SoulScreenFireMixin", "ClientLevelMixin", "DimensionSpecialEffectsMixin", "WindowMixin", "EntityGlowMixin", "JukeboxEventsMixin"],
+  "client": ["SoulFlameMixin", "SoulScreenFireMixin", "ClientLevelMixin", "DimensionSpecialEffectsMixin", "WindowMixin", "EntityGlowMixin", "JukeboxEventsMixin", "QuadEmissionMixin", "CompositeRenderTypeAccessor", "CompositeStateAccessor", "TextureStateShardAccessor"],
   "injectors": {"defaultRequire": 1}
 }

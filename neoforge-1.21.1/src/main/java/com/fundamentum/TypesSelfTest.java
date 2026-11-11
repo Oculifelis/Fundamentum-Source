@@ -3,6 +3,7 @@ package com.fundamentum;
 import com.fundamentum.compat.BetterCombat;
 import com.fundamentum.gauntlet.Gauntlets;
 import com.fundamentum.spear.Spears;
+import com.fundamentum.spear.ThrownSpear;
 import com.fundamentum.summon.Sentries;
 import com.fundamentum.summon.Summons;
 import com.mojang.authlib.GameProfile;
@@ -308,6 +309,18 @@ final class TypesSelfTest {
             && Math.abs(charged - 6.0F) < 0.01F, "charging " + using + ", plain " + plain + ", charged " + charged);
         p.getAttribute(Spears.SPEAR_CHARGE_DAMAGE).setBaseValue(1.0);
         cow.discard();
+
+        Spears.SpearThrow def = Spears.throwOf(spear);
+        report("the spear throw data file loads", def != null && def.damage() == 8.0 && def.chargeTicks() == 10 && def.sneak(), "def " + def);
+        if (def != null) {
+            ThrownSpear thrown = Spears.throwSpear(p, spear, def, 20);
+            report("a drawn spear is thrown as a spear entity and leaves the hand", thrown != null && thrown.isAlive()
+                && thrown.getOwner() == p && thrown.getItem().is(Items.TRIDENT) && spear.isEmpty(),
+                thrown == null ? "none" : "damage " + thrown.spearDamage() + ", hand " + spear.getCount());
+            if (thrown != null) {
+                thrown.discard();
+            }
+        }
     }
 
     private static float hurt(ServerLevel level, FakePlayer p, LivingEntity victim) {

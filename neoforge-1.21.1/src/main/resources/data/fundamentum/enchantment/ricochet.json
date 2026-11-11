@@ -1,0 +1,34 @@
+{
+  "description": {
+    "translate": "enchantment.fundamentum.ricochet"
+  },
+  "supported_items": "#fundamentum:enchantable/boomerang",
+  "weight": 2,
+  "max_level": 2,
+  "min_cost": {
+    "base": 20,
+    "per_level_above_first": 20
+  },
+  "max_cost": {
+    "base": 70,
+    "per_level_above_first": 20
+  },
+  "anvil_cost": 4,
+  "slots": [
+    "hand"
+  ],
+  "effects": {
+    "minecraft:attributes": [
+      {
+        "id": "fundamentum:enchantment.ricochet",
+        "attribute": "fundamentum:boomerang_bounces",
+        "amount": {
+          "type": "minecraft:linear",
+          "base": 1,
+          "per_level_above_first": 1
+        },
+        "operation": "add_value"
+      }
+    ]
+  }
+}

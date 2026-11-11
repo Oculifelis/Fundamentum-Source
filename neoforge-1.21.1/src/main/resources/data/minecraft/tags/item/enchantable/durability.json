@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
+    "#fundamentum:thrown",
     "#fundamentum:spears",
     "#fundamentum:gauntlets",
     "#fundamentum:flails",

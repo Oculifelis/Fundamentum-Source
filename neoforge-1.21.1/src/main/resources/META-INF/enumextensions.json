@@ -23,6 +23,12 @@
       "name": "FUNDAMENTUM_CLIP",
       "constructor": "(ZLnet/neoforged/neoforge/client/IArmPoseTransformer;)V",
       "parameters": {"class": "com/fundamentum/pose/ArmPoses", "field": "CLIP"}
+    },
+    {
+      "enum": "net/minecraft/client/RecipeBookCategories",
+      "name": "FUNDAMENTUM_PORTAL_CRAFTING",
+      "constructor": "(Ljava/util/function/Supplier;)V",
+      "parameters": {"class": "com/fundamentum/portal/PortalRecipeBook", "field": "ICONS"}
     }
   ]
 }

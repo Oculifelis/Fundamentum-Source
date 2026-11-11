@@ -61,7 +61,7 @@ import org.jspecify.annotations.Nullable;
  * Scythes: an item with a file in {@code data/<ns>/fundamentum/scythes/} and the moves it lists (see {@link ScytheSpec}
  * and the README). Left click stays the item's own attack (Better Combat's when it is loaded); the sweet spot, the
  * backswing and harvested souls change those hits, and the whirl, reap pull and crescent wave go on use or sneak + use.
- * A broken file (whirl together with backswing, two moves on one input, a bad number) is named in the log and left out.
+ * A broken file (two moves on one input or a bad number) is named in the log and left out.
  */
 public final class Scythes {
     /** {@code #fundamentum:scythes}. */
@@ -367,6 +367,9 @@ public final class Scythes {
             return;
         }
         State s = state(player);
+        if (s.whirling) {
+            return;
+        }
         long now = player.level().getGameTime();
         if (now - s.lastAttack > spec.backswing.window()) {
             s.lastAttack = now;

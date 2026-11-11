@@ -58,6 +58,14 @@ minecraft {
             if (project.hasProperty('typestest')) {
                 property 'fundamentum.typestest', 'true'
             }
+            // gradlew runServer -Pthrowntest: the thrown weapon test (thrown/ThrownSelfTest) with its example boomerang and knife
+            if (project.hasProperty('throwntest')) {
+                property 'fundamentum.throwntest', 'true'
+            }
+            // gradlew runServer -Pshieldtest: example shields blocking, parrying, bashing and thrown (shield/ShieldSelfTest)
+            if (project.hasProperty('shieldtest')) {
+                property 'fundamentum.shieldtest', 'true'
+            }
             // gradlew runServer -Pflailtest: flails and scythes used on husks (flail/FlailSelfTest) with its data
             if (project.hasProperty('flailtest')) {
                 property 'fundamentum.flailtest', 'true'
@@ -130,6 +138,18 @@ if (project.hasProperty('typestest')) {
     sourceSets.main.resources.srcDir 'src/typestest/resources'
     // the test's spear tag replaces the empty one in main (the test folder comes last, so its copy wins)
     tasks.named('processResources').configure { duplicatesStrategy = DuplicatesStrategy.INCLUDE }
+}
+// The thrown weapon test's example boomerang and knife (code, models and data), only in -Pthrowntest runs
+if (project.hasProperty('throwntest')) {
+    sourceSets.main.resources.srcDir 'src/throwntest/resources'
+    sourceSets.main.java.srcDir 'src/throwntest/java'
+    // the test's thrown tags replace the empty ones in main (the test folder comes last, so its copy wins)
+    tasks.named('processResources').configure { duplicatesStrategy = DuplicatesStrategy.INCLUDE }
+}
+// The shield test's example shields (code, models, textures and data), only in -Pshieldtest runs
+if (project.hasProperty('shieldtest')) {
+    sourceSets.main.resources.srcDir 'src/shieldtest/resources'
+    sourceSets.main.java.srcDir 'src/shieldtest/java'
 }
 if (project.hasProperty('flailtest')) {
     sourceSets.main.resources.srcDir 'src/flailtest/resources'

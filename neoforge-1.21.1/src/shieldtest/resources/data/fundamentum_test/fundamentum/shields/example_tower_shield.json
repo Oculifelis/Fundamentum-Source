@@ -1,0 +1,10 @@
+{
+  "item": "fundamentum:example_tower_shield",
+  "block_delay_seconds": 0.4,
+  "disable_cooldown_scale": 0.5,
+  "damage_reductions": [ { "horizontal_blocking_angle": 130, "base": 0, "factor": 1 } ],
+  "item_damage": { "threshold": 4, "base": 0, "factor": 0.5 },
+  "speed_while_blocking": 0.1,
+  "parry": false,
+  "bash": { "damage": 6, "knockback": 1.6, "reach": 3, "angle": 60, "cooldown": 50, "stagger_ticks": 40, "trigger": "use" }
+}

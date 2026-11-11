@@ -24,9 +24,11 @@ class ScytheSpecTest {
     }
 
     @Test
-    void whirlAndBackswingAreRejected() {
-        String m = error("{\"moves\":{\"whirl\":{},\"backswing\":{}}}");
-        assertTrue(m.contains("\"whirl\" and \"backswing\" can't share one scythe"), m);
+    void whirlAndBackswingCanShareAScythe() {
+        ScytheSpec s = parse("{\"moves\":{\"whirl\":{},\"backswing\":{}}}");
+        assertNotNull(s.whirl);
+        assertNotNull(s.backswing);
+        assertEquals("whirl", s.moveOn("use"));
     }
 
     @Test

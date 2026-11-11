@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    { "id": "fundamentum:example_buckler", "required": false },
+    { "id": "fundamentum:example_tower_shield", "required": false },
+    { "id": "fundamentum:example_ember_shield", "required": false },
+    { "id": "fundamentum:example_round_shield", "required": false }
+  ]
+}

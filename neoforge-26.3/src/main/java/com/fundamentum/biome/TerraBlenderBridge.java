@@ -13,9 +13,13 @@ import net.neoforged.fml.ModList;
 
 /**
  * TerraBlender, reached by reflection only (no build or run dependency): biome slices become one data-driven region per
- * dimension ({@code fundamentum:overworld}, {@code fundamentum:nether}), and surface rules go through its rule manager.
- * Written against TerraBlender 26.1.2.0.3's {@code terrablender.api} (Region, Regions, RegionType, data.RegionDefinition,
- * data.BiomeMapping, data.DataDrivenRegion, SurfaceRuleManager).
+ * dimension ({@code fundamentum:overworld}, {@code fundamentum:nether}). Written against TerraBlender 26.1.2.0.3's
+ * {@code terrablender.api} (Region, Regions, RegionType, data.RegionDefinition, data.BiomeMapping, data.DataDrivenRegion).
+ * <p>
+ * 26.3: no surface rule half. 26.1.2's {@code hasSurfaceRules}/{@code surfaceRules} hand a {@code SurfaceRules.RuleSource}
+ * to TerraBlender's {@code SurfaceRuleManager}; 26.3 has no {@code SurfaceRules} class (material rules replaced it) and
+ * no TerraBlender build for 26.3 exists, so there is no rule manager signature to call. Surface rule files are put
+ * before the dimension's material rule by mixin/NoiseGeneratorSettingsMixin instead, with or without TerraBlender.
  */
 public final class TerraBlenderBridge {
     private TerraBlenderBridge() { }
