@@ -49,14 +49,36 @@ jobs:
             21
             25
       - uses: gradle/actions/setup-gradle@v4
-      - name: Compile and unit tests
+      - name: Pick the JDK Gradle runs on
         run: |
-          chmod +x gradlew
-          ./gradlew build --stacktrace $JDKS
+          tr -d '\015' < gradlew > gradlew.unix && mv gradlew.unix gradlew && chmod +x gradlew
+          # ForgeGradle (1.20.1) runs on Java 17; the others run on 25 and pick their own toolchain.
+          if grep -qs 'minecraftforge' build.gradle settings.gradle; then
+            echo "JAVA_HOME=$JAVA_HOME_17_X64" >> "$GITHUB_ENV"
+          fi
+      - name: Shared core mod (Fundamentum)
+        run: |
+          want=$(sed -n 's/^fundamentum_version=//p' gradle.properties 2>/dev/null | tr -d '\015')
+          if [ -z "$want" ]; then echo "Not needed."; exit 0; fi
+          mc=${want#*+}
+          loader=neoforge
+          if grep -qs 'minecraftforge' build.gradle; then loader=forge; fi
+          git clone -q --depth 1 https://github.com/Oculifelis/Fundamentum-Source.git "$RUNNER_TEMP/fundamentum"
+          cd "$RUNNER_TEMP/fundamentum/$loader-$mc"
+          tr -d '\015' < gradlew > gradlew.unix && mv gradlew.unix gradlew && chmod +x gradlew
+          ./gradlew publish -x test "-Pfundamentum_publish_repo=$RUNNER_TEMP/fundamentum-repo" $JDKS
+          have="$(sed -n 's/^mod_version=//p' gradle.properties | tr -d '\015')+$mc"
+          cat > "$RUNNER_TEMP/fundamentum.gradle" <<EOF
+          allprojects { repositories { maven { url = uri("$RUNNER_TEMP/fundamentum-repo"); content { includeGroup "com.fundamentum" } } } }
+          EOF
+          echo "Built Fundamentum $have (the project names $want)."
+          echo "DEPS=--init-script $RUNNER_TEMP/fundamentum.gradle -Pfundamentum_version=$have" >> "$GITHUB_ENV"
+      - name: Compile and unit tests
+        run: ./gradlew build --stacktrace $JDKS $DEPS
       - name: GameTests
         run: |
           if grep -qs 'gameTestServer' build.gradle build.gradle.kts; then
-            ./gradlew runGameTestServer --stacktrace $JDKS
+            ./gradlew runGameTestServer --stacktrace $JDKS $DEPS
           else
             echo "This project has no GameTest server run: compile and unit tests only."
           fi
