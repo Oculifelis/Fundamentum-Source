@@ -56,6 +56,8 @@ jobs:
           if grep -qs 'minecraftforge' build.gradle settings.gradle; then
             echo "JAVA_HOME=$JAVA_HOME_17_X64" >> "$GITHUB_ENV"
           fi
+          # Point Gradle at the runner's JDKs (a gradle.properties may name local Windows paths).
+          echo "JDKS=$JDKS -Porg.gradle.java.installations.paths=$JAVA_HOME_17_X64,$JAVA_HOME_21_X64,$JAVA_HOME_25_X64" >> "$GITHUB_ENV"
       - name: Shared core mod (Fundamentum)
         run: |
           want=$(sed -n 's/^fundamentum_version=//p' gradle.properties 2>/dev/null | tr -d '\015')
