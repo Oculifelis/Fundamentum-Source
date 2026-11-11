@@ -39,5 +39,52 @@ final class CuriosBridge {
         return out;
     }
 
+    static java.util.List<ItemStack> stacks(LivingEntity entity, String slot) {
+        var inventory = CuriosApi.getCuriosInventory(entity).orElse(null);
+        var handler = inventory == null ? null : inventory.getCurios().get(slot);
+        if (handler == null) {
+            return java.util.List.of();
+        }
+        var stacks = handler.getStacks();
+        java.util.List<ItemStack> out = new java.util.ArrayList<>(stacks.getSlots());
+        for (int i = 0; i < stacks.getSlots(); i++) {
+            out.add(stacks.getStackInSlot(i));
+        }
+        return out;
+    }
+
+    static java.util.List<ItemStack> allWorn(LivingEntity entity) {
+        var inventory = CuriosApi.getCuriosInventory(entity).orElse(null);
+        if (inventory == null) {
+            return java.util.List.of();
+        }
+        java.util.List<ItemStack> out = new java.util.ArrayList<>();
+        for (var handler : inventory.getCurios().values()) {
+            var stacks = handler.getStacks();
+            for (int i = 0; i < stacks.getSlots(); i++) {
+                ItemStack stack = stacks.getStackInSlot(i);
+                if (!stack.isEmpty()) {
+                    out.add(stack);
+                }
+            }
+        }
+        return out;
+    }
+
+    static boolean set(LivingEntity entity, String slot, int index, ItemStack stack) {
+        var inventory = CuriosApi.getCuriosInventory(entity).orElse(null);
+        var handler = inventory == null ? null : inventory.getCurios().get(slot);
+        if (handler == null || index < 0 || index >= handler.getStacks().getSlots()) {
+            return false;
+        }
+        handler.getStacks().setStackInSlot(index, stack);
+        return true;
+    }
+
+    static void onChange(java.util.function.Consumer<LivingEntity> listener) {
+        net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(
+            (top.theillusivec4.curios.api.event.CurioChangeEvent event) -> listener.accept(event.getEntity()));
+    }
+
     private CuriosBridge() {}
 }

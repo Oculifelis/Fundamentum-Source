@@ -1,0 +1,7 @@
+{
+  "rolls": 1,
+  "entries": [
+    {"item": "minecraft:diamond", "weight": 3},
+    {"item": "minecraft:emerald", "weight": 1}
+  ]
+}

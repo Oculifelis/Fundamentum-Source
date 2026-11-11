@@ -1,0 +1,8 @@
+{
+  "entries": {
+    "enabled": { "type": "bool", "default": true },
+    "speed": { "type": "double", "default": 1.5, "min": 0, "max": 4 },
+    "style": { "type": "enum", "values": ["plain", "fancy"], "default": "plain", "side": "client" },
+    "items": { "type": "id_list", "default": ["minecraft:apple"] }
+  }
+}

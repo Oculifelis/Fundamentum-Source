@@ -116,6 +116,7 @@
   "death.attack.fundamentum.bullet.player": "%1$s was shot while fighting %2$s",
   "death.attack.fundamentum.bullet.item": "%1$s was shot by %2$s using %3$s",
   "fundamentum.tps.server": "Server",
+  "fundamentum.materials.dumped": "Wrote %s material sets to %s",
   "fundamentum.tps.counts": " (%s entities, %s chunks)",
   "fundamentum.configuration.title": "Fundamentum",
   "fundamentum.configuration.section.fundamentum.client.toml": "Client settings",

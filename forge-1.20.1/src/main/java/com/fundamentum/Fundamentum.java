@@ -37,13 +37,14 @@ import net.minecraftforge.fml.loading.FMLEnvironment;
 /**
  * Fundamentum: the shared groundwork under Oculifelis's mods. Each piece lives in its own package (attribute: the health
  * ceiling and shared combat stats; data: data tables; creature: creature types; sickness: use sickness; item: item
- * matching; curios: the wings, mount, hook and summon slots; wings: Terraria-style wings;
+ * matching; curios: the wings, mount, hook, summon and quiver slots; wings: Terraria-style wings;
  * cosmetic: cosmetic armour; arrow: 3D arrows; mount: summoned mounts; hook: grappling hooks; client: the hotkeys and
  * tooltips; command: /fundamentum showcase and tps; trigger: left click as a trigger; pose: how items are held, and pose
  * clips; moon: special moons and night events; summon: minions; damage: damage classes and elements; whip: cord whips;
  * glow: coloured Glowing outlines; portal: portal crafting, items thrown through a portal changing; element: elemental
  * auras, reactions and affinities; compat.jei: the optional JEI categories; sky: fractal skies and the Psychedelic Moon; biome: data-driven biome slices;
- * curve: shared curves; net: the 1.20.1 network channels);
+ * curve: shared curves; net: the 1.20.1 network channels; effect: data-driven status effects; armorset: armour set bonuses;
+ * ammo: ammo search and quivers; mana: the mana bridge to other mods' pools; hud: HUD layer order and switches);
  * mods that rely on one list fundamentum as a required dependency.
  */
 @Mod(Fundamentum.MODID)
@@ -52,6 +53,13 @@ public final class Fundamentum {
 
     public Fundamentum() {
         var modBus = FMLJavaModLoadingContext.get().getModEventBus();
+        // the version-neutral layer (port/): attachments, level and stack data, packets, registration
+        com.fundamentum.port.Port.init(modBus);
+        loadPortTest(modBus);
+        com.fundamentum.config.FConfig.init();
+        loadTest("com.fundamentum.config.ConfigSelfTest");
+        com.fundamentum.event.EventHooks.init();
+        loadTest("com.fundamentum.event.EventSelfTest");
         var context = ModLoadingContext.get();
         HealthCap.lift();
         DataTables.init();
@@ -62,6 +70,10 @@ public final class Fundamentum {
         ElementInteractions.init(modBus);
         com.fundamentum.soulfire.SoulFlames.init(modBus);
         com.fundamentum.shield.Shields.init(modBus);
+        com.fundamentum.effect.Effects.init(modBus);
+        com.fundamentum.armorset.ArmorSets.init(modBus);
+        com.fundamentum.ammo.Ammo.init(modBus);
+        loadSystemsTest(modBus);
         context.registerConfig(ModConfig.Type.COMMON, com.fundamentum.soulfire.SoulFireConfig.SPEC, "fundamentum-soulfire.toml");
         CreatureTypes.init();
         Sickness.init(modBus);
@@ -96,8 +108,47 @@ public final class Fundamentum {
         context.registerConfig(ModConfig.Type.CLIENT, com.fundamentum.client.ItemHudConfig.SPEC, "fundamentum-hud-client.toml");
         com.fundamentum.biome.BiomeSlices.init();
         context.registerConfig(ModConfig.Type.COMMON, com.fundamentum.biome.BiomeSlicesConfig.SPEC, "fundamentum-biomes.toml");
+        // bosses, boss music, loot helpers, material sets
+        com.fundamentum.music.BossMusic.init(modBus);
+        com.fundamentum.boss.Bosses.init(modBus);
+        com.fundamentum.loot.Loots.init(modBus);
+        com.fundamentum.material.Materials.init(modBus);
+        context.registerConfig(ModConfig.Type.COMMON, com.fundamentum.material.MaterialConfig.SPEC, "fundamentum-materials.toml");
         if (FMLEnvironment.dist.isClient()) {
             FundamentumClient.init();
+        }
+    }
+
+    /** A self test with a no-argument {@code init()}, only when its source folder is on the class path (-P<name>test). */
+    private static void loadTest(String className) {
+        try {
+            Class.forName(className).getMethod("init").invoke(null);
+        } catch (ClassNotFoundException absent) {
+            // a normal build
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    /** The porting layer test, only when {@code src/porttest} is on the class path (-Pporttest). */
+    private static void loadPortTest(net.minecraftforge.eventbus.api.IEventBus modBus) {
+        try {
+            Class.forName("com.fundamentum.port.PortSelfTest").getMethod("init").invoke(null);
+        } catch (ClassNotFoundException absent) {
+            // a normal build
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    /** The systems test (effects, armour sets, ammo, shield block events), only when {@code src/systemstest} is on the class path (-Psystemstest). */
+    private static void loadSystemsTest(net.minecraftforge.eventbus.api.IEventBus modBus) {
+        try {
+            Class.forName("com.fundamentum.SystemsSelfTest").getMethod("init", net.minecraftforge.eventbus.api.IEventBus.class).invoke(null, modBus);
+        } catch (ClassNotFoundException absent) {
+            // a normal build
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException(e);
         }
     }
 }

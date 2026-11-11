@@ -1,0 +1,7 @@
+{
+  "pieces": {"head": "minecraft:iron_helmet", "chest": "minecraft:iron_chestplate", "legs": "minecraft:iron_leggings", "feet": ["minecraft:iron_boots", "minecraft:chainmail_boots"]},
+  "tiers": [
+    {"pieces": 2, "flags": ["test_two"], "attributes": [{"attribute": "minecraft:armor", "amount": 3}]},
+    {"pieces": 4, "flags": ["test_four"], "effects": [{"effect": "minecraft:resistance", "amplifier": 0}, {"effect": "fundamentum_test:extend", "amplifier": 0}]}
+  ]
+}

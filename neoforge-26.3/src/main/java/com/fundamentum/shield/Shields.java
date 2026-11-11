@@ -514,6 +514,7 @@ public final class Shields {
     public static void init(IEventBus modBus) {
         NeoForge.EVENT_BUS.addListener(Shields::onUseStart);
         NeoForge.EVENT_BUS.addListener(EventPriority.LOW, Shields::onBlock);
+        ShieldBlockHook.init();
         NeoForge.EVENT_BUS.addListener(Shields::onIncoming);
         NeoForge.EVENT_BUS.addListener(Shields::afterTick);
         NeoForge.EVENT_BUS.addListener(Shields::onPlayerTick);

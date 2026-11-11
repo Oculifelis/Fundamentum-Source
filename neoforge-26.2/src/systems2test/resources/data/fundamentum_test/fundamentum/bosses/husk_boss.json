@@ -1,0 +1,15 @@
+{
+  "entity": "minecraft:husk",
+  "name": "Test Husk",
+  "color": "purple",
+  "overlay": "notched_10",
+  "darken": true,
+  "visible": "arena",
+  "phases": [
+    {"id": "enraged", "below": 0.5, "color": "red", "name": "Enraged Husk"},
+    {"id": "desperate", "below": 0.25, "color": "white"}
+  ],
+  "arena": {"shape": "radius", "radius": 16, "height": 16, "reset_when_empty": 5},
+  "record": "both",
+  "drops": {"pool": "fundamentum_test:boss_drop", "first_kill_pool": "fundamentum_test:boss_first"}
+}

@@ -54,6 +54,10 @@ minecraft {
             if (project.hasProperty('elementtest')) {
                 property 'fundamentum.elementtest', 'true'
             }
+            // gradlew runServer -Psystemstest: status effects, armour sets, ammo and quivers, shield block events (SystemsSelfTest) with their data
+            if (project.hasProperty('systemstest')) {
+                property 'fundamentum.systemstest', 'true'
+            }
             // gradlew runServer -Ptypestest: sentries, gauntlets, spears and the Better Combat seam (TypesSelfTest) with their data
             if (project.hasProperty('typestest')) {
                 property 'fundamentum.typestest', 'true'
@@ -69,6 +73,26 @@ minecraft {
             // gradlew runServer -Pflailtest: flails and scythes used on husks (flail/FlailSelfTest) with its data
             if (project.hasProperty('flailtest')) {
                 property 'fundamentum.flailtest', 'true'
+            }
+            // gradlew runServer -Psystems2test: bosses, loot helpers, material sets, mana bridge and HUD layers (systems2test), stops the server when done
+            if (project.hasProperty('systems2test')) {
+                property 'fundamentum.systems2test', 'true'
+                workingDirectory project.file('run-systems2test')
+            }
+            // gradlew runServer -Pporttest: the version-neutral layer (port/PortSelfTest), stops the server when done
+            if (project.hasProperty('porttest')) {
+                property 'fundamentum.porttest', 'true'
+                workingDirectory project.file('run-porttest')
+            }
+            // gradlew runServer -Pconfigtest: configs, files, datapack defaults and sync (config/ConfigSelfTest), stops the server when done
+            if (project.hasProperty('configtest')) {
+                property 'fundamentum.configtest', 'true'
+                workingDirectory project.file('run-configtest')
+            }
+            // gradlew runServer -Peventtest: ecosystem events, the loader bus and the advancement trigger (event/EventSelfTest), stops the server when done
+            if (project.hasProperty('eventtest')) {
+                property 'fundamentum.eventtest', 'true'
+                workingDirectory project.file('run-eventtest')
             }
             // gradlew runServer -Pbiometest: the biome slice test (biome/BiomeSliceSelfTest) in a fresh world, own injector;
             // -Pbiometest=tb runs it with TerraBlender on the run classpath (run-biometest-tb)
@@ -133,6 +157,12 @@ if (project.hasProperty('skytest')) {
 if (project.hasProperty('elementtest')) {
     sourceSets.main.resources.srcDir 'src/elementtest/resources'
 }
+// The systems test's example quiver and shield and its data, only in -Psystemstest runs (never build a jar with -Psystemstest)
+if (project.hasProperty('systemstest')) {
+    sourceSets.main.resources.srcDir 'src/systemstest/resources'
+    sourceSets.main.java.srcDir 'src/systemstest/java'
+    tasks.named('processResources').configure { duplicatesStrategy = DuplicatesStrategy.INCLUDE }
+}
 // The weapon type test's data, only in -Ptypestest runs (never build a jar with -Ptypestest)
 if (project.hasProperty('typestest')) {
     sourceSets.main.resources.srcDir 'src/typestest/resources'
@@ -156,6 +186,28 @@ if (project.hasProperty('flailtest')) {
     sourceSets.main.java.srcDir 'src/flailtest/java'
     // the test's tags replace the emptied ones in main (the test folder comes last, so its copy wins)
     tasks.named('processResources').configure { duplicatesStrategy = DuplicatesStrategy.INCLUDE }
+}
+// The systems test's code and data (bosses, loot, material sets), only in -Psystems2test runs
+if (project.hasProperty('systems2test')) {
+    sourceSets.main.java.srcDir 'src/systems2test/java'
+    sourceSets.main.resources.srcDir 'src/systems2test/resources'
+}
+
+// The porting layer test, only in -Pporttest runs
+if (project.hasProperty('porttest')) {
+    sourceSets.main.java.srcDir 'src/porttest/java'
+}
+
+// The config test's code and data, only in -Pconfigtest runs
+if (project.hasProperty('configtest')) {
+    sourceSets.main.java.srcDir 'src/configtest/java'
+    sourceSets.main.resources.srcDir 'src/configtest/resources'
+}
+
+// The event test's code and data, only in -Peventtest runs
+if (project.hasProperty('eventtest')) {
+    sourceSets.main.java.srcDir 'src/eventtest/java'
+    sourceSets.main.resources.srcDir 'src/eventtest/resources'
 }
 // The biome slice test's code and data, only in -Pbiometest runs (never build a jar with -Pbiometest)
 if (project.hasProperty('biometest')) {

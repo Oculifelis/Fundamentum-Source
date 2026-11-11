@@ -1,0 +1,10 @@
+{
+  "criteria": {
+    "done": {
+      "trigger": "fundamentum:event",
+      "conditions": {
+        "event": "fundamentum:ritual_started"
+      }
+    }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "tables": ["minecraft:chests/simple_dungeon"],
+  "chance": 1,
+  "rolls": 1,
+  "entries": [{"item": "minecraft:nether_star", "weight": 1}]
+}

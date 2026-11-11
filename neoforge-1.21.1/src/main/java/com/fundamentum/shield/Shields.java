@@ -488,6 +488,7 @@ public final class Shields {
         SERIALIZERS.register(modBus);
         NeoForge.EVENT_BUS.addListener(Shields::onUseStart);
         NeoForge.EVENT_BUS.addListener(Shields::onBlock);
+        ShieldBlockHook.init();
         NeoForge.EVENT_BUS.addListener(Shields::onIncoming);
         NeoForge.EVENT_BUS.addListener(Shields::afterTick);
         NeoForge.EVENT_BUS.addListener(Shields::onPlayerTick);

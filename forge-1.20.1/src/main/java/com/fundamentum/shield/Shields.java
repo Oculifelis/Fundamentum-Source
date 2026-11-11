@@ -492,6 +492,7 @@ public final class Shields {
     public static void init(IEventBus modBus) {
         MinecraftForge.EVENT_BUS.addListener(Shields::onUseStart);
         MinecraftForge.EVENT_BUS.addListener(Shields::onBlock);
+        ShieldBlockHook.init();
         MinecraftForge.EVENT_BUS.addListener(Shields::onIncoming);
         MinecraftForge.EVENT_BUS.addListener(Shields::afterTick);
         MinecraftForge.EVENT_BUS.addListener(Shields::onPlayerTick);

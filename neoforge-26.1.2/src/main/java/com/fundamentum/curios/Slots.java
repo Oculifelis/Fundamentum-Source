@@ -15,6 +15,7 @@ public final class Slots {
     public static final String MOUNT = "mount";
     public static final String HOOK = "hook";
     public static final String SUMMON = "summon";
+    public static final String QUIVER = "quiver";
 
     private static final boolean CURIOS = ModList.get().isLoaded("curios");
 
@@ -35,6 +36,28 @@ public final class Slots {
     /** The first cosmetic item in a slot's cosmetic twin, or empty; what to draw instead of {@link #equipped}. */
     public static ItemStack cosmetic(LivingEntity entity, String slot) {
         return CURIOS ? CuriosBridge.equipped(entity, slot, true) : ItemStack.EMPTY;
+    }
+
+    /** Every stack in a slot type, by slot index, empty ones included (the live stacks: changing one changes the slot). */
+    public static java.util.List<ItemStack> stacks(LivingEntity entity, String slot) {
+        return CURIOS ? CuriosBridge.stacks(entity, slot) : java.util.List.of();
+    }
+
+    /** Every item worn in any Curios slot (not cosmetic ones). */
+    public static java.util.List<ItemStack> allWorn(LivingEntity entity) {
+        return CURIOS ? CuriosBridge.allWorn(entity) : java.util.List.of();
+    }
+
+    /** Puts {@code stack} in slot {@code index} of a slot type; false if the entity has no such slot. */
+    public static boolean equip(LivingEntity entity, String slot, int index, ItemStack stack) {
+        return CURIOS && CuriosBridge.set(entity, slot, index, stack);
+    }
+
+    /** Calls {@code listener} whenever the item in any Curios slot of an entity changes (server and client). */
+    public static void onChange(java.util.function.Consumer<LivingEntity> listener) {
+        if (CURIOS) {
+            CuriosBridge.onChange(listener);
+        }
     }
 
     private Slots() {}

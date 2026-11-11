@@ -1,13 +1,15 @@
 package com.fundamentum;
 
 import com.fundamentum.client.ConfigScreen;
+import com.fundamentum.config.client.ConfigClient;
+import com.fundamentum.config.client.FConfigScreen;
 import com.fundamentum.portal.PortalCraftingClient;
 import java.util.List;
 import net.minecraftforge.client.ConfigScreenHandler;
 import net.minecraftforge.fml.ModLoadingContext;
 
 /**
- * Client side of {@link Fundamentum}: the client's copy of the portal recipes and the Config button in the mod list
+ * Client side of {@link Fundamentum}: the client's copy of the portal recipes, the armour set tooltip and the Config button in the mod list
  * ({@link ConfigScreen}, every Fundamentum config file). Called from the mod's constructor on a client only.
  */
 public final class FundamentumClient {
@@ -21,7 +23,9 @@ public final class FundamentumClient {
             new ConfigScreen.File("fundamentum-soulfire.toml", com.fundamentum.soulfire.SoulFireConfig.SPEC),
             new ConfigScreen.File("fundamentum-biomes.toml", com.fundamentum.biome.BiomeSlicesConfig.SPEC));
         ModLoadingContext.get().registerExtensionPoint(ConfigScreenHandler.ConfigScreenFactory.class,
-            () -> new ConfigScreenHandler.ConfigScreenFactory((mc, parent) -> new ConfigScreen(parent, files)));
+            () -> new ConfigScreenHandler.ConfigScreenFactory((mc, parent) -> new FConfigScreen(parent, p -> new ConfigScreen(p, files))));
+        ConfigClient.init();
+        com.fundamentum.armorset.ArmorSetTooltip.init();
     }
 
     private FundamentumClient() {}

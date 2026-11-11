@@ -8,3 +8,8 @@ repo/
 branding/curseforge/*.jar
 libs/
 run-biometest*/
+run-systems2test/
+.s2w/
+run-porttest/
+run-configtest/
+run-eventtest/

@@ -1,0 +1,1 @@
+{"category":"harmful","color":"#AA33AA","stacking":"amplify","max_amplifier":3,"attributes":[{"attribute":"minecraft:movement_speed","amount":-0.05,"operation":"add_multiplied_total"}],"per_level":true}
