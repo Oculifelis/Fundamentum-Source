@@ -84,6 +84,10 @@ public final class RelicItemRenderer extends BlockEntityWithoutLevelRenderer {
 
     @SubscribeEvent
     public static void extensions(RegisterClientExtensionsEvent event) {
+        Item[] relics = items().toArray(Item[]::new);
+        if (relics.length == 0) {
+            return; // NeoForge refuses an empty target list; with no relic sets there is nothing to draw
+        }
         event.registerItem(new IClientItemExtensions() {
             @Override
             public BlockEntityWithoutLevelRenderer getCustomRenderer() {
@@ -92,7 +96,7 @@ public final class RelicItemRenderer extends BlockEntityWithoutLevelRenderer {
                 }
                 return instance;
             }
-        }, items().toArray(Item[]::new));
+        }, relics);
     }
 
     /** The item's own model stays for its particle; it is drawn by {@link #renderByItem} with a block's transforms. */

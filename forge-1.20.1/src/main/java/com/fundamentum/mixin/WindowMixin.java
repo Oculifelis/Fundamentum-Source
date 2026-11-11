@@ -30,15 +30,18 @@ public abstract class WindowMixin {
         return Boolean.getBoolean("fundamentum.nofocus");
     }
 
-    @Inject(method = "<init>", remap = false, require = 0, at = @At(value = "INVOKE", remap = false,
+    // 1.20.1's Mixin refuses an @Inject inside a constructor anywhere but RETURN, so the hints ride on a @ModifyArg of the
+    // same call: its handler runs right before the window is created and hands the argument back unchanged.
+    @ModifyArg(method = "<init>", remap = false, require = 0, index = 0, at = @At(value = "INVOKE", remap = false,
             target = "Lnet/minecraftforge/fml/loading/ImmediateWindowHandler;setupMinecraftWindow(Ljava/util/function/IntSupplier;Ljava/util/function/IntSupplier;Ljava/util/function/Supplier;Ljava/util/function/LongSupplier;)J"))
-    private void fundamentum$noFocusHints(CallbackInfo ci) {
+    private java.util.function.IntSupplier fundamentum$noFocusHints(java.util.function.IntSupplier width) {
         if (!fundamentum$noFocus()) {
-            return;
+            return width;
         }
         GLFW.glfwWindowHint(GLFW.GLFW_FOCUSED, GLFW.GLFW_FALSE);
         GLFW.glfwWindowHint(GLFW.GLFW_FOCUS_ON_SHOW, GLFW.GLFW_FALSE);
         GLFW.glfwWindowHint(GLFW.GLFW_VISIBLE, GLFW.GLFW_FALSE);
+        return width;
     }
 
     @ModifyArg(method = {"setMode", "m_85453_"}, remap = false, require = 0, at = @At(value = "INVOKE", target = MONITOR, remap = false), index = 1)
