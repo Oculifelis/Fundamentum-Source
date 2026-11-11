@@ -8,6 +8,7 @@ import net.minecraft.world.item.Items;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.fml.common.asm.enumextension.EnumProxy;
 import net.neoforged.neoforge.client.event.RegisterRecipeBookCategoriesEvent;
 
 /**
@@ -18,13 +19,14 @@ import net.neoforged.neoforge.client.event.RegisterRecipeBookCategoriesEvent;
  */
 @EventBusSubscriber(modid = "fundamentum", value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
 public final class PortalRecipeBook {
-    /** The category's icons (enum extension parameter). */
-    public static final Supplier<List<ItemStack>> ICONS = () -> List.of(new ItemStack(Items.OBSIDIAN));
+    /** The category's constructor argument, its icons (enum extension parameter; the loader wants an EnumProxy here). */
+    public static final EnumProxy<RecipeBookCategories> ICONS = new EnumProxy<>(RecipeBookCategories.class,
+        (Supplier<List<ItemStack>>) () -> List.of(new ItemStack(Items.OBSIDIAN)));
 
     private PortalRecipeBook() {}
 
     public static RecipeBookCategories category() {
-        return RecipeBookCategories.valueOf("FUNDAMENTUM_PORTAL_CRAFTING");
+        return ICONS.getValue();
     }
 
     @SubscribeEvent
