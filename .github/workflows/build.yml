@@ -1,0 +1,72 @@
+name: Build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  projects:
+    name: Find Gradle projects
+    runs-on: ubuntu-latest
+    outputs:
+      list: ${{ steps.find.outputs.list }}
+    steps:
+      - uses: actions/checkout@v5
+      - id: find
+        name: List every folder with a Gradle wrapper
+        run: |
+          list=$(find . -name gradlew -not -path './.git/*' -not -path '*/build/*' -printf '%h\n' \
+            | sed 's|^\./||' | sort | jq -R . | jq -cs .)
+          echo "Projects: $list"
+          echo "list=$list" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: ${{ matrix.project }}
+    needs: projects
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        project: ${{ fromJson(needs.projects.outputs.list) }}
+    defaults:
+      run:
+        working-directory: ${{ matrix.project }}
+    env:
+      GRADLE_OPTS: -Dorg.gradle.daemon=false
+      JDKS: -Porg.gradle.java.installations.fromEnv=JAVA_HOME_17_X64,JAVA_HOME_21_X64,JAVA_HOME_25_X64 -Porg.gradle.java.installations.auto-download=true
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: |
+            17
+            21
+            25
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Compile and unit tests
+        run: |
+          chmod +x gradlew
+          ./gradlew build --stacktrace $JDKS
+      - name: GameTests
+        run: |
+          if grep -qs 'gameTestServer' build.gradle build.gradle.kts; then
+            ./gradlew runGameTestServer --stacktrace $JDKS
+          else
+            echo "This project has no GameTest server run: compile and unit tests only."
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: logs-${{ strategy.job-index }}
+          path: |
+            ${{ matrix.project }}/build/reports/
+            ${{ matrix.project }}/run*/logs/latest.log
+            ${{ matrix.project }}/run*/crash-reports/
+          if-no-files-found: ignore
+          retention-days: 7
