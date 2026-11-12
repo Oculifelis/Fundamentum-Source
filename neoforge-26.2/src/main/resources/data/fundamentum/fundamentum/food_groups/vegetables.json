@@ -1,0 +1,8 @@
+{
+  "icon": "minecraft:carrot",
+  "color": "#4FA34A",
+  "items": ["minecraft:carrot", "minecraft:golden_carrot", "minecraft:potato", "minecraft:baked_potato", "minecraft:poisonous_potato", "minecraft:beetroot",
+    "minecraft:beetroot_soup", "minecraft:dried_kelp", "minecraft:mushroom_stew", "minecraft:brown_mushroom", "minecraft:red_mushroom",
+    "#c:foods/vegetable", "#forge:vegetables"],
+  "tags": ["diet:vegetables"]
+}

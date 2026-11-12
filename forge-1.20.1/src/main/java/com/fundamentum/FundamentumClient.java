@@ -26,6 +26,9 @@ public final class FundamentumClient {
             () -> new ConfigScreenHandler.ConfigScreenFactory((mc, parent) -> new FConfigScreen(parent, p -> new ConfigScreen(p, files))));
         ConfigClient.init();
         com.fundamentum.armorset.ArmorSetTooltip.init();
+        com.fundamentum.stat.client.StatClient.init();
+        com.fundamentum.survival.client.SurvivalClient.init();
+        com.fundamentum.climate.Seasons.clientRefresh(com.fundamentum.port.FClimateClient::refreshTints);
     }
 
     private FundamentumClient() {}

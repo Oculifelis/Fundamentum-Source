@@ -43,6 +43,12 @@ config="fundamentum.mixins.json"
     ordering="NONE"
     side="CLIENT"
 [[dependencies.${mod_id}]]
+    modId="roughlyenoughitems"
+    type="optional"
+    versionRange="${rei_range}"
+    ordering="NONE"
+    side="CLIENT"
+[[dependencies.${mod_id}]]
     modId="jade"
     type="optional"
     versionRange="${jade_range}"

@@ -1,0 +1,14 @@
+{
+  "entity": "minecraft:zombie",
+  "goals": [
+    {"goal": "fundamentum:kite", "priority": 1},
+    {"goal": "fundamentum:strafe", "priority": 2, "params": {"radius": 6}},
+    {"goal": "fundamentum:leap", "priority": 2, "params": {"chance": 1.0}},
+    {"goal": "fundamentum:charge", "priority": 2},
+    {"goal": "fundamentum:flee_low_health", "priority": 0},
+    {"goal": "fundamentum:call_allies", "priority": 3},
+    {"goal": "fundamentum:guard", "priority": 4},
+    {"goal": "fundamentum:follow_leader", "priority": 5},
+    {"goal": "fundamentum:faction_target", "priority": 1}
+  ]
+}

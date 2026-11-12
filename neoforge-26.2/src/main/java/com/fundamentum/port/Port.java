@@ -11,6 +11,7 @@ import java.util.TreeMap;
 import net.minecraft.resources.FileToIdConverter;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimplePreparableReloadListener;
@@ -18,6 +19,11 @@ import net.minecraft.util.profiling.ProfilerFiller;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.AddServerReloadListenersEvent;
+import net.neoforged.neoforge.event.OnDatapackSyncEvent;
+import net.neoforged.neoforge.event.entity.living.LivingEquipmentChangeEvent;
+import net.neoforged.neoforge.event.entity.living.MobEffectEvent;
+import net.neoforged.neoforge.event.level.ChunkWatchEvent;
+import net.neoforged.neoforge.event.entity.player.AdvancementEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.server.ServerAboutToStartEvent;
 import net.neoforged.neoforge.event.server.ServerStartedEvent;
@@ -60,6 +66,22 @@ public final class Port {
                 FLife.DIMENSION.forEach(a -> a.changed(p, from, to));
             }
         });
+        NeoForge.EVENT_BUS.addListener(ServerStartedEvent.class, e -> FLife.fireDataReloaded(e.getServer()));
+        NeoForge.EVENT_BUS.addListener(OnDatapackSyncEvent.class, e -> {
+            // no player means a /reload finished for everyone
+            if (e.getPlayer() == null) FLife.fireDataReloaded(e.getPlayerList().getServer());
+        });
+        NeoForge.EVENT_BUS.addListener(AdvancementEvent.AdvancementEarnEvent.class, e -> {
+            if (e.getEntity() instanceof ServerPlayer p) FLife.fireAdvancementEarned(p, FId.from(e.getAdvancement().id()));
+        });
+        NeoForge.EVENT_BUS.addListener(MobEffectEvent.Added.class, e -> FLife.fireEffectsChanged(e.getEntity()));
+        NeoForge.EVENT_BUS.addListener(MobEffectEvent.Remove.class, e -> FLife.fireEffectsChanged(e.getEntity()));
+        NeoForge.EVENT_BUS.addListener(MobEffectEvent.Expired.class, e -> FLife.fireEffectsChanged(e.getEntity()));
+        NeoForge.EVENT_BUS.addListener(LivingEquipmentChangeEvent.class, e -> {
+            if (e.getSlot().getType() == EquipmentSlot.Type.HAND && e.getEntity() instanceof ServerPlayer p) FLife.fireHandChanged(p);
+        });
+        NeoForge.EVENT_BUS.addListener(ChunkWatchEvent.Sent.class,
+            e -> FLife.fireChunkWatched(e.getPlayer(), e.getLevel(), e.getPos().x(), e.getPos().z()));
         NeoForge.EVENT_BUS.addListener(AddServerReloadListenersEvent.class, e -> {
             for (FLife.JsonData d : FLife.JSON_DATA) e.addListener(d.name().vanilla(), new JsonLoader(d));
         });

@@ -10,6 +10,7 @@ import java.util.Optional;
 import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.advancements.triggers.CriterionTrigger;
 import net.minecraft.core.Holder;
+import net.minecraft.advancements.predicates.entity.EntityPredicate;
 import net.minecraft.world.level.storage.loot.predicates.LootItemCondition;
 import net.minecraft.advancements.triggers.SimpleCriterionTrigger;
 import net.minecraft.core.registries.Registries;
@@ -44,6 +45,11 @@ public final class EventTrigger extends SimpleCriterionTrigger<EventTrigger.Inst
             JsonObject w = this.where.filter(JsonElement::isJsonObject).map(JsonElement::getAsJsonObject).orElse(null);
             return FEvents.matches(event, w);
         }
+
+        /** True when the player meets the {@code player} conditions (or there are none). */
+        public boolean testPlayer(ServerPlayer p) {
+            return this.player.map(c -> c.value().test(EntityPredicate.createContext(p, p))).orElse(true);
+        }
     }
 
     private EventTrigger() { }
@@ -67,7 +73,10 @@ public final class EventTrigger extends SimpleCriterionTrigger<EventTrigger.Inst
 
     /** Reads trigger conditions from JSON (for checks and tools). */
     public static Instance read(JsonElement conditions) {
-        return Instance.CODEC.parse(com.mojang.serialization.JsonOps.INSTANCE, conditions).getOrThrow();
+        MinecraftServer server = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
+        com.mojang.serialization.DynamicOps<JsonElement> ops = server == null ? com.mojang.serialization.JsonOps.INSTANCE
+            : net.minecraft.resources.RegistryOps.create(com.mojang.serialization.JsonOps.INSTANCE, server.registryAccess());
+        return Instance.CODEC.parse(ops, conditions).getOrThrow();
     }
 
     /** True when the player has completed the advancement. */

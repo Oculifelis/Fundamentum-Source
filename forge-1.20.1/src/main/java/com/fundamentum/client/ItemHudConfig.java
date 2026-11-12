@@ -4,7 +4,8 @@ import net.minecraftforge.common.ForgeConfigSpec;
 
 /**
  * Client settings for the item HUD ({@link com.fundamentum.api.ItemHud}), config/fundamentum-hud-client.toml; Mods,
- * Fundamentum, Config edits it in game. Read every frame, so a change shows at once.
+ * Fundamentum, Config edits it in game. Anchor, x, y and scale are the default place of the item HUD element; once the
+ * player moves it in the HUD editor, config/fundamentum-hud-layout.json wins.
  */
 public final class ItemHudConfig {
     private static final String S = "itemHud.";
@@ -50,6 +51,11 @@ public final class ItemHudConfig {
         .comment("How dark the backdrop is: 0 clear, 1 solid black.")
         .translation("fundamentum.configuration.itemHud.backgroundOpacity")
         .defineInRange(S + "backgroundOpacity", 0.35, 0.0, 1.0);
+
+    public static final ForgeConfigSpec.IntValue SAFETY_RECHECK = BUILDER
+        .comment("The HUD, the stats and survival meters and the multiblock ghost redraw only when something changes. As a safety net they also recheck every this many seconds, in case a change was missed. 0 turns the timer off.")
+        .translation("fundamentum.configuration.refresh.safetyRecheck")
+        .defineInRange("refresh.safetyRecheck", 5, 0, 600);
 
     public static final ForgeConfigSpec SPEC = BUILDER.build();
 

@@ -1,6 +1,6 @@
 package com.fundamentum.wings;
 
-import com.fundamentum.curios.Slots;
+import com.fundamentum.slots.Slots;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.entity.ClientAvatarEntity;
 import net.minecraft.client.model.geom.EntityModelSet;
@@ -40,7 +40,7 @@ import net.neoforged.neoforge.client.renderstate.RegisterRenderStateModifiersEve
  */
 @EventBusSubscriber(modid = "fundamentum", value = Dist.CLIENT)
 public final class WingsRender {
-    /** The wings stack to draw on a player this frame, set from the Curios slots. */
+    /** The wings stack to draw on a player this frame, set from the wings slot. */
     public static final ContextKey<ItemStack> WORN = new ContextKey<>(Identifier.fromNamespaceAndPath("fundamentum", "worn_wings"));
 
     @SubscribeEvent
@@ -48,13 +48,10 @@ public final class WingsRender {
         event.registerAvatarEntityModifier(new AvatarRenderStateModifier() {
             @Override
             public <T extends Avatar & ClientAvatarEntity> void accept(T entity, AvatarRenderState state) {
-                if (!(entity instanceof Player player) || !Slots.curiosLoaded() || state.chestEquipment.has(DataComponents.GLIDER)) {
+                if (!(entity instanceof Player player) || state.chestEquipment.has(DataComponents.GLIDER)) {
                     return;
                 }
-                ItemStack wings = Slots.cosmetic(player, Slots.WINGS);
-                if (wings.isEmpty()) {
-                    wings = Slots.equipped(player, Slots.WINGS);
-                }
+                ItemStack wings = Slots.shown(player, Slots.WINGS);
                 Equippable equippable = wings.get(DataComponents.EQUIPPABLE);
                 if (equippable != null && equippable.assetId().isPresent()) {
                     state.setRenderData(WORN, wings);

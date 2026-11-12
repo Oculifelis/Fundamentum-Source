@@ -80,6 +80,8 @@ public final class SoulFireSelfTest {
         if (start < 0) {
             if (now < 40) return;
             start = now;
+            // rain puts fire out, and the shared test world may be left raining
+            server.getCommands().performPrefixedCommand(server.createCommandSourceStack().withSuppressedOutput(), "weather clear 6000");
             force(level, true);
             for (int x = -14; x <= 14; x++) {
                 for (int z = -2; z <= 2; z++) {
@@ -89,7 +91,7 @@ public final class SoulFireSelfTest {
             }
             level.setBlock(BASE.offset(0, -1, 0), Blocks.SOUL_SOIL.defaultBlockState(), Block.UPDATE_CLIENTS);
             level.setBlock(BASE, Blocks.SOUL_FIRE.defaultBlockState(), Block.UPDATE_CLIENTS);
-            // a glass pen round the soul fire, so the pig in it can keep its behaviour: a creature without behaviour never moves, and
+            // a glass pen round the soul fire, so the pig in it can keep its behavior: a creature without behavior never moves, and
             // 1.21.1 only applies the blocks an entity is inside when it moves
             for (BlockPos side : List.of(BASE.east(), BASE.west(), BASE.north(), BASE.south())) {
                 level.setBlock(side, Blocks.GLASS.defaultBlockState(), Block.UPDATE_CLIENTS);

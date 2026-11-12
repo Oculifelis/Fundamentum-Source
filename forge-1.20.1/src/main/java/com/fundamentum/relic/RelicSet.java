@@ -1,14 +1,23 @@
 package com.fundamentum.relic;
 
+import com.fundamentum.port.FId;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraftforge.registries.RegistryObject;
 import org.jetbrains.annotations.Nullable;
 
-/** One mod's relics as {@link Relics#register} made them: by name, the block, item, declaration and (grand relics) filler. */
+/**
+ * One mod's relics as the deprecated {@link Relics#register} maps them: by name, the shared base anchor the relic stands
+ * on, the shared item {@code fundamentum:relic}, the declaration and (wide relics) the base's filler. Give a relic with
+ * {@link #stack}; the item alone is a blank relic.
+ *
+ * @deprecated relics are data now; use {@link Relics#stack}.
+ */
+@Deprecated
 public final class RelicSet {
     private final String modid;
     private final Map<String, RegistryObject<RelicBlock>> blocks = new LinkedHashMap<>();
@@ -40,6 +49,11 @@ public final class RelicSet {
 
     public RegistryObject<BlockItem> item(String name) {
         return this.items.get(name);
+    }
+
+    /** A stack of relic {@code <modid>:<name>}. */
+    public ItemStack stack(String name) {
+        return Relics.stack(FId.of(this.modid, name));
     }
 
     /** The declaration read at registration. */

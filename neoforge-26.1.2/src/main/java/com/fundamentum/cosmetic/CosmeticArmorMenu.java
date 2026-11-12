@@ -12,7 +12,10 @@ import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import org.jspecify.annotations.Nullable;
 
-/** The cosmetic armour screen's menu: the four cosmetic slots (where the armour column is) and the player inventory. */
+/**
+ * The cosmetic armour screen's menu: the four cosmetic slots (where the armour column is), then the player inventory.
+ * The accessory slots are Curios slots, in Curios' own screen.
+ */
 public class CosmeticArmorMenu extends AbstractContainerMenu {
     private static final Identifier[] EMPTY_ICONS = {InventoryMenu.EMPTY_ARMOR_SLOT_HELMET, InventoryMenu.EMPTY_ARMOR_SLOT_CHESTPLATE,
         InventoryMenu.EMPTY_ARMOR_SLOT_LEGGINGS, InventoryMenu.EMPTY_ARMOR_SLOT_BOOTS};
@@ -65,6 +68,11 @@ public class CosmeticArmorMenu extends AbstractContainerMenu {
         addStandardInventorySlots(inventory, 8, 84);
     }
 
+    /** How many slots come before the player inventory: the cosmetic armour. */
+    static int ownSlots() {
+        return COSMETIC_SLOTS;
+    }
+
     @Override
     public ItemStack quickMoveStack(Player player, int index) {
         Slot slot = slots.get(index);
@@ -74,20 +82,21 @@ public class CosmeticArmorMenu extends AbstractContainerMenu {
         ItemStack stack = slot.getItem();
         ItemStack original = stack.copy();
         int end = slots.size();
-        if (index < COSMETIC_SLOTS) {
-            if (!moveItemStackTo(stack, COSMETIC_SLOTS, end, true)) {
+        int own = ownSlots();
+        if (index < own) {
+            if (!moveItemStackTo(stack, own, end, true)) {
                 return ItemStack.EMPTY;
             }
         } else {
             boolean moved = false;
-            for (int i = 0; i < COSMETIC_SLOTS && !moved; i++) {
+            for (int i = 0; i < own && !moved; i++) {
                 if (!slots.get(i).hasItem() && slots.get(i).mayPlace(stack)) {
                     moved = moveItemStackTo(stack, i, i + 1, false);
                 }
             }
             // Otherwise between the main inventory and the hotbar, as vanilla does.
             int hotbar = end - 9;
-            if (!moved && !(index < hotbar ? moveItemStackTo(stack, hotbar, end, false) : moveItemStackTo(stack, COSMETIC_SLOTS, hotbar, false))) {
+            if (!moved && !(index < hotbar ? moveItemStackTo(stack, hotbar, end, false) : moveItemStackTo(stack, own, hotbar, false))) {
                 return ItemStack.EMPTY;
             }
         }

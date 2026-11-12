@@ -79,6 +79,8 @@ public final class SoulFireSelfTest {
         if (start < 0) {
             if (now < 40) return;
             start = now;
+            // rain puts fire out, and the shared test world may be left raining
+            server.getCommands().performPrefixedCommand(server.createCommandSourceStack().withSuppressedOutput(), "weather clear 6000");
             force(level, true);
             for (int x = -14; x <= 14; x++) {
                 for (int z = -2; z <= 2; z++) {

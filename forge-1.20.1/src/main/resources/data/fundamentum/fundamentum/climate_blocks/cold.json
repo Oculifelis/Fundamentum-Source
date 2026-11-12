@@ -1,0 +1,5 @@
+{
+  "blocks": ["minecraft:ice", "minecraft:packed_ice", "minecraft:blue_ice", "minecraft:snow_block", "minecraft:powder_snow"],
+  "temperature": -0.4,
+  "radius": 3
+}

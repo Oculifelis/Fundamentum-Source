@@ -1,5 +1,6 @@
 package com.fundamentum.relic.client;
 
+import com.fundamentum.relic.RelicBases;
 import com.fundamentum.relic.RelicBlock;
 import com.fundamentum.relic.RelicBlockEntity;
 import com.fundamentum.relic.RelicDef;
@@ -46,9 +47,11 @@ import org.slf4j.LoggerFactory;
  * <li>Entity mode: the boss's own renderer, given a stand-in that is never added to the world, drawn through
  * {@link RelicGold} on the relic's tint ramp and fitted to the declared width and height (measured on the model as drawn,
  * {@link RelicMeasure}); one figure per declared phase, several standing round the middle. The base is the block's model.</li>
- * <li>Model mode: a ready-made model layer with its own gold texture and glow, at its declared offset and scale; the base is
- * a model layer too.</li>
+ * <li>Model mode: a ready-made model layer with its own gold texture and glow, at its declared offset and scale.</li>
  * </ul>
+ * The base is the anchor block's look ({@link RelicBases.Look}): its block model, or a model layer scaled to the stand's
+ * size, retinted when the relic's file gives the base a tint. A wide stand draws round its true centre. A stand whose relic
+ * is unknown draws its base alone.
  * A boss whose stand-in, renderer or layer fails is left off (the base still stands) and named once in the log.
  */
 public class RelicRenderer implements BlockEntityRenderer<RelicBlockEntity, RelicRenderer.State> {
@@ -71,6 +74,9 @@ public class RelicRenderer implements BlockEntityRenderer<RelicBlockEntity, Reli
     public static class State extends BlockEntityRenderState {
         final List<Figure> figures = new ArrayList<>();
         @Nullable RelicDef def;
+        RelicBases.Look look = RelicBases.Look.block(16F);
+        float cx;
+        float cz;
         Direction facing = Direction.NORTH;
         float angle;
         float bob;
@@ -168,14 +174,26 @@ public class RelicRenderer implements BlockEntityRenderer<RelicBlockEntity, Reli
         Level level = be.getLevel();
         RelicDef def = be.def();
         state.def = def;
-        if (level == null || def == null) {
+        if (!(be.getBlockState().getBlock() instanceof RelicBlock anchor)) {
             return;
         }
         state.facing = be.getBlockState().getValue(RelicBlock.FACING);
+        place(state, anchor, def);
+        if (level == null || def == null) {
+            return;
+        }
         float time = (level.getGameTime() % 24000L) + partial;
         state.bob = def.bob(time);
         state.angle = be.spin().angle(partial);
         this.figures(state, def, level, partial);
+    }
+
+    /** The stand's look and true centre (a wide stand's middle is off its anchor block). */
+    private static void place(State state, RelicBlock anchor, @Nullable RelicDef def) {
+        state.look = RelicBases.look(anchor, def);
+        double[] c = RelicBlock.centre(state.facing, anchor.size());
+        state.cx = (float) c[0];
+        state.cz = (float) c[1];
     }
 
     /** Entity mode: one stand-in's drawn state per declared phase, placed round the middle; nothing in model mode. */
@@ -220,7 +238,7 @@ public class RelicRenderer implements BlockEntityRenderer<RelicBlockEntity, Reli
             f.key = key;
             f.wide = fig.wide / 16F;
             f.tall = fig.tall / 16F;
-            f.lift = def.base.top / 16F + fig.floatBy / 16F + state.bob;
+            f.lift = state.look.top() / 16F + fig.floatBy / 16F + state.bob;
             f.scale = fig.scale;
             f.bounds = fig.bounds;
             if (n > 1) {
@@ -239,33 +257,38 @@ public class RelicRenderer implements BlockEntityRenderer<RelicBlockEntity, Reli
     @Override
     public void submit(State state, PoseStack pose, SubmitNodeCollector collector, CameraRenderState camera) {
         RelicDef def = state.def;
-        if (def == null) {
-            return;
-        }
         int light = state.lightCoords;
-        if (def.base.layer != null) {
-            ModelPart base = this.layer(def.base.layer);
+        RelicBases.Look look = state.look;
+        if (look.layer() != null && look.texture() != null) {
+            ModelPart base = this.layer(look.layer());
             if (base != null) {
+                SubmitNodeCollector out = def != null && def.base.tint != null && def.base.tint.length > 0
+                    ? new RelicGold(collector, def.base.tint, def.tintFloor) : collector;
                 pose.pushPose();
-                pose.translate(0.5F, 0.0F, 0.5F);
+                pose.translate(0.5F + state.cx, 0.0F, 0.5F + state.cz);
                 pose.rotate(Axis.YP.rotationDegrees(180.0F - state.facing.toYRot()));
                 pose.scale(-1.0F, -1.0F, 1.0F);                 // model space, as for mobs: y down, front toward -z
-                part(collector, pose, base, def.base.texture, def.base.glow, light);
+                pose.scale(look.scale(), look.scale(), look.scale());
+                part(out, pose, base, look.texture(), look.glow(), light);
                 pose.popPose();
             }
+        }
+        if (def == null) {
+            return;
         }
         if (def.figure.model()) {
             ModelPart model = this.layer(def.figure.layer);
             if (model != null) {
                 float[] o = def.figure.offset;
                 float s = def.figure.scale;
+                SubmitNodeCollector out = def.tinted ? new RelicGold(collector, def.tint, def.tintFloor) : collector;
                 pose.pushPose();
-                pose.translate(0.5F, 0.0F, 0.5F);
+                pose.translate(0.5F + state.cx, 0.0F, 0.5F + state.cz);
                 pose.rotate(Axis.YP.rotationDegrees(180.0F + state.angle));
                 pose.scale(-1.0F, -1.0F, 1.0F);
                 pose.translate(o[0] / 16.0F, o[1] / 16.0F - state.bob, o[2] / 16.0F);
                 pose.scale(s, s, s);
-                part(collector, pose, model, def.figure.texture, def.figure.glow, light);
+                part(out, pose, model, def.figure.texture, def.figure.glow, light);
                 pose.popPose();
             }
             return;
@@ -288,7 +311,7 @@ public class RelicRenderer implements BlockEntityRenderer<RelicBlockEntity, Reli
             float high = Math.max(0.05F, b[4] - b[1]);
             float k = Float.isNaN(f.scale) ? Math.min(f.wide / across, f.tall / high) : f.scale;
             pose.pushPose();
-            pose.translate(0.5F + f.x, f.lift, 0.5F + f.z);
+            pose.translate(0.5F + state.cx + f.x, f.lift, 0.5F + state.cz + f.z);
             pose.rotate(Axis.YP.rotationDegrees(f.yaw));
             pose.scale(k, k, k);
             pose.translate(-(b[0] + b[3]) / 2F, -b[1], -(b[2] + b[5]) / 2F);
@@ -321,14 +344,19 @@ public class RelicRenderer implements BlockEntityRenderer<RelicBlockEntity, Reli
 
     /**
      * The relic as an item: a small copy of the placed relic, front forward, at rest (no bob, not turning), fitted into the
-     * one-block cube the item's display transforms expect (a grand relic shrinks to fit too). In entity mode the base is the
-     * block's own model, and the figure needs a world to make its stand-in in (without one, only the base is drawn).
+     * one-block cube the item's display transforms expect (a wide relic shrinks to fit too). A block-model base is the
+     * anchor's own model, and an entity-mode figure needs a world to make its stand-in in (without one, only the base is
+     * drawn).
      */
-    void drawItem(RelicBlock block, PoseStack pose, SubmitNodeCollector collector, int light, int overlay, int outline) {
-        RelicDef def = com.fundamentum.relic.Relics.def(block);
+    void drawItem(RelicDef def, PoseStack pose, SubmitNodeCollector collector, int light, int overlay, int outline) {
+        RelicBlock anchor = RelicBases.anchorFor(def);
+        if (anchor == null) {
+            return;
+        }
         State state = new State();
         state.def = def;
         state.facing = Direction.NORTH;
+        place(state, anchor, def);
         state.angle = com.fundamentum.relic.RelicSpin.rest(Direction.NORTH.toYRot());
         state.bob = 0F;
         state.lightCoords = light;
@@ -341,17 +369,18 @@ public class RelicRenderer implements BlockEntityRenderer<RelicBlockEntity, Reli
         float[] b = whole ? ITEM_BOUNDS.get(def) : null;
         if (b == null) {
             RelicMeasure m = new RelicMeasure();
-            float lo = def.grand() ? -1F : 0F;
-            float hi = def.grand() ? 2F : 1F;
-            if (def.base.layer == null) {
-                m.box(lo, 0F, lo, hi, def.base.top / 16F, hi);
+            float n = anchor.size();
+            float lo0 = 0.5F + state.cx - n / 2F;
+            float lo2 = 0.5F + state.cz - n / 2F;
+            if (state.look.layer() == null) {
+                m.box(lo0, 0F, lo2, lo0 + n, state.look.top() / 16F, lo2 + n);
             }
             try {
                 this.submit(state, new PoseStack(), m, camera);
             } catch (RuntimeException ex) {
-                LOG.warn("could not measure the relic item {}", block, ex);
+                LOG.warn("could not measure a relic item", ex);
             }
-            b = m.empty() ? new float[] {lo, 0F, lo, hi, 1F, hi} : m.b.clone();
+            b = m.empty() ? new float[] {lo0, 0F, lo2, lo0 + n, 1F, lo2 + n} : m.b.clone();
             if (whole) {
                 ITEM_BOUNDS.put(def, b);
             }
@@ -362,8 +391,8 @@ public class RelicRenderer implements BlockEntityRenderer<RelicBlockEntity, Reli
         pose.translate(0.5F, (1F - (b[4] - b[1]) * k) / 2F, 0.5F);
         pose.scale(k, k, k);
         pose.translate(-(b[0] + b[3]) / 2F, -b[1], -(b[2] + b[5]) / 2F);
-        if (def.base.layer == null) {
-            var model = net.minecraft.client.Minecraft.getInstance().getModelManager().getBlockStateModelSet().get(block.defaultBlockState());
+        if (state.look.layer() == null) {
+            var model = net.minecraft.client.Minecraft.getInstance().getModelManager().getBlockStateModelSet().get(anchor.defaultBlockState());
             List<net.minecraft.client.renderer.block.dispatch.BlockStateModelPart> parts = new ArrayList<>();
             model.collectParts(net.minecraft.util.RandomSource.create(42L), parts);
             collector.submitBlockModel(pose, net.minecraft.client.renderer.Sheets.cutoutBlockItemSheet(), parts, new int[0], light, overlay, outline);
@@ -372,11 +401,16 @@ public class RelicRenderer implements BlockEntityRenderer<RelicBlockEntity, Reli
         pose.popPose();
     }
 
-    /** The likeness rises well above the block, and a grand relic spreads a block and a half to each side. */
+    /** The likeness rises well above the stand, and a wide stand spreads round its true centre. */
     @Override
     public AABB getRenderBoundingBox(RelicBlockEntity be) {
         BlockPos p = be.getBlockPos();
-        AABB box = new AABB(p);
-        return be.grand() ? box.inflate(1.5, 0.0, 1.5).expandTowards(0.0, 4.5, 0.0) : box.inflate(0.25, 0.0, 0.25).expandTowards(0.0, 2.0, 0.0);
+        int n = be.getBlockState().getBlock() instanceof RelicBlock r ? r.size() : 1;
+        Direction facing = be.getBlockState().hasProperty(RelicBlock.FACING) ? be.getBlockState().getValue(RelicBlock.FACING) : Direction.NORTH;
+        double[] c = RelicBlock.centre(facing, n);
+        double x = p.getX() + 0.5 + c[0];
+        double z = p.getZ() + 0.5 + c[1];
+        double r = n / 2.0 + 0.5;
+        return new AABB(x - r, p.getY(), z - r, x + r, p.getY() + 2.0 + 1.7 * n, z + r);
     }
 }

@@ -55,6 +55,7 @@ public class CosmeticArmorScreen extends AbstractContainerScreen<CosmeticArmorMe
         graphics.text(font, title, titleLabelX, titleLabelY, LABEL, false);
         int y = titleLabelY + 14;
         for (FormattedCharSequence line : font.split(Component.translatable("fundamentum.cosmetic_armor.hint"), imageWidth - titleLabelX - 8)) {
+            if (y + font.lineHeight > 80) break;
             graphics.text(font, line, titleLabelX, y, 0xFF606060, false);
             y += font.lineHeight + 1;
         }

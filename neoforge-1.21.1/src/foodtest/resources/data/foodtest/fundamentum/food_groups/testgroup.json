@@ -1,0 +1,9 @@
+{
+  "name": "food_group.foodtest.testgroup",
+  "icon": "minecraft:stick",
+  "color": "#123456",
+  "items": ["minecraft:stick", "#c:foods/bread", "#forge:bread"],
+  "values": {"minecraft:pumpkin_pie": 0.25},
+  "exclude": ["minecraft:bread"],
+  "guess": false
+}

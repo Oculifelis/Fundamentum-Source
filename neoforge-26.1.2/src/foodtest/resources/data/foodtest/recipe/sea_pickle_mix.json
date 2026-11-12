@@ -1,0 +1,5 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": ["minecraft:apple", "minecraft:carrot", "minecraft:carrot", "minecraft:cobblestone"],
+  "result": {"id": "minecraft:sea_pickle", "count": 1}
+}

@@ -1,8 +1,11 @@
 package com.fundamentum.summon;
 
+import com.fundamentum.event.Events;
+import com.fundamentum.event.FEvents;
+import com.fundamentum.port.FId;
 import com.fundamentum.data.Unknown;
 import com.fundamentum.attribute.StatAttributes;
-import com.fundamentum.curios.Slots;
+import com.fundamentum.slots.Slots;
 import com.fundamentum.data.DataTable;
 import com.fundamentum.data.DataTables;
 import com.fundamentum.whip.WhipTags;
@@ -249,6 +252,10 @@ public final class Summons {
         mob.targetSelector.removeAllGoals(g -> true);
         if (mob instanceof PathfinderMob pathfinder && pathfinder.getAttribute(Attributes.ATTACK_DAMAGE) != null && !attacks(mob)) {
             mob.goalSelector.addGoal(1, new MeleeAttackGoal(pathfinder, 1.2, true));
+        }
+        if (FEvents.post(new Events.SummonCreated(mob, player))) {
+            mob.discard();
+            return null;
         }
         SPAWNING.set(true);
         try {

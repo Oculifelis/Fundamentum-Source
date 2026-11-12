@@ -1,5 +1,7 @@
 package com.fundamentum.spear;
 
+import com.fundamentum.config.Timers;
+import com.fundamentum.port.FLife;
 import com.fundamentum.attribute.StatAttributes;
 import com.fundamentum.compat.BetterCombat;
 import com.fundamentum.data.DataTable;
@@ -144,13 +146,10 @@ public final class Spears {
         return spear;
     }
 
-    /** With Better Combat: keeps spear_reach on the player's entity reach while a spear is held, since Better Combat reads that. */
-    private static void reachTick(PlayerTickEvent.Post e) {
-        Player player = e.getEntity();
-        if (!player.level().isClientSide() && player.tickCount % 5 == 0) {
-            syncReach(player);
-        }
-    }
+    /*
+     * With Better Combat: keeps spear_reach on the player's entity reach while a spear is held, since Better Combat reads
+     * that. Synced when the held items change, with a slow safety net (spears_recheck_seconds).
+     */
 
     /** Puts {@code fundamentum:spear_reach} on the player's entity reach when Better Combat plays the held spear's jab. */
     public static void syncReach(Player player) {
@@ -172,7 +171,8 @@ public final class Spears {
 
     public static void init(IEventBus modBus) {
         ENTITIES.register(modBus);
-        NeoForge.EVENT_BUS.addListener(Spears::reachTick);
+        FLife.handsChanged(Spears::syncReach);
+        Timers.perPlayer("spears_recheck_seconds", 30, Spears::syncReach);
         // The held charge's hits scale with spear_charge_damage.
         NeoForge.EVENT_BUS.addListener((LivingIncomingDamageEvent e) -> {
             Entity attacker = e.getSource().getEntity();

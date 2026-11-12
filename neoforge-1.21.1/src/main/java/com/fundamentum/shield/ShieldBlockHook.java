@@ -1,5 +1,8 @@
 package com.fundamentum.shield;
 
+import com.fundamentum.event.Events;
+import com.fundamentum.event.FEvents;
+import com.fundamentum.port.FId;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Map;
@@ -51,6 +54,9 @@ final class ShieldBlockHook {
         }
         NeoForge.EVENT_BUS.post(new ShieldBlockEvent.Post(pre.getDefender(), pre.getSource(), pre.getShield(), event.getBlocked(),
             event.getBlockedDamage(), pre.isParried(), pre.data()));
+        if (event.getBlocked()) {
+            FEvents.post(new Events.ShieldBlocked(pre.getDefender(), pre.getShield(), event.getBlockedDamage(), pre.isParried()));
+        }
     }
 
     static void init() {

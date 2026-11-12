@@ -38,7 +38,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
  * Portal crafting: an item entity about to travel through any portal (Nether, End, End gateway, or a modded portal
  * that teleports the usual way) is checked against the {@link PortalRecipe}s first. On a match it changes in place,
  * stays on this side and is pushed back out of the portal. The recipes are sent to clients for JEI
- * ({@code compat.jei}). When Architect's Palette is installed, an item one of its {@code warping} recipes takes is left
+ * ({@code PortalViews}, shown in JEI, EMI and REI). When Architect's Palette is installed, an item one of its {@code warping} recipes takes is left
  * to it.
  */
 public final class PortalCrafting {

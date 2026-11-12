@@ -1,0 +1,8 @@
+{
+  "recipes": [
+    { "type": "unifytest:crusher", "paths": ["outputs/*/stack"] },
+    { "type": "unifytest:press", "paths": ["product"], "replace_defaults": true }
+  ],
+  "skip": ["unifytest:keep_copper"],
+  "skip_types": ["unifytest:no_touch"]
+}

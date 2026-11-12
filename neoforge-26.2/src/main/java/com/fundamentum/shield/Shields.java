@@ -1,5 +1,7 @@
 package com.fundamentum.shield;
 
+import com.fundamentum.config.Timers;
+import com.fundamentum.port.FLife;
 import com.fundamentum.attribute.StatAttributes;
 import com.fundamentum.damage.Elements;
 import com.fundamentum.data.DataTable;
@@ -25,6 +27,7 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -418,14 +421,17 @@ public final class Shields {
         return true;
     }
 
+    private static void stampHands(ServerPlayer player) {
+        if (player.level() instanceof ServerLevel level) {
+            stamp(player.getMainHandItem(), level);
+            stamp(player.getOffhandItem(), level);
+        }
+    }
+
     private static void onPlayerTick(PlayerTickEvent.Post event) {
         Player player = event.getEntity();
         if (!(player.level() instanceof ServerLevel level)) {
             return;
-        }
-        if (player.tickCount % 20 == 0) {
-            stamp(player.getMainHandItem(), level);
-            stamp(player.getOffhandItem(), level);
         }
         State state = state(player);
         boolean sneaking = player.isShiftKeyDown();
@@ -517,6 +523,9 @@ public final class Shields {
         NeoForge.EVENT_BUS.addListener(Shields::onIncoming);
         NeoForge.EVENT_BUS.addListener(Shields::afterTick);
         NeoForge.EVENT_BUS.addListener(Shields::onPlayerTick);
+        // held shields get their stats stamped when the hands change, with a slow safety net
+        FLife.handsChanged(Shields::stampHands);
+        Timers.perPlayer("shields_recheck_seconds", 30, Shields::stampHands);
         NeoForge.EVENT_BUS.addListener(Shields::onRightClick);
         NeoForge.EVENT_BUS.addListener(Shields::onEquip);
         ShieldTextures.init();

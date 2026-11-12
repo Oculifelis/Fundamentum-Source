@@ -1,5 +1,7 @@
 package com.fundamentum.whip;
 
+import com.fundamentum.config.Timers;
+import com.fundamentum.port.FLife;
 import io.netty.buffer.ByteBuf;
 import java.util.Map;
 import java.util.Optional;
@@ -42,10 +44,8 @@ public final class WhipHip {
         return Optional.empty();
     }
 
-    private static void tick(PlayerTickEvent.Post event) {
-        if (!(event.getEntity() instanceof ServerPlayer player) || player.tickCount % 5 != 0) {
-            return;
-        }
+    /** Sends the hip whip when it changed: after hotbar or held item changes, with a slow safety net (whip_hip_recheck_seconds). */
+    private static void update(ServerPlayer player) {
         Optional<Identifier> now = player.isSpectator() ? Optional.empty() : hip(player);
         if (!now.equals(SENT.get(player.getUUID()))) {
             SENT.put(player.getUUID(), now);
@@ -55,7 +55,9 @@ public final class WhipHip {
 
     static void init(IEventBus modBus) {
         modBus.addListener((RegisterPayloadHandlersEvent e) -> e.registrar("1").playToClient(HipPayload.TYPE, HipPayload.STREAM_CODEC, HipPayload::handle));
-        NeoForge.EVENT_BUS.addListener(WhipHip::tick);
+        FLife.handsChanged(WhipHip::update);
+        FLife.inventoryChanged(WhipHip::update);
+        Timers.perPlayer("whip_hip_recheck_seconds", 30, WhipHip::update);
         NeoForge.EVENT_BUS.addListener((PlayerEvent.PlayerLoggedOutEvent e) -> SENT.remove(e.getEntity().getUUID()));
         NeoForge.EVENT_BUS.addListener((PlayerEvent.StartTracking e) -> {
             if (e.getTarget() instanceof ServerPlayer target && e.getEntity() instanceof ServerPlayer watcher) {

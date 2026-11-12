@@ -1,5 +1,8 @@
 package com.fundamentum.effect;
 
+import com.fundamentum.event.Events;
+import com.fundamentum.event.FEvents;
+import com.fundamentum.port.FId;
 import com.fundamentum.damage.Elements;
 import com.fundamentum.data.DataTable;
 import com.fundamentum.data.DataTables;
@@ -132,6 +135,9 @@ public final class Effects {
         }
         EffectEvent.Apply pre = post(new EffectEvent.Apply(entity, def, duration, amplifier));
         if (pre.isCanceled()) {
+            return false;
+        }
+        if (FEvents.post(new Events.EffectApplied(entity, FId.from(id), pre.getAmplifier(), Math.max(-1, pre.getDuration())))) {
             return false;
         }
         long now = level.getGameTime();
@@ -426,6 +432,7 @@ public final class Effects {
             case CURED -> post(new EffectEvent.Cured(entity, def, why.cure()));
             case REMOVED -> post(new EffectEvent.Removed(entity, def));
         }
+        FEvents.post(new Events.EffectEnded(entity, FId.from(def.id()), why.reason().name().toLowerCase(java.util.Locale.ROOT)));
     }
 
     private static ResourceLocation modifierId(ResourceLocation effect, int index) {
@@ -499,6 +506,10 @@ public final class Effects {
                         continue;
                     }
                     refreshAttributes(entity, def, a);
+                }
+                long left = a.remaining(now);
+                if (FEvents.post(new Events.EffectTick(entity, FId.from(a.id()), a.level(def), left == Long.MAX_VALUE ? -1 : (int) Math.min(Integer.MAX_VALUE, left)))) {
+                    continue;
                 }
                 EffectAction.Context ctx = new EffectAction.Context(entity, level, def, a, now - a.startedAt());
                 for (EffectAction action : def.actions()) {

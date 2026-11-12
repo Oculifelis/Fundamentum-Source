@@ -1,5 +1,7 @@
 package com.fundamentum.spear;
 
+import com.fundamentum.config.Timers;
+import com.fundamentum.port.FLife;
 import com.fundamentum.attribute.StatAttributes;
 import com.fundamentum.compat.BetterCombat;
 import com.fundamentum.data.DataTable;
@@ -29,7 +31,6 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.entity.living.LivingEntityUseItemEvent;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
-import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import org.jetbrains.annotations.Nullable;
@@ -122,13 +123,6 @@ public final class Spears {
         return spear;
     }
 
-    private static void reachTick(PlayerTickEvent.Post e) {
-        Player player = e.getEntity();
-        if (!player.level().isClientSide() && player.tickCount % 5 == 0) {
-            syncReach(player);
-        }
-    }
-
     /** Puts {@code fundamentum:spear_reach} on the player's entity reach while a spear is in the main hand. */
     public static void syncReach(Player player) {
         AttributeInstance reach = player.getAttribute(Attributes.ENTITY_INTERACTION_RANGE);
@@ -149,7 +143,9 @@ public final class Spears {
 
     public static void init(IEventBus modBus) {
         ENTITIES.register(modBus);
-        NeoForge.EVENT_BUS.addListener(Spears::reachTick);
+        // reach follows the held spear: set when the hands change, with a slow safety net
+        FLife.handsChanged(Spears::syncReach);
+        Timers.perPlayer("spears_recheck_seconds", 30, Spears::syncReach);
         // The held charge's hits scale with spear_charge_damage.
         NeoForge.EVENT_BUS.addListener((LivingIncomingDamageEvent e) -> {
             Entity attacker = e.getSource().getEntity();

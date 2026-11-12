@@ -65,6 +65,9 @@ public final class FConfig {
     private static MinecraftServer server;
     private static Path worldRoot;
     private static int watchTimer;
+    private static ConfigWatcher watcher;
+    private static int watchedConfigs;
+    private static ConfigValue<Integer> watchSeconds;
     private static boolean initialised;
 
     private final FId id;
@@ -271,6 +274,8 @@ public final class FConfig {
             serverRunning = true;
             worldRoot = s.getWorldPath(LevelResource.ROOT).toAbsolutePath().normalize();
             for (FConfig c : ALL.values()) c.reloadFiles();
+            watcher = ConfigWatcher.start();
+            watchedConfigs = -1;
         });
         FLife.serverStarted(s -> live = true);
         FLife.serverStopped(s -> {
@@ -278,14 +283,32 @@ public final class FConfig {
             serverRunning = false;
             server = null;
             worldRoot = null;
+            if (watcher != null) watcher.close();
+            watcher = null;
             applyData(Map.of());
             for (FConfig c : ALL.values()) c.reloadFiles();
         });
         FLife.serverTick(s -> {
-            if (++watchTimer < WATCH_TICKS) return;
+            ConfigWatcher w = watcher;
+            if (w != null) {
+                boolean check = w.takeChanged();
+                if (ALL.size() != watchedConfigs || check) {
+                    watchedConfigs = ALL.size();
+                    if (watchAll(w)) check = true;
+                }
+                if (check) {
+                    watchTimer = 0;
+                    checkFiles();
+                    return;
+                }
+            }
+            // without file notifications, the old two-second check; with them, a slow safety net
+            int period = w == null ? WATCH_TICKS : Timers.ticks(watchSeconds, 60);
+            if (period <= 0 || ++watchTimer < period) return;
             watchTimer = 0;
             checkFiles();
         });
+        watchSeconds = Timers.seconds("config_recheck_seconds", 60);
         FLife.playerLoggedIn(p -> {
             for (FConfig c : all()) {
                 if (c.hasServerEntries()) FNet.toPlayer(p, c.sync());
@@ -293,7 +316,21 @@ public final class FConfig {
         });
     }
 
-    /** Re-reads every config file whose time stamp or size changed. Runs every 2 seconds on the server thread. */
+    private static boolean watchAll(ConfigWatcher w) {
+        boolean added = false;
+        Path global = FVanilla.configDir().resolve("fundamentum");
+        Path root = worldRoot;
+        for (FConfig c : all()) {
+            if (w.watch(c.globalFile(), global)) added = true;
+            if (root != null && w.watch(c.worldFile(), root.resolve("serverconfig"))) added = true;
+        }
+        return added;
+    }
+
+    /**
+     * Re-reads every config file whose time stamp or size changed. Runs on the server thread when the file system
+     * reports a change in a config folder, and on the performance config's {@code config_recheck_seconds} timer.
+     */
     public static void checkFiles() {
         List<FConfig> changed = new ArrayList<>();
         for (FConfig c : all()) {

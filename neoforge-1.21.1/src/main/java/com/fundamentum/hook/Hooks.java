@@ -1,6 +1,6 @@
 package com.fundamentum.hook;
 
-import com.fundamentum.curios.Slots;
+import com.fundamentum.slots.Slots;
 import com.fundamentum.data.DataTable;
 import com.fundamentum.data.DataTables;
 import com.google.gson.JsonObject;

@@ -1,5 +1,8 @@
 package com.fundamentum.boss;
 
+import com.fundamentum.event.Events;
+import com.fundamentum.event.FEvents;
+import com.fundamentum.port.FId;
 import com.fundamentum.music.BossMusic;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -193,7 +196,7 @@ public final class Boss {
         for (ServerPlayer p : viewers) {
             if (!had.contains(p)) {
                 this.bar.addPlayer(p);
-                if (music != null) BossMusic.play(p, music, this.spec.fadeIn);
+                if (music != null) BossMusic.play(p, music, this.spec.fadeIn, this.entity);
             }
         }
     }
@@ -210,6 +213,7 @@ public final class Boss {
         int next = findPhase();
         if (next == this.phase) return;
         String from = phase();
+        int fromIndex = this.phase;
         ResourceLocation oldMusic = music();
         if (this.phase >= 0 && this.spec.phases.get(this.phase).onExit != null) this.spec.phases.get(this.phase).onExit.accept(this);
         this.phase = next;
@@ -219,11 +223,12 @@ public final class Boss {
             int fade = Math.max(this.spec.fadeIn, 1);
             for (ServerPlayer p : this.bar.getPlayers()) {
                 if (newMusic == null) BossMusic.stop(p, this.spec.fadeOut);
-                else BossMusic.play(p, newMusic, fade);
+                else BossMusic.play(p, newMusic, fade, this.entity);
             }
         }
         if (this.phase >= 0 && this.spec.phases.get(this.phase).onEnter != null) this.spec.phases.get(this.phase).onEnter.accept(this);
         MinecraftForge.EVENT_BUS.post(new BossEvents.Phase(this, from, phase()));
+        FEvents.post(new Events.BossPhaseChanged(this.entity, FId.from(this.spec.id()), fromIndex + 1, this.phase + 1));
     }
 
     private void applyBar() {

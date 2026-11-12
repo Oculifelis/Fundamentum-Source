@@ -1,6 +1,8 @@
 package com.fundamentum.relic;
 
+import com.fundamentum.port.FId;
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.BlockGetter;
@@ -8,6 +10,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.RenderShape;
+import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.IntegerProperty;
@@ -16,100 +19,101 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * One of the eight invisible fillers round a grand relic's centre block ({@link RelicBlock}): it holds the base's floor so
- * nothing else is placed inside the relic. {@link #PART} is its place in the 3 x 3 (0 to 8, row by row from the north-west
- * corner; 4 is the centre). Breaking it breaks the relic: the centre drops the one relic item (none in creative), and the
- * centre takes the other fillers with it. A signal into it reaches the relic. Fillers saved before they knew their place
- * (all {@code part=0}) find their centre by looking round them.
+ * An invisible filler in a wide relic stand ({@link RelicBlock}): it holds the stand's floor so nothing else is placed
+ * inside it. {@link #DX} and {@link #DZ} are the way to the anchor, plus 2. Breaking it breaks the stand (the anchor drops
+ * the relic once; nothing in creative), and a signal into it reaches the stand.
  */
 public class RelicPartBlock extends Block {
-    public static final IntegerProperty PART = IntegerProperty.create("part", 0, 8);
-    public static final int CENTRE = 4;
+    public static final IntegerProperty DX = IntegerProperty.create("dx", 0, 4);
+    public static final IntegerProperty DZ = IntegerProperty.create("dz", 0, 4);
+    /** A half-block floor. */
+    public static final VoxelShape FLOOR = Block.box(0, 0, 0, 16, 8, 16);
 
-    private final VoxelShape shape;
+    private final FId base;
 
-    public RelicPartBlock(Properties props) {
-        this(props, RelicBlock.shape(java.util.List.of(new float[] {0, 0, 0, 16, 4.5F, 16})));
-    }
-
-    public RelicPartBlock(Properties props, VoxelShape shape) {
+    public RelicPartBlock(Properties props, FId base) {
         super(props);
-        this.shape = shape;
-        this.registerDefaultState(this.stateDefinition.any().setValue(PART, 0));
+        this.base = base;
+        this.registerDefaultState(this.stateDefinition.any().setValue(DX, 2).setValue(DZ, 2));
     }
 
-    public static int dx(int part) {
-        return part % 3 - 1;
+    public FId base() {
+        return this.base;
     }
 
-    public static int dz(int part) {
-        return part / 3 - 1;
+    /** This filler pointing at an anchor {@code dx}, {@code dz} blocks away (each -2 to 2). */
+    public BlockState at(int dx, int dz) {
+        return this.defaultBlockState().setValue(DX, dx + 2).setValue(DZ, dz + 2);
     }
 
-    private static boolean isRelic(BlockState s) {
-        return s.getBlock() instanceof RelicBlock r && r.grand();
+    /** The anchor a filler state at {@code pos} points at. */
+    public static BlockPos anchor(BlockPos pos, BlockState state) {
+        return pos.offset(state.getValue(DX) - 2, 0, state.getValue(DZ) - 2);
     }
 
-    /**
-     * The grand relic's centre for a filler at {@code pos}: where {@link #PART} says, else (an old filler) the grand relic
-     * within one block; {@code fallback} when there is none.
-     */
-    public static @Nullable BlockPos centre(BlockGetter level, BlockPos pos, BlockState state, @Nullable BlockPos fallback) {
-        int i = state.getValue(PART);
-        BlockPos c = pos.offset(-dx(i), 0, -dz(i));
-        if (isRelic(level.getBlockState(c))) {
-            return c;
-        }
-        for (int j = 0; j < 9; j++) {
-            BlockPos p = pos.offset(dx(j), 0, dz(j));
-            if (j != CENTRE && isRelic(level.getBlockState(p))) {
-                return p;
-            }
-        }
-        return fallback;
+    private static @Nullable BlockPos anchorIn(BlockGetter level, BlockPos pos, BlockState state) {
+        BlockPos a = anchor(pos, state);
+        return level.getBlockState(a).getBlock() instanceof RelicBlock ? a : null;
     }
-
 
     @Override
     public void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> b) {
-        b.add(PART);
+        b.add(DX, DZ);
     }
 
-    /** In creative the relic goes without a drop. */
+    /** In creative the stand goes without a drop. */
     @Override
     public void playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
-        BlockPos c = centre(level, pos, state, null);
-        if (c != null && !level.isClientSide() && player.isCreative()) {
-            level.removeBlock(c, false);
+        BlockPos a = anchorIn(level, pos, state);
+        if (a != null && !level.isClientSide()) {
+            if (level.getBlockEntity(a) instanceof RelicBlockEntity be && player instanceof ServerPlayer sp) {
+                be.breaker(sp);
+            }
+            if (player.isCreative()) {
+                level.removeBlock(a, false);
+            }
         }
         super.playerWillDestroy(level, pos, state, player);
     }
 
-    /** However it went (a pick, an explosion), the relic goes with it and drops itself once. */
+    /** However it went (a pick, an explosion), the stand goes with it and drops its relic once. */
     @Override
     public void onRemove(BlockState state, Level level, BlockPos pos, BlockState now, boolean movedByPiston) {
         super.onRemove(state, level, pos, now, movedByPiston);
-        BlockPos c = now.is(this) || level.isClientSide() ? null : centre(level, pos, state, null);
-        if (c != null) {
-            level.destroyBlock(c, true);
+        BlockPos a = now.is(this) || level.isClientSide() ? null : anchorIn(level, pos, state);
+        if (a != null) {
+            level.destroyBlock(a, true);
         }
     }
 
-    /** A signal into a filler reaches the relic. */
+    /** A signal into a filler reaches the stand. */
     @Override
     public void neighborChanged(BlockState state, Level level, BlockPos pos, Block from, BlockPos fromPos, boolean movedByPiston) {
         super.neighborChanged(state, level, pos, from, fromPos, movedByPiston);
-        BlockPos c = centre(level, pos, state, null);
-        if (c != null && level.getBlockState(c).getBlock() instanceof RelicBlock r) {
-            r.updatePower(level, c, level.getBlockState(c));
+        BlockPos a = anchorIn(level, pos, state);
+        if (a != null && level.getBlockState(a).getBlock() instanceof RelicBlock r) {
+            r.updatePower(level, a, level.getBlockState(a));
         }
     }
 
-    /** Picking a filler gives the relic it belongs to. */
+    /** Picking a filler gives the stand's relic. */
     @Override
     public ItemStack getCloneItemStack(BlockGetter level, BlockPos pos, BlockState state) {
-        BlockPos c = centre(level, pos, state, null);
-        return c == null ? ItemStack.EMPTY : new ItemStack(level.getBlockState(c).getBlock());
+        BlockPos a = anchorIn(level, pos, state);
+        return a != null && level.getBlockEntity(a) instanceof RelicBlockEntity r ? Relics.stackOf(r) : ItemStack.EMPTY;
+    }
+
+    /** A turned structure turns the way to the anchor with it. */
+    @Override
+    public BlockState rotate(BlockState state, Rotation rotation) {
+        int x = state.getValue(DX) - 2;
+        int z = state.getValue(DZ) - 2;
+        for (int i = 0; i < rotation.ordinal(); i++) {
+            int t = x;
+            x = -z;
+            z = t;
+        }
+        return state.setValue(DX, x + 2).setValue(DZ, z + 2);
     }
 
     @Override
@@ -119,6 +123,6 @@ public class RelicPartBlock extends Block {
 
     @Override
     public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext ctx) {
-        return this.shape;
+        return FLOOR;
     }
 }

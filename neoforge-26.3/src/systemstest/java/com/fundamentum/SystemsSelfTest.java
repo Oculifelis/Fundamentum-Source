@@ -6,10 +6,12 @@ import com.fundamentum.ammo.Quivers;
 import com.fundamentum.armorset.ArmorSetEvent;
 import com.fundamentum.armorset.ArmorSets;
 import com.fundamentum.attribute.StatAttributes;
-import com.fundamentum.curios.Slots;
+import com.fundamentum.slots.Slots;
 import com.fundamentum.effect.ActiveEffect;
 import com.fundamentum.effect.EffectEvent;
 import com.fundamentum.effect.Effects;
+import com.fundamentum.event.Events;
+import com.fundamentum.event.FEvents;
 import com.fundamentum.shield.ShieldBlockEvent;
 import com.fundamentum.shield.ShieldTypeItem;
 import com.fundamentum.shield.Shields;
@@ -85,12 +87,25 @@ public final class SystemsSelfTest {
     private static int applied, stacked, expired, cured, gained, lost, blockPre, blockPost;
     private static final java.util.Map<LivingEntity, ShieldBlockEvent.Post> POSTS = new java.util.HashMap<>();
     private static int arrowsBefore, arrowsAfter;
+    // the Fundamentum events (fundamentum:effect_applied and the rest) these systems post
+    private static int fApplied, fTicks, fEnded, fDrawn, fShield, fSetOn, fSetOff;
+    private static boolean refuseEffects;
 
     public static void init(IEventBus modBus) {
         ITEMS.register(modBus);
         if (!Boolean.getBoolean("fundamentum.systemstest")) {
             return;
         }
+        FEvents.listen(Events.EffectApplied.class, (e, call) -> {
+            fApplied++;
+            if (refuseEffects) call.cancel();
+        });
+        FEvents.listen(Events.EffectTick.class, e -> fTicks++);
+        FEvents.listen(Events.EffectEnded.class, e -> fEnded++);
+        FEvents.listen(Events.AmmoDrawn.class, e -> fDrawn++);
+        FEvents.listen(Events.ShieldBlocked.class, e -> fShield++);
+        FEvents.listen(Events.SetBonusOn.class, e -> { if (e.player() == archer) fSetOn++; });
+        FEvents.listen(Events.SetBonusOff.class, e -> { if (e.player() == archer) fSetOff++; });
         NeoForge.EVENT_BUS.addListener(SystemsSelfTest::tick);
         NeoForge.EVENT_BUS.addListener((EffectEvent.Applied e) -> applied++);
         NeoForge.EVENT_BUS.addListener((EffectEvent.Stacked e) -> stacked++);
@@ -169,6 +184,9 @@ public final class SystemsSelfTest {
             case 26 -> {
                 setHusk.setItemSlot(EquipmentSlot.HEAD, new ItemStack(Items.IRON_HELMET));
                 setHusk.setItemSlot(EquipmentSlot.CHEST, new ItemStack(Items.IRON_CHESTPLATE));
+                archer.setItemSlot(EquipmentSlot.HEAD, new ItemStack(Items.IRON_HELMET));
+                archer.setItemSlot(EquipmentSlot.CHEST, new ItemStack(Items.IRON_CHESTPLATE));
+                ArmorSets.recompute(archer);
             }
             case 30 -> {
                 report("sets: 2 pieces give tier 2 (flag, TierGained)",
@@ -194,6 +212,11 @@ public final class SystemsSelfTest {
                     "flags " + ArmorSets.flags(setHusk) + ", lost " + lost);
                 setHusk.setItemSlot(EquipmentSlot.HEAD, ItemStack.EMPTY);
                 setHusk.setItemSlot(EquipmentSlot.CHEST, ItemStack.EMPTY);
+                report("events: set_bonus_on for a player gaining a set tier", fSetOn == 1 && fSetOff == 0, "on " + fSetOn + ", off " + fSetOff);
+                archer.setItemSlot(EquipmentSlot.HEAD, ItemStack.EMPTY);
+                archer.setItemSlot(EquipmentSlot.CHEST, ItemStack.EMPTY);
+                ArmorSets.recompute(archer);
+                report("events: set_bonus_off once the last tier is gone", fSetOff == 1, "off " + fSetOff);
             }
             case 42 -> {
                 report("sets: no pieces, no tiers", ArmorSets.flags(setHusk).isEmpty() && lost == 2, "flags " + ArmorSets.flags(setHusk) + ", lost " + lost);
@@ -365,6 +388,19 @@ public final class SystemsSelfTest {
     // ---- plumbing ---------------------------------------------------------------------------------------------------
 
     private static void finish(MinecraftServer server, ServerLevel level) {
+        if (effectHusk != null) {
+            int before = fApplied;
+            refuseEffects = true;
+            boolean took = Effects.apply(effectHusk, id("refresh"), 40, 0);
+            refuseEffects = false;
+            report("events: effect_applied, effect_tick and effect_ended posted, a cancelled effect_applied refuses the effect",
+                before >= 6 && fTicks > 0 && fEnded >= 1 && !took && !Effects.has(effectHusk, id("refresh")),
+                "applied " + before + ", ticks " + fTicks + ", ended " + fEnded + ", refused " + !took);
+        }
+        report("events: ammo_drawn posted for a shot", fDrawn >= 1, "drawn " + fDrawn);
+        long blockedHits = POSTS.values().stream().filter(e -> e.wasBlocked()).count();
+        report("events: shield_blocked posted for each blocked hit only", fShield >= 1 && fShield == blockedHits,
+            "shield_blocked " + fShield + ", blocked hits " + blockedHits);
         long passed = RESULTS.stream().filter(r -> r.startsWith("PASS")).count();
         LOG.info("SYSTEMSTEST DONE {}/{}", passed, RESULTS.size());
         level.getEntitiesOfClass(Entity.class, new AABB(BASE).inflate(32), e -> e.entityTags().contains(TAG) || e instanceof AbstractArrow)

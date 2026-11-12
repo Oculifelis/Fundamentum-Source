@@ -4,7 +4,7 @@ import com.fundamentum.net.Net;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.network.simple.SimpleChannel;
 import com.fundamentum.data.Unknown;
-import com.fundamentum.curios.Slots;
+import com.fundamentum.slots.Slots;
 import com.fundamentum.data.DataTable;
 import com.fundamentum.data.DataTables;
 import com.google.gson.JsonObject;

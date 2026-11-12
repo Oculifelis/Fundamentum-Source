@@ -1,0 +1,5 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [{ "item": "minecraft:dirt" }],
+  "result": { "item": "unifytest:copper_ingot", "count": 2 }
+}

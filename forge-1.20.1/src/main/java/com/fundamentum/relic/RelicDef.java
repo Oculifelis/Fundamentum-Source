@@ -8,11 +8,10 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * One relic's declaration, read from {@code data/<namespace>/fundamentum/relics/<name>.json} (the block and item are
- * {@code <namespace>:<name>}). Plain data with no game classes in it, so it is read the same way at registration (from
- * the owning mod's own jar) and on every data reload (where a datapack may retune it). Ids are kept as strings. Lengths
- * are in sixteenths of a block (pixels) unless a field says otherwise. Every field but {@code boss} is optional; the
- * defaults are Ultima Ratio's relics. The fields are listed in the README's Relics section.
+ * One relic's declaration, read from {@code data/<namespace>/fundamentum/relics/<name>.json}; the file alone makes the
+ * relic {@code <namespace>:<name>} (a stack of {@code fundamentum:relic} carrying that id, placed on a shared base block).
+ * Plain data with no game classes in it. Ids are kept as strings. Lengths are in sixteenths of a block (pixels) unless a
+ * field says otherwise. Every field but {@code boss} is optional. The fields are listed in docs/RELICS.md.
  */
 public final class RelicDef {
     public enum Size { SINGLE, GRAND }
@@ -23,15 +22,21 @@ public final class RelicDef {
     /** The ramp a figure's textures are gilded on, dark to light (RelicGold), and how far up it the darkest texel starts. */
     public static final int[] GOLD = {0x5A3A12, 0x9A6A1E, 0xD6A238, 0xF2CC5A, 0xFFF0A8};
     public static final float GOLD_FLOOR = 0.7F;
+    /** The base a relic stands on when its file names none. */
+    public static final String DEFAULT_BASE = "fundamentum:relic_stand";
 
     /** The base: drawn by the block's own model, or by the renderer from an entity model layer. */
     public static final class Base {
+        /** The registered base it stands on ({@link RelicBases}); a string {@code "base"} sets only this. */
+        public String id = DEFAULT_BASE;
         /** Model layer ({@code ns:path} or {@code ns:path#layer}); null: the block model is the base. */
         public String layer;
         public String texture;
         public String glow;
-        /** Where the figure's float starts, over the block's floor. */
-        public float top;
+        /** Where the figure's float starts, over the block's floor; NaN: the base's own. */
+        public float top = Float.NaN;
+        /** The base's own colour ramp (one colour or several, dark to light); null: drawn as its texture is. */
+        public int[] tint;
     }
 
     /** The figure: the boss's own renderer in gold (entity mode), or a ready-made model with its own textures (model mode). */
@@ -63,7 +68,11 @@ public final class RelicDef {
 
     public String boss;
     public Size size = Size.SINGLE;
-    /** Grand relics: the filler block's name, in the relic's namespace. */
+    /** Blocks across, 1 to 5 ({@code "size"}: a number, or "single" = 1 and "grand" = 3). */
+    public int span = 1;
+    /** The shown name, when the lang has neither {@code relic.<ns>.<name>} nor {@code block.<ns>.<name>}; null: made from the id. */
+    public String name;
+    /** Read for files written before relics were data-driven; no longer used (see docs/RELICS.md). */
     public String part;
     public String rarity;
     public int stack = 16;
@@ -82,6 +91,8 @@ public final class RelicDef {
     public final Base base = new Base();
     public final Figure figure = new Figure();
     public int[] tint = GOLD.clone();
+    /** Whether {@link #tint} was declared (a model-mode figure is only recoloured then). */
+    public boolean tinted;
     public float tintFloor = GOLD_FLOOR;
     /** Bob: how high (pixels) and how long one bob takes (ticks); centred bobs swing round the rest height instead of over it. */
     public float bobHeight = 1.0F;
@@ -92,8 +103,9 @@ public final class RelicDef {
     /** One slow turn, in ticks. */
     public float turnTicks = RelicSpin.TURN_TICKS;
 
+    /** Whether it is more than one block across. */
     public boolean grand() {
-        return this.size == Size.GRAND;
+        return this.span > 1;
     }
 
     /** Reads a declaration; {@code name} is the relic's block name (for the default part name). Throws on a bad file. */
@@ -103,7 +115,9 @@ public final class RelicDef {
             throw new IllegalArgumentException("relic " + name + ": no boss");
         }
         d.boss = json.get("boss").getAsString();
-        d.size = Size.valueOf(str(json, "size", "single").toUpperCase(Locale.ROOT));
+        d.span = span(json, name);
+        d.size = d.span > 1 ? Size.GRAND : Size.SINGLE;
+        d.name = str(json, "name", null);
         boolean grand = d.grand();
         d.part = str(json, "part", grand ? name + "_part" : null);
         d.rarity = str(json, "rarity", grand ? "epic" : "rare").toLowerCase(Locale.ROOT);
@@ -120,11 +134,23 @@ public final class RelicDef {
         d.description = str(json, "description", null);
         d.jei = str(json, "jei", null);
 
-        JsonObject base = json.has("base") ? json.getAsJsonObject("base") : new JsonObject();
+        JsonObject base = new JsonObject();
+        if (json.has("base") && json.get("base").isJsonPrimitive()) {
+            d.base.id = json.get("base").getAsString();
+        } else if (json.has("base")) {
+            base = json.getAsJsonObject("base");
+            d.base.id = str(base, "id", d.base.id);
+        }
+        if (!d.base.id.contains(":")) {
+            d.base.id = "minecraft:" + d.base.id;
+        }
+        if (base.has("tint")) {
+            d.base.tint = tint(base.get("tint"), name);
+        }
         d.base.layer = str(base, "layer", null);
         d.base.texture = str(base, "texture", null);
         d.base.glow = str(base, "glow", null);
-        d.base.top = num(base, "top", grand ? 14.8F : 8.6F).floatValue();
+        d.base.top = num(base, "top", Float.NaN).floatValue();
         if (d.base.layer != null && d.base.texture == null) {
             throw new IllegalArgumentException("relic " + name + ": base.layer needs base.texture");
         }
@@ -149,8 +175,9 @@ public final class RelicDef {
             }
         }
         boolean trio = f.phases.length > 1;
-        f.wide = num(fig, "wide", grand ? (trio ? 26F : 46F) : 18F).floatValue();
-        f.tall = num(fig, "tall", grand ? (trio ? 36F : 50F) : 21F).floatValue();
+        float k = grand ? d.span / 3F : 1F;
+        f.wide = num(fig, "wide", grand ? (trio ? 26F : 46F) * k : 18F).floatValue();
+        f.tall = num(fig, "tall", grand ? (trio ? 36F : 50F) * k : 21F).floatValue();
         f.floatBy = num(fig, "float", f.floatBy).floatValue();
         f.radius = num(fig, "radius", f.radius).floatValue();
         f.scale = num(fig, "scale", Float.NaN).floatValue();
@@ -164,14 +191,12 @@ public final class RelicDef {
             f.scale = 1F;
         }
 
-        if (json.has("tint")) {
-            JsonArray a = json.getAsJsonArray("tint");
-            if (a.size() < 2) {
-                throw new IllegalArgumentException("relic " + name + ": tint needs at least two colours");
-            }
-            d.tint = new int[a.size()];
-            for (int i = 0; i < a.size(); i++) {
-                d.tint[i] = colour(a.get(i).getAsString());
+        JsonElement tint = fig.has("tint") ? fig.get("tint") : json.get("tint");
+        if (tint != null && !tint.isJsonNull()) {
+            int[] t = tint(tint, name);
+            if (t != null) {
+                d.tint = t;
+                d.tinted = true;
             }
         }
         d.tintFloor = num(json, "tint_floor", d.tintFloor).floatValue();
@@ -182,6 +207,63 @@ public final class RelicDef {
         d.bobPhase = num(bob, "phase", 0F).floatValue();
         d.turnTicks = Math.max(20F, num(json, "turn_ticks", d.turnTicks).floatValue());
         return d;
+    }
+
+    /** {@code "size"}: 1 to 5, "single" (1) or "grand" (3). */
+    private static int span(JsonObject json, String name) {
+        if (!json.has("size")) {
+            return 1;
+        }
+        JsonElement e = json.get("size");
+        int n;
+        if (e.isJsonPrimitive() && e.getAsJsonPrimitive().isNumber()) {
+            n = e.getAsInt();
+        } else {
+            n = switch (e.getAsString().toLowerCase(Locale.ROOT)) {
+                case "single" -> 1;
+                case "grand" -> 3;
+                default -> throw new IllegalArgumentException("relic " + name + ": size must be 1 to 5, single or grand");
+            };
+        }
+        if (n < 1 || n > 5) {
+            throw new IllegalArgumentException("relic " + name + ": size must be 1 to 5");
+        }
+        return n;
+    }
+
+    /** A tint: one colour (made into a five-step ramp round it) or a list of at least two, dark to light; blank: null. */
+    static int[] tint(JsonElement e, String name) {
+        if (e.isJsonPrimitive()) {
+            String s = e.getAsString().trim();
+            return s.isEmpty() ? null : ramp(colour(s));
+        }
+        JsonArray a = e.getAsJsonArray();
+        if (a.size() < 2) {
+            throw new IllegalArgumentException("relic " + name + ": a tint list needs at least two colours");
+        }
+        int[] out = new int[a.size()];
+        for (int i = 0; i < a.size(); i++) {
+            out[i] = colour(a.get(i).getAsString());
+        }
+        return out;
+    }
+
+    /** Five steps round one colour: three shades darker, the colour, and one lighter. */
+    static int[] ramp(int c) {
+        float[] k = {0.35F, 0.6F, 0.85F, 1F};
+        int[] out = new int[5];
+        for (int i = 0; i < 4; i++) {
+            out[i] = mix(c, 0, 1F - k[i]);
+        }
+        out[4] = mix(c, 0xFFFFFF, 0.55F);
+        return out;
+    }
+
+    private static int mix(int a, int b, float t) {
+        int r = Math.round(((a >> 16) & 255) * (1 - t) + ((b >> 16) & 255) * t);
+        int g = Math.round(((a >> 8) & 255) * (1 - t) + ((b >> 8) & 255) * t);
+        int bl = Math.round((a & 255) * (1 - t) + (b & 255) * t);
+        return (r << 16) | (g << 8) | bl;
     }
 
     /** The bob over the rest height at {@code time} ticks, in blocks. */

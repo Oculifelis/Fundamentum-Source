@@ -1,5 +1,8 @@
 package com.fundamentum.loot;
 
+import com.fundamentum.event.Events;
+import com.fundamentum.event.FEvents;
+import com.fundamentum.port.FId;
 import com.fundamentum.boss.Boss;
 import com.fundamentum.boss.BossEvents;
 import com.google.gson.JsonObject;
@@ -95,6 +98,7 @@ public final class BossDrops {
                 if (firstKill.contains(p.getUUID())) roll(level, at, p, spec.firstKillPool, spec.firstKillTable, got);
                 for (ItemStack s : got) give(level, at, p, s.copy(), spec.toInventory);
                 out.put(p.getUUID(), got);
+                FEvents.post(new Events.BossLootDropped(p, FId.from(boss.spec().id()), got.size()));
             }
         } else {
             List<ItemStack> got = new ArrayList<>();
@@ -103,6 +107,7 @@ public final class BossDrops {
             if (!firstKill.isEmpty()) roll(level, at, any, spec.firstKillPool, spec.firstKillTable, got);
             for (ItemStack s : got) give(level, at, null, s.copy(), false);
             out.put(boss.entity().getUUID(), got);
+            FEvents.post(new Events.BossLootDropped(null, FId.from(boss.spec().id()), got.size()));
         }
         return out;
     }

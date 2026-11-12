@@ -3,36 +3,56 @@ package com.fundamentum.relic;
 import com.fundamentum.Fundamentum;
 import com.fundamentum.data.DataTable;
 import com.fundamentum.data.DataTables;
+import com.fundamentum.port.FId;
+import com.fundamentum.port.FReg;
+import com.fundamentum.port.FStackData;
+import com.fundamentum.port.FStreamCodec;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.mojang.brigadier.ParseResults;
+import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.context.CommandContextBuilder;
+import com.mojang.brigadier.context.ParsedArgument;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedHashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.commands.SharedSuggestionProvider;
+import net.minecraft.commands.arguments.EntityArgument;
+import net.minecraft.commands.arguments.ResourceLocationArgument;
+import net.minecraft.commands.arguments.item.ItemInput;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.locale.Language;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.Rarity;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.entity.BlockEntityType;
-import net.minecraft.world.level.block.state.BlockBehaviour;
-import net.minecraft.world.level.material.MapColor;
-import net.minecraft.world.level.material.PushReaction;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.CommandEvent;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
 import net.neoforged.neoforge.registries.DeferredBlock;
@@ -44,113 +64,145 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Boss relics: a Terraria-style trophy block per boss, the boss's gold likeness floating, bobbing and turning slowly over a
- * base (a redstone signal stops the turn and faces it forward). A mod declares each relic in
- * {@code data/<modid>/fundamentum/relics/<name>.json} ({@link RelicDef}) and registers them with {@link #register} into its
- * own registers, so the blocks, items, grand relics' filler blocks and (optionally) the block entity type keep the mod's
- * ids. Fundamentum supplies the blocks' behaviour, the block entity, the renderer, the boss drop and the JEI page. The
- * same files are also a synced data table ({@link #TABLE}), so a datapack can retune a relic's look and drop; what makes
- * the block itself (size, shape, strength, light, rarity, stack) is read once, at registration, from the owning mod.
+ * Boss relics: a Terraria-style trophy, the boss's gold likeness floating, bobbing and turning slowly over a base (a
+ * redstone signal stops the turn and faces it forward). A relic is only data: a file
+ * {@code data/<ns>/fundamentum/relics/<name>.json} ({@link RelicDef}) makes relic {@code <ns>:<name>}, with its creative
+ * entry, name, boss drop, recipe viewer page and {@code /fundamentum relic give}. Every relic is the one item
+ * {@code fundamentum:relic} with the relic's id as data ({@link #RELIC}), placed on a shared base block
+ * ({@link RelicBases}) that keeps the id in its block entity. The bases never reach players on their own: they have no
+ * creative entry, recipe, loot table or tag, recipe viewers hide them, and a blank relic cannot be given.
+ * See docs/RELICS.md.
  */
 public final class Relics {
     private static final Logger LOG = LoggerFactory.getLogger("fundamentum");
     public static final String PATH = "fundamentum/relics";
-    /** Every relic file, keyed by its block id; a datapack file of the same id is merged over the mod's. */
+    /** Every relic file, keyed by relic id; a datapack file of the same id is merged over the mod's. */
     public static final DataTable<RelicDef> TABLE = DataTables.register(ResourceLocation.fromNamespaceAndPath(Fundamentum.MODID, "relics"), PATH,
         json -> RelicDef.parse(json, "relic")).synced();
 
-    private static final DeferredRegister<BlockEntityType<?>> OWN_ENTITIES = DeferredRegister.create(Registries.BLOCK_ENTITY_TYPE, Fundamentum.MODID);
-    private static final List<DeferredBlock<RelicBlock>> SHARED = new ArrayList<>();
-    /** The block entity type for relics whose mod brings none of its own: {@code fundamentum:relic}. */
-    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<RelicBlockEntity>> SHARED_ENTITY = OWN_ENTITIES.register("relic",
-        () -> BlockEntityType.Builder.of(RelicBlockEntity::new, SHARED.stream().map(DeferredBlock::get).toArray(Block[]::new)).build(null));
+    /** Which relic a {@code fundamentum:relic} stack is. */
+    public static final FStackData<FId> RELIC = FStackData.of(FId.of(Fundamentum.MODID, "relic"), FId.CODEC, FStreamCodec.ID);
+
+    /** Fundamentum's own base, {@code fundamentum:relic_stand}, sizes 1 to 5. */
+    public static final RelicBases.Base STAND = RelicBases.registerDefault();
+
+    /** The relic item. */
+    public static final FReg.Ref<RelicItem> ITEM = FReg.item(FId.of(Fundamentum.MODID, "relic"),
+        p -> new RelicItem(STAND.anchor(1), p), new Item.Properties().fireResistant().stacksTo(16).rarity(Rarity.RARE));
+
+    /** The block entity of every base's anchors, {@code fundamentum:relic}. */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public static final FReg.Ref<BlockEntityType<RelicBlockEntity>> ENTITY = (FReg.Ref) FReg.<BlockEntityType<?>>other(Registries.BLOCK_ENTITY_TYPE, FId.of(Fundamentum.MODID, "relic"),
+        () -> BlockEntityType.Builder.of(RelicBlockEntity::new, anchors().toArray(new Block[0])).build(null));
+
+    /** The creative tab: one entry per relic file. */
+    public static final FReg.Ref<CreativeModeTab> TAB = FReg.other(Registries.CREATIVE_MODE_TAB, FId.of(Fundamentum.MODID, "relics"),
+        () -> CreativeModeTab.builder()
+            .title(Component.translatable("itemGroup.fundamentum.relics"))
+            .icon(() -> TABLE.entries().isEmpty() ? new ItemStack(Items.GOLD_BLOCK) : stack(FId.from(TABLE.entries().keySet().iterator().next())))
+            .displayItems((params, out) -> {
+                for (ResourceLocation id : TABLE.entries().keySet()) {
+                    out.accept(stack(FId.from(id)));
+                }
+            })
+            .build());
 
     private static final List<RelicSet> SETS = new ArrayList<>();
-    private static final List<DeferredHolder<BlockEntityType<?>, BlockEntityType<RelicBlockEntity>>> ENTITY_TYPES = new ArrayList<>(List.of(SHARED_ENTITY));
+    private static final Set<String> MISSING = Collections.synchronizedSet(new HashSet<>());
 
     private Relics() {}
 
     public static void init(IEventBus modBus) {
-        OWN_ENTITIES.register(modBus);
         NeoForge.EVENT_BUS.addListener(Relics::drops);
         NeoForge.EVENT_BUS.addListener(Relics::death);
+        NeoForge.EVENT_BUS.addListener(Relics::commands);
+        NeoForge.EVENT_BUS.addListener(Relics::command);
+    }
+
+    private static Set<Block> anchors() {
+        Set<Block> out = new HashSet<>();
+        for (RelicBases.Base b : RelicBases.all()) {
+            for (FReg.Ref<RelicBlock> r : b.anchorRefs()) {
+                out.add(r.get());
+            }
+        }
+        return out;
+    }
+
+    /** The relic with this id, or null (an unknown non-blank id is logged once). */
+    public static @Nullable RelicDef def(String id) {
+        if (id == null || id.isEmpty()) {
+            return null;
+        }
+        FId f = FId.tryOf(id);
+        RelicDef def = f == null ? null : TABLE.get(f.vanilla());
+        if (def == null && MISSING.add(id)) {
+            LOG.warn("no relic file for relic {} (a removed datapack or mod?); its stand stays, plain, and drops nothing", id);
+        }
+        return def;
+    }
+
+    /** A stack of relic {@code id}, with that relic's rarity and stack size. */
+    public static ItemStack stack(FId id) {
+        ItemStack s = new ItemStack(ITEM.get());
+        RELIC.set(s, id);
+        RelicDef def = TABLE.get(id.vanilla());
+        if (def != null) {
+            s.set(DataComponents.RARITY, rarity(def.rarity));
+            s.set(DataComponents.MAX_STACK_SIZE, Math.max(1, Math.min(99, def.stack)));
+        }
+        return s;
+    }
+
+    /** The relic a placed stand holds, or empty when its relic is unknown. */
+    public static ItemStack stackOf(RelicBlockEntity be) {
+        FId id = FId.tryOf(be.relicId());
+        return id != null && def(id.toString()) != null ? stack(id) : ItemStack.EMPTY;
     }
 
     /**
-     * Registers {@code names}' relics, each read from {@code data/<modid>/fundamentum/relics/<name>.json} in the jar of
-     * {@code owner} (any class of the calling mod), into the mod's own registers: block and item {@code <modid>:<name>},
-     * a grand relic's filler {@code <modid>:<part>} (shared by every grand relic naming the same part), and, when
-     * {@code blockEntities} is given, one block entity type {@code <modid>:<entityName>} for them all (otherwise
-     * {@code fundamentum:relic}). Call it while the mod is constructed, before its registers are added to the bus.
+     * A relic's name: {@code relic.<ns>.<path>} when a lang file has it, else {@code block.<ns>.<path>} (relics that used
+     * to be blocks), else the file's {@code name}, else the id's path in words.
      */
-    public static RelicSet register(Class<?> owner, String modid, DeferredRegister.Blocks blocks, DeferredRegister.Items items,
-                                    @Nullable DeferredRegister<BlockEntityType<?>> blockEntities, String entityName, String... names) {
-        RelicSet set = new RelicSet(modid);
-        Map<String, DeferredBlock<RelicPartBlock>> parts = new LinkedHashMap<>();
-        List<DeferredBlock<RelicBlock>> mine = new ArrayList<>();
-        for (String name : names) {
-            RelicDef def = read(owner, modid, name);
-            DeferredBlock<RelicPartBlock> part = null;
-            if (def.grand()) {
-                part = parts.computeIfAbsent(def.part, p -> blocks.registerBlock(p, q -> new RelicPartBlock(q, RelicBlock.shape(def.partShape)),
-                    stone(BlockBehaviour.Properties.of(), def.strength, def.resistance, def.partLight).noLootTable()));
+    public static Component name(FId id) {
+        String tail = id.namespace() + "." + id.path().replace('/', '.');
+        Language lang = Language.getInstance();
+        if (lang.has("relic." + tail)) {
+            return Component.translatable("relic." + tail);
+        }
+        if (lang.has("block." + tail)) {
+            return Component.translatable("block." + tail);
+        }
+        RelicDef def = TABLE.get(id.vanilla());
+        String plain = def != null && def.name != null && !def.name.isEmpty() ? def.name : words(id.path());
+        return Component.translatableWithFallback("relic." + tail, plain);
+    }
+
+    private static String words(String path) {
+        String last = path.substring(path.lastIndexOf('/') + 1);
+        StringBuilder b = new StringBuilder();
+        for (String w : last.split("_")) {
+            if (!w.isEmpty()) {
+                b.append(b.length() == 0 ? "" : " ").append(Character.toUpperCase(w.charAt(0))).append(w.substring(1));
             }
-            DeferredBlock<RelicPartBlock> partFinal = part;
-            DeferredBlock<RelicBlock> block = blocks.registerBlock(name, p -> new RelicBlock(p, def, partFinal, set),
-                stone(BlockBehaviour.Properties.of(), def.strength, def.resistance, def.light));
-            Rarity rarity = rarity(def.rarity);
-            DeferredItem<BlockItem> item = items.registerSimpleBlockItem(name, block, props(def, rarity));
-            set.add(name, def, block, item, part);
-            mine.add(block);
         }
-        if (blockEntities != null) {
-            set.entity = blockEntities.register(entityName, () -> BlockEntityType.Builder.of(RelicBlockEntity::new,
-                mine.stream().map(DeferredBlock::get).toArray(Block[]::new)).build(null));
-            ENTITY_TYPES.add(set.entity);
-        } else {
-            set.entity = SHARED_ENTITY;
-            SHARED.addAll(mine);
-        }
-        SETS.add(set);
-        return set;
+        return b.toString();
     }
 
-    /** {@link #register} with Fundamentum's shared block entity type. */
-    public static RelicSet register(Class<?> owner, String modid, DeferredRegister.Blocks blocks, DeferredRegister.Items items, String... names) {
-        return register(owner, modid, blocks, items, null, "", names);
-    }
-
-    /** Every registered relic set, in registration order. */
-    public static List<RelicSet> sets() {
-        return Collections.unmodifiableList(SETS);
-    }
-
-    /** Every relic block entity type (Fundamentum's shared one first), for the renderer. */
-    public static List<DeferredHolder<BlockEntityType<?>, BlockEntityType<RelicBlockEntity>>> entityTypes() {
-        return Collections.unmodifiableList(ENTITY_TYPES);
-    }
-
-    /** {@code block}'s declaration as it stands: the data table's entry when one loaded, else what it was registered with. */
-    public static RelicDef def(RelicBlock block) {
-        RelicDef live = TABLE.get(BuiltInRegistries.BLOCK.getKey(block));
-        return live != null ? live : block.registered();
-    }
-
-    /** The relic item for a block id, or null. */
-    public static @Nullable Item item(ResourceLocation relic) {
-        Block b = BuiltInRegistries.BLOCK.get(relic);
-        return b instanceof RelicBlock ? b.asItem() : null;
-    }
-
-    /** Hands {@code relic} to each of {@code players} (into the inventory, or dropped at their feet when it is full). */
+    /** Hands relic {@code relic} to each of {@code players} (into the inventory, or dropped at their feet when it is full). */
     public static void hand(ResourceLocation relic, List<ServerPlayer> players) {
-        Item item = item(relic);
-        if (item == null) {
+        if (TABLE.get(relic) == null) {
             return;
         }
         for (ServerPlayer p : players) {
-            give(p, new ItemStack(item));
+            give(p, stack(FId.from(relic)));
         }
+    }
+
+    /** The relic item, when {@code relic} names a known relic. */
+    @Deprecated
+    public static @Nullable Item item(ResourceLocation relic) {
+        return TABLE.get(relic) != null ? ITEM.get() : null;
     }
 
     private static void give(ServerPlayer p, ItemStack stack) {
@@ -160,15 +212,12 @@ public final class Relics {
     }
 
     /** The relics a boss of this type gives, with how. */
-    private static List<RelicBlock> relicsOf(Entity boss, RelicDef.Drop how) {
-        ResourceLocation type = BuiltInRegistries.ENTITY_TYPE.getKey(boss.getType());
-        List<RelicBlock> out = new ArrayList<>();
-        for (RelicSet set : SETS) {
-            for (DeferredBlock<RelicBlock> b : set.blocks().values()) {
-                RelicDef d = def(b.get());
-                if (d.drop == how && type.toString().equals(d.boss)) {
-                    out.add(b.get());
-                }
+    private static List<FId> relicsOf(Entity boss, RelicDef.Drop how) {
+        String type = BuiltInRegistries.ENTITY_TYPE.getKey(boss.getType()).toString();
+        List<FId> out = new ArrayList<>();
+        for (Map.Entry<ResourceLocation, RelicDef> e : TABLE.entries().entrySet()) {
+            if (e.getValue().drop == how && type.equals(e.getValue().boss)) {
+                out.add(FId.from(e.getKey()));
             }
         }
         return out;
@@ -177,8 +226,8 @@ public final class Relics {
     /** "drops": the relic falls with the boss's drops. */
     private static void drops(LivingDropsEvent event) {
         Entity boss = event.getEntity();
-        for (RelicBlock b : relicsOf(boss, RelicDef.Drop.DROPS)) {
-            event.getDrops().add(new ItemEntity(boss.level(), boss.getX(), boss.getY(), boss.getZ(), new ItemStack(b)));
+        for (FId id : relicsOf(boss, RelicDef.Drop.DROPS)) {
+            event.getDrops().add(new ItemEntity(boss.level(), boss.getX(), boss.getY(), boss.getZ(), stack(id)));
         }
     }
 
@@ -188,34 +237,118 @@ public final class Relics {
         if (boss.level().isClientSide()) {
             return;
         }
-        for (RelicBlock b : relicsOf(boss, RelicDef.Drop.KILLER)) {
-            ItemStack stack = new ItemStack(b);
+        for (FId id : relicsOf(boss, RelicDef.Drop.KILLER)) {
             if (event.getSource().getEntity() instanceof ServerPlayer player) {
-                give(player, stack);
+                give(player, stack(id));
             } else {
-                boss.spawnAtLocation(stack);
+                boss.spawnAtLocation(stack(id));
             }
         }
     }
 
-    private static Item.Properties props(RelicDef def, Rarity rarity) {
-        Item.Properties q = new Item.Properties().stacksTo(Math.max(1, Math.min(99, def.stack))).rarity(rarity);
-        return def.fireResistant ? q.fireResistant() : q;
-    }
-
-    /** A gold relic: blast-proof as declared, unmovable (a grand relic is never split apart), lit as declared. */
-    private static BlockBehaviour.Properties stone(BlockBehaviour.Properties p, float strength, float resistance, int light) {
-        int l = Math.max(0, Math.min(15, light));
-        return p.mapColor(MapColor.GOLD).strength(strength, resistance).sound(SoundType.METAL).noOcclusion().lightLevel(s -> l)
-            .pushReaction(PushReaction.BLOCK);
-    }
-
-    private static Rarity rarity(String name) {
+    static Rarity rarity(@Nullable String name) {
         try {
-            return Rarity.valueOf(name.toUpperCase(Locale.ROOT));
+            return name == null ? Rarity.RARE : Rarity.valueOf(name.toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
             return Rarity.RARE;
         }
+    }
+
+    // ---- commands
+
+    /** {@code /fundamentum relic give <id> [targets]}. */
+    private static void commands(RegisterCommandsEvent event) {
+        event.getDispatcher().register(Commands.literal("fundamentum")
+            .then(Commands.literal("relic")
+                .requires(s -> s.hasPermission(2))
+                .then(Commands.literal("give")
+                    .then(Commands.argument("id", ResourceLocationArgument.id())
+                        .suggests((c, b) -> SharedSuggestionProvider.suggestResource(TABLE.entries().keySet(), b))
+                        .executes(c -> give(c, List.of(c.getSource().getPlayerOrException())))
+                        .then(Commands.argument("targets", EntityArgument.players())
+                            .executes(c -> give(c, EntityArgument.getPlayers(c, "targets"))))))));
+    }
+
+    private static int give(CommandContext<CommandSourceStack> c, Collection<ServerPlayer> players) {
+        ResourceLocation id = ResourceLocationArgument.getId(c, "id");
+        if (TABLE.get(id) == null) {
+            c.getSource().sendFailure(Component.translatable("commands.fundamentum.relic.unknown", id.toString()));
+            return 0;
+        }
+        for (ServerPlayer p : players) {
+            give(p, stack(FId.from(id)));
+        }
+        Component name = name(FId.from(id));
+        c.getSource().sendSuccess(() -> Component.translatable("commands.fundamentum.relic.give", name, players.size()), true);
+        return players.size();
+    }
+
+    /** A {@code /give} of a blank relic is refused with a message. */
+    private static void command(CommandEvent event) {
+        if (blankGive(event.getParseResults())) {
+            event.setCanceled(true);
+            event.getParseResults().getContext().getSource().sendFailure(Component.translatable("commands.fundamentum.relic.blank"));
+        }
+    }
+
+    /** Whether a parsed command is {@code /give} (directly or after {@code execute ... run}) of a relic with no relic data. */
+    public static boolean blankGive(ParseResults<CommandSourceStack> parse) {
+        CommandContextBuilder<CommandSourceStack> ctx = parse.getContext().getLastChild();
+        if (ctx.getNodes().isEmpty() || !"give".equals(ctx.getNodes().get(0).getNode().getName())) {
+            return false;
+        }
+        ParsedArgument<CommandSourceStack, ?> arg = ctx.getArguments().get("item");
+        if (arg == null || !(arg.getResult() instanceof ItemInput input) || input.getItem() != ITEM.get()) {
+            return false;
+        }
+        try {
+            return !RELIC.has(input.createItemStack(1, false));
+        } catch (Exception e) {
+            return true;
+        }
+    }
+
+    // ---- the old, per-mod registration
+
+    /**
+     * Before relics were data, each mod registered its relics as its own blocks and items. This still reads and checks
+     * each named file from the mod's jar, but registers nothing: relic {@code <modid>:<name>} comes from the file alone,
+     * and the returned set points at the shared blocks and item. Placed relics saved under the old block ids need the
+     * remap in docs/RELICS.md.
+     *
+     * @deprecated relic files need no registration; give relics with {@link #stack}.
+     */
+    @Deprecated
+    public static RelicSet register(Class<?> owner, String modid, DeferredRegister.Blocks blocks, DeferredRegister.Items items,
+                                    @Nullable DeferredRegister<BlockEntityType<?>> blockEntities, String entityName, String... names) {
+        RelicSet set = new RelicSet(modid);
+        ResourceLocation stand = FId.of(RelicBases.DEFAULT).vanilla();
+        for (String name : names) {
+            RelicDef def = read(owner, modid, name);
+            FId base = FId.tryOf(def.base.id);
+            if (base == null || RelicBases.get(base) == null || !RelicBases.get(base).sizes().contains(def.span)) {
+                base = FId.from(stand);
+            }
+            DeferredBlock<RelicBlock> block = DeferredBlock.createBlock(base.withSuffix("_" + def.span).vanilla());
+            DeferredBlock<RelicPartBlock> part = def.span > 1 ? DeferredBlock.createBlock(base.withSuffix("_filler").vanilla()) : null;
+            DeferredItem<BlockItem> item = DeferredItem.createItem(ResourceLocation.fromNamespaceAndPath(Fundamentum.MODID, "relic"));
+            set.add(name, def, block, item, part);
+        }
+        set.entity = DeferredHolder.create(Registries.BLOCK_ENTITY_TYPE, ResourceLocation.fromNamespaceAndPath(Fundamentum.MODID, "relic"));
+        SETS.add(set);
+        return set;
+    }
+
+    /** @deprecated see {@link #register(Class, String, DeferredRegister.Blocks, DeferredRegister.Items, DeferredRegister, String, String...)}. */
+    @Deprecated
+    public static RelicSet register(Class<?> owner, String modid, DeferredRegister.Blocks blocks, DeferredRegister.Items items, String... names) {
+        return register(owner, modid, blocks, items, null, "", names);
+    }
+
+    /** @deprecated every set made by the old {@link #register}. */
+    @Deprecated
+    public static List<RelicSet> sets() {
+        return Collections.unmodifiableList(SETS);
     }
 
     /** Reads a relic's declaration from the owning mod's jar; a missing or bad file stops the game, naming it. */
@@ -238,9 +371,6 @@ public final class Relics {
         InputStream in = owner.getResourceAsStream("/" + path);
         if (in == null && owner.getClassLoader() != null) {
             in = owner.getClassLoader().getResourceAsStream(path);
-        }
-        if (in == null) {
-            LOG.debug("relic file {} not found next to {}", path, owner.getName());
         }
         return in;
     }

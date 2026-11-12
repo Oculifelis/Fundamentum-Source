@@ -1,0 +1,1 @@
+{"min": -10, "max": 10, "rules": [{"climate": "temperature", "scale": 5, "rate": 0.1}]}

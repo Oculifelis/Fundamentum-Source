@@ -1,0 +1,14 @@
+{
+  "layers": [
+    ["ICI", "I.I", "IIG"],
+    ["L L", " F ", "LLL"]
+  ],
+  "key": {
+    "I": "minecraft:iron_block",
+    "C": "minecraft:crafting_table",
+    "G": "minecraft:gold_block",
+    "L": "#minecraft:logs",
+    "F": {"block": "minecraft:furnace", "state": {"facing": "north"}}
+  },
+  "controller": "C"
+}

@@ -31,8 +31,8 @@ import net.neoforged.neoforge.registries.NeoForgeRegistries;
  * Cosmetic armour: four vanity slots (head, chest, legs, feet) per player, set in their own small screen opened from a
  * button on the inventory. A filled cosmetic slot is drawn instead of the real armour in that slot; the real armour
  * still does all the protecting. Kept on death, saved with the player and synced to everyone who can see them.
- * Cosmetic curios use Curios' own cosmetic slots (see com.fundamentum.curios.Slots). Mods that draw their own armour
- * pieces call {@link #shown}.
+ * Accessory slots and their cosmetic twins live in {@link com.fundamentum.slots.Slots}; without Curios, this screen
+ * holds them too. Mods that draw their own armour pieces call {@link #shown}.
  */
 public final class CosmeticArmor {
     /** The slots, in screen order. */

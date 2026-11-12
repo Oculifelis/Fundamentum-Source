@@ -1,5 +1,6 @@
 package com.fundamentum.cosmetic;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import java.lang.reflect.Method;
 import net.minecraft.client.CameraType;
 import net.minecraft.client.Minecraft;
@@ -255,7 +256,7 @@ public final class CosmeticShot {
             fail("nothing to click");
             return;
         }
-        MouseButtonEvent press = new MouseButtonEvent(button.getX() + 5, button.getY() + 5, new MouseButtonInfo(0, 0));
+        MouseButtonEvent press = new MouseButtonEvent(button.getX() + 5, button.getY() + 5, new MouseButtonInfo(InputConstants.MOUSE_BUTTON_LEFT, 0));
         screen.mouseClicked(press, false);
         screen.mouseReleased(press);
     }

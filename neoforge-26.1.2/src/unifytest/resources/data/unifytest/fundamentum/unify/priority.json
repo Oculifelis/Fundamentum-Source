@@ -1,0 +1,6 @@
+{
+  "materials": {
+    "gold": { "keep": "unifytest:gold_ingot" },
+    "iron": { "unify": false }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "icon": "minecraft:sugar",
+  "color": "#E58FC9",
+  "items": ["minecraft:sugar", "minecraft:honey_bottle", "#c:foods/candy"],
+  "tags": ["diet:sugars"]
+}

@@ -1,0 +1,7 @@
+{
+  "min": -10,
+  "max": 10,
+  "start": 0,
+  "rules": [{"type": "climate", "value": "temperature", "scale": 1, "offset": 0, "rate": 1}],
+  "hud": {"style": "text", "side": "left", "label": "meter.survivaltest.warmth", "order": 1}
+}

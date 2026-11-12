@@ -35,11 +35,11 @@ import net.neoforged.fml.common.Mod;
 /**
  * Fundamentum: the shared groundwork under Oculifelis's mods. Each piece lives in its own package (attribute: the health
  * ceiling and shared combat stats; data: data tables; creature: creature types; sickness: use sickness; item: item
- * matching; curios: the wings, mount and hook slots; wings: Terraria-style wings;
+ * matching; slots: the wings, mount, hook, summon and quiver slots (Curios or built in); wings: Terraria-style wings;
  * cosmetic: cosmetic armour; arrow: 3D arrows; mount: summoned mounts; hook: grappling hooks; client: the hotkeys;
  * command: /fundamentum showcase; trigger: left click as a trigger; pose: how items are held, and pose clips; moon: special moons; whip: cord whips; glow: coloured Glowing outlines;
  * portal: portal crafting, items thrown through a portal changing; element: elemental auras, reactions and affinities;
- * compat.jei: the optional JEI categories; sky: fractal skies and the Psychedelic Moon; biome: data-driven biome slices;
+ * recipeview: one declaration feeds JEI, EMI and REI; sky: fractal skies and the Psychedelic Moon; biome: data-driven biome slices;
  * effect: data-driven status effects; armorset: armour set bonuses; ammo: ammo search and quivers; boss: boss bars,
  * phases, arenas and defeat records; music: boss music; loot: loot additions, pools and boss drops; material: material
  * sets, palettes and the material swap processor; mana: the mana bridge to other mods' pools; hud: HUD layer order and switches);
@@ -57,6 +57,29 @@ public final class Fundamentum {
         loadTest("com.fundamentum.config.ConfigSelfTest");
         com.fundamentum.event.EventHooks.init();
         loadTest("com.fundamentum.event.EventSelfTest");
+        com.fundamentum.unlock.Unlocks.init();
+        loadTest("com.fundamentum.unlock.UnlockSelfTest");
+        com.fundamentum.stat.Stats.init();
+        loadTest("com.fundamentum.stat.StatSelfTest");
+        loadTest("com.fundamentum.recipeview.RecipeViewSelfTest");
+        loadTest("com.fundamentum.relic.RelicSelfTest");
+        loadTest("com.fundamentum.slots.SlotSelfTest");
+        loadTest("com.fundamentum.unify.UnifySelfTest");
+        loadTest("com.fundamentum.multiblock.MultiblockSelfTest");
+        com.fundamentum.port.FTransfer.init(modBus);
+        com.fundamentum.transfer.Transfer.init();
+        loadTest("com.fundamentum.transfer.TransferSelfTest");
+        com.fundamentum.port.FMobs.init(modBus);
+        com.fundamentum.mobgoal.MobGoals.init();
+        loadTest("com.fundamentum.mobgoal.MobGoalSelfTest");
+        com.fundamentum.port.FClimate.init(modBus);
+        com.fundamentum.climate.Seasons.init();
+        loadTest("com.fundamentum.climate.ClimateSelfTest");
+        com.fundamentum.food.Food.init();
+        loadTest("com.fundamentum.food.FoodSelfTest");
+        com.fundamentum.survival.Survival.init();
+        loadTest("com.fundamentum.survival.SurvivalSelfTest");
+        loadTest("com.fundamentum.port.PerfSelfTest");
         HealthCap.lift();
         DataTables.init(modBus);
         StatAttributes.init(modBus);
@@ -75,6 +98,7 @@ public final class Fundamentum {
         Sickness.init(modBus);
         Wings.init(modBus);
         CosmeticArmor.init(modBus);
+        com.fundamentum.slots.Slots.init();
         Mounts.init(modBus);
         Hooks.init(modBus);
         Summons.init(modBus);
@@ -95,6 +119,9 @@ public final class Fundamentum {
         NightEvents.init(modBus);
         PortalCrafting.init(modBus);
         com.fundamentum.relic.Relics.init(modBus);
+        // recipe viewer pages (JEI, EMI, REI): portal crafting and relic info
+        com.fundamentum.portal.PortalViews.init();
+        com.fundamentum.relic.RelicViews.init();
         PortalSelfTest.init();
         FractalSkies.init();
         PsychedelicMoon.init();
@@ -110,7 +137,14 @@ public final class Fundamentum {
         com.fundamentum.boss.Bosses.init(modBus);
         com.fundamentum.loot.Loots.init(modBus);
         com.fundamentum.material.Materials.init(modBus);
+        com.fundamentum.unify.UnifyHooks.init(modBus);
+        com.fundamentum.multiblock.Multiblocks.init();
         container.registerConfig(ModConfig.Type.COMMON, com.fundamentum.material.MaterialConfig.SPEC, "fundamentum-materials.toml");
+        // music rules (music/MusicDirector, boss music included) and the guide (guide/Guides)
+        com.fundamentum.music.MusicDirector.init();
+        loadTest("com.fundamentum.music.MusicSelfTest");
+        com.fundamentum.guide.Guides.init();
+        loadTest("com.fundamentum.guide.GuideSelfTest");
     }
 
     /** A self test with a no-argument {@code init()}, only when its source folder is on the class path (-P<name>test). */

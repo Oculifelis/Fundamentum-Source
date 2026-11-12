@@ -1,5 +1,8 @@
 package com.fundamentum.thrown;
 
+import com.fundamentum.event.Events;
+import com.fundamentum.event.FEvents;
+import com.fundamentum.port.FId;
 import com.fundamentum.whip.WhipVec;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -172,7 +175,9 @@ public class ThrownWeapon extends ThrowableItemProjectile {
         DamageSource source = damageSources().thrown(this, owner == null ? this : owner);
         ItemStack weapon = getItem();
         float damage = EnchantmentHelper.modifyDamage(level, weapon, target, source, (float) stats().hitDamage());
-        boolean hurt = target.hurtServer(level, source, damage);
+        // fundamentum:thrown_weapon_hit, cancelled: no damage
+        boolean struck = !FEvents.post(new Events.ThrownWeaponHit(owner instanceof LivingEntity thrower ? thrower : null, target, weapon));
+        boolean hurt = struck && target.hurtServer(level, source, damage);
         if (hurt) {
             EnchantmentHelper.doPostAttackEffectsWithItemSource(level, target, source, weapon);
         }

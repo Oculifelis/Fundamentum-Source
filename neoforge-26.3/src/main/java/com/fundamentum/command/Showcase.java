@@ -55,7 +55,7 @@ import net.neoforged.neoforge.event.RegisterCommandsEvent;
 public final class Showcase {
     /** Tag on every showcased mob, so {@code clear} (or {@code @e[tag=fundamentum_showcase]}) finds them. */
     public static final String TAG = "fundamentum_showcase";
-    /** Mobs that stand still (no behaviour) in the gallery. */
+    /** Mobs that stand still (no behavior) in the gallery. */
     public static final TagKey<EntityType<?>> STILL = TagKey.create(Registries.ENTITY_TYPE, Identifier.fromNamespaceAndPath("fundamentum", "showcase/still"));
 
     private static final String DATA = "fundamentum_showcase";

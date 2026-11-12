@@ -14,7 +14,9 @@ public final class HudBox {
         HOTBAR_RIGHT(-1, -1),
         TOP_LEFT(0, 0), TOP_CENTER(0.5F, 0), TOP_RIGHT(1, 0),
         MIDDLE_LEFT(0, 0.5F), MIDDLE_RIGHT(1, 0.5F),
-        BOTTOM_LEFT(0, 1), BOTTOM_CENTER(0.5F, 1), BOTTOM_RIGHT(1, 1);
+        BOTTOM_LEFT(0, 1), BOTTOM_CENTER(0.5F, 1), BOTTOM_RIGHT(1, 1),
+        /** The middle of the screen. */
+        CENTER(0.5F, 0.5F);
 
         public final float fx;
         public final float fy;

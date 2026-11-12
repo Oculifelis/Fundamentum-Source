@@ -1,5 +1,8 @@
 package com.fundamentum.element;
 
+import com.fundamentum.event.Events;
+import com.fundamentum.event.FEvents;
+import com.fundamentum.port.FId;
 import com.fundamentum.data.DataTable;
 import com.fundamentum.data.DataTables;
 import com.google.gson.JsonElement;
@@ -241,6 +244,7 @@ public final class ElementReactions {
                 GUARD.exit();
             }
             MinecraftForge.EVENT_BUS.post(new ElementEvents.Reacted(entry.id(), r, target, source));
+            FEvents.post(new Events.ElementReacted(target, FId.from(entry.id()), source.getEntity()));
             applyAura &= r.applyTriggerAura();
             if (r.convertTo().isPresent() && convert == null) {
                 convert = r.convertTo().get();

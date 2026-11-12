@@ -1,6 +1,6 @@
 package com.fundamentum.wings;
 
-import com.fundamentum.curios.Slots;
+import com.fundamentum.slots.Slots;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import java.util.Map;
@@ -32,7 +32,7 @@ import net.minecraftforge.fml.common.Mod;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Draws wings worn in the {@code wings} Curios slot (1.28.0). This version has no equipment assets, so wings whose data
+ * Draws wings worn in the {@code wings} slot (1.28.0). This version has no equipment assets, so wings whose data
  * names a {@code texture} (see {@link Wings.Stats#texture()}) are drawn on the vanilla elytra model with it, posed by
  * {@link WingsAnim}; the cosmetic wings slot wins over the real one, and an elytra in the chest slot is left to vanilla.
  * Wings without a texture are still the owning mod's to draw.
@@ -42,11 +42,10 @@ public final class WingsRender {
 
     /** The wings stack to draw on this player, or empty. */
     static ItemStack drawn(AbstractClientPlayer player) {
-        if (!Slots.curiosLoaded() || player.getItemBySlot(EquipmentSlot.CHEST).canElytraFly(player)) {
+        if (player.getItemBySlot(EquipmentSlot.CHEST).canElytraFly(player)) {
             return ItemStack.EMPTY;
         }
-        ItemStack wings = Slots.cosmetic(player, Slots.WINGS);
-        return wings.isEmpty() ? Slots.equipped(player, Slots.WINGS) : wings;
+        return Slots.shown(player, Slots.WINGS);
     }
 
     /**

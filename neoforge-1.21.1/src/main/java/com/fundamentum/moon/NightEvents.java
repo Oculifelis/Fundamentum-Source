@@ -1,5 +1,8 @@
 package com.fundamentum.moon;
 
+import com.fundamentum.event.Events;
+import com.fundamentum.event.FEvents;
+import com.fundamentum.port.FId;
 import com.fundamentum.data.DataTable;
 import com.fundamentum.data.DataTables;
 import com.google.gson.JsonObject;
@@ -332,6 +335,7 @@ public final class NightEvents {
                     }
                     String outcome = why != null ? why : Moons.isNight(l) ? TIME : DAWN;
                     GUARD.fire("end", old.id(), li -> li.onEnd(l, old, outcome));
+                    FEvents.post(new Events.NightEventEnded(l, FId.of(old.id()), outcome));
                 }
                 if (cur.isPresent()) {
                     NightEvent e = cur.get();
@@ -345,6 +349,7 @@ public final class NightEvents {
                         }
                     }
                     GUARD.fire("start", e.id(), li -> li.onStart(l, e));
+                    FEvents.post(new Events.NightEventStarted(l, FId.of(e.id())));
                 }
             }
             for (ServerPlayer p : l.players()) {

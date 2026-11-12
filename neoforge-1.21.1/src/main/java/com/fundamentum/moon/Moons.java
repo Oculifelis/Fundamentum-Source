@@ -1,5 +1,8 @@
 package com.fundamentum.moon;
 
+import com.fundamentum.event.Events;
+import com.fundamentum.event.FEvents;
+import com.fundamentum.port.FId;
 import com.fundamentum.data.Unknown;
 import com.fundamentum.data.DataTable;
 import com.fundamentum.data.DataTables;
@@ -417,6 +420,7 @@ public final class Moons {
                         say(p, old, old.set());
                     }
                     GUARD.fire("set", old.id(), li -> li.onSet(l, old));
+                    FEvents.post(new Events.MoonSet(l, FId.of(old.id())));
                 }
                 if (cur.isPresent()) {
                     Moon m = cur.get();
@@ -429,6 +433,7 @@ public final class Moons {
                         }
                     }
                     GUARD.fire("rise", m.id(), li -> li.onRise(l, m));
+                    FEvents.post(new Events.MoonRose(l, FId.of(m.id())));
                 }
             }
             for (ServerPlayer p : l.players()) {

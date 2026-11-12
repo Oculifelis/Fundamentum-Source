@@ -1,0 +1,5 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": ["minecraft:sea_pickle", "minecraft:bread"],
+  "result": {"id": "minecraft:dead_bush", "count": 1}
+}

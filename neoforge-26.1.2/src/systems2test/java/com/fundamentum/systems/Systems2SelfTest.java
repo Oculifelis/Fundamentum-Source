@@ -7,6 +7,8 @@ import com.fundamentum.mana.ManaSource;
 import com.fundamentum.boss.BossEvents;
 import com.fundamentum.boss.BossRecords;
 import com.fundamentum.boss.Bosses;
+import com.fundamentum.event.Events;
+import com.fundamentum.event.FEvents;
 import com.fundamentum.loot.BossDrops;
 import com.fundamentum.loot.LootPools;
 import com.fundamentum.material.MaterialColor;
@@ -147,6 +149,10 @@ public final class Systems2SelfTest {
         Husk husk = EntityType.HUSK.create(level, EntitySpawnReason.COMMAND);
         husk.setNoAi(true);
         husk.setPos(at.getX() + 0.5, at.getY(), at.getZ() + 0.5);
+        List<String> posted = new ArrayList<>();
+        FEvents.listen(Events.BossSpawned.class, e -> { if (e.boss() == husk) posted.add("spawned"); });
+        FEvents.listen(Events.BossPhaseChanged.class, e -> { if (e.boss() == husk) posted.add(e.from() + ">" + e.to()); });
+        FEvents.listen(Events.BossKilled.class, e -> { if (e.boss() == husk) posted.add("killed"); });
         level.addFreshEntity(husk);
         Boss boss = Bosses.get(husk);
         check(boss != null, "husk became a boss on joining the level");
@@ -177,6 +183,7 @@ public final class Systems2SelfTest {
         boss.tick(players);
         check("desperate".equals(boss.phase()) && boss.bar().getColor() == BossEvent.BossBarColor.WHITE, "20% health enters phase desperate, white bar");
         check(phases.equals(List.of("base>enraged", "enraged>desperate")), "phase events fired in order: " + phases);
+        check(posted.equals(List.of("spawned", "0>1", "1>2")), "boss_spawned and boss_phase_changed posted: " + posted);
 
         p.setPos(at.getX() + 100, at.getY(), at.getZ());
         for (int i = 0; i < 4; i++) boss.tick(players);
@@ -198,6 +205,7 @@ public final class Systems2SelfTest {
         check(!records.defeated(sid, UUID.randomUUID()), "other players have no record");
         check(defeats.size() == 1 && defeats.get(0).firstKill().contains(p.getUUID()) && defeats.get(0).firstInWorld(), "defeated event: first kill and first in world");
         check(Bosses.get(husk) == null && boss.bar().getPlayers().isEmpty(), "defeat ended the bar");
+        check(posted.contains("killed"), "boss_killed posted: " + posted);
         server.saveEverything(true, true, true);
         Path data = server.getWorldPath(LevelResource.ROOT);
         Optional<Path> file = Optional.empty();
@@ -223,7 +231,10 @@ public final class Systems2SelfTest {
         ServerLevel level = server.overworld();
         LootTable dungeon = server.reloadableRegistries().getLootTable(ResourceKey.create(Registries.LOOT_TABLE, id("minecraft:chests/simple_dungeon")));
         LootParams params = new LootParams.Builder(level).withParameter(LootContextParams.ORIGIN, Vec3.ZERO).create(LootContextParamSets.CHEST);
+        List<String> added = new ArrayList<>();
+        FEvents.listen(Events.LootAdded.class, e -> added.add(e.table() + " " + e.addition() + " " + e.stacks()));
         List<ItemStack> got = dungeon.getRandomItems(params);
+        check(added.stream().anyMatch(a -> a.startsWith("minecraft:chests/simple_dungeon ")), "loot_added posted for the addition: " + added);
         check(got.stream().anyMatch(s -> s.is(Items.NETHER_STAR)), "loot addition put a nether star in simple_dungeon: " + got);
         LootTable other = server.reloadableRegistries().getLootTable(ResourceKey.create(Registries.LOOT_TABLE, id("minecraft:chests/abandoned_mineshaft")));
         check(other.getRandomItems(params).stream().noneMatch(s -> s.is(Items.NETHER_STAR)), "addition stays out of other chests");
@@ -261,9 +272,12 @@ public final class Systems2SelfTest {
         BossDrops.Spec spec = BossDrops.spec(boss);
         check(spec != null && test("boss_drop").equals(spec.pool()) && spec.perPlayer(), "boss drops read from the boss file");
         ServerPlayer p1 = fake(level, "drop_one"), p2 = fake(level, "drop_two");
+        List<String> bossLoot = new ArrayList<>();
+        FEvents.listen(Events.BossLootDropped.class, e -> { if (e.player() != null) bossLoot.add(e.player().getScoreboardName()); });
         Map<UUID, List<ItemStack>> drops = BossDrops.dropFor(boss, spec, List.of(p1, p2), Set.of(p1.getUUID()));
         List<ItemStack> d1 = drops.getOrDefault(p1.getUUID(), List.of()), d2 = drops.getOrDefault(p2.getUUID(), List.of());
         check(drops.size() == 2, "each player got their own roll: " + drops.size());
+        check(bossLoot.size() == 2 && bossLoot.contains("drop_one") && bossLoot.contains("drop_two"), "boss_loot_dropped posted per player: " + bossLoot);
         check(d1.stream().anyMatch(s -> s.is(Items.GOLD_INGOT)) && d2.stream().anyMatch(s -> s.is(Items.GOLD_INGOT)), "both players got the boss pool");
         check(d1.stream().anyMatch(s -> s.is(Items.NETHER_STAR)) && d2.stream().noneMatch(s -> s.is(Items.NETHER_STAR)), "only the first-time player got the first-kill bonus");
         husk.discard();

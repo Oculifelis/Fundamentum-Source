@@ -1,5 +1,8 @@
 package com.fundamentum.summon;
 
+import com.fundamentum.event.Events;
+import com.fundamentum.event.FEvents;
+import com.fundamentum.port.FId;
 import com.fundamentum.attribute.StatAttributes;
 import com.fundamentum.data.DataTable;
 import com.fundamentum.data.DataTables;
@@ -254,7 +257,7 @@ public final class Sentries {
 
     /**
      * Places the sentry {@code def} for {@code owner} against the {@code face} of block {@code clicked}. Returns the
-     * sentry, or why it failed: "placement" (wrong face), "blocked" (no room), "no_slots" (costs more than the limit)
+     * sentry, or why it failed: "placement" (wrong face), "blocked" (no room), "no_slots" (costs more than the limit), "cancelled" (a summon_created listener)
      * or "entity" (unknown or not a creature).
      */
     public static Placed place(ServerPlayer owner, Identifier item, SentryDefinition def, BlockPos clicked, Direction face) {
@@ -305,6 +308,10 @@ public final class Sentries {
         mob.setHealth(mob.getMaxHealth());
         mob.setYHeadRot(yaw);
         mob.yBodyRot = yaw;
+        if (FEvents.post(new Events.SummonCreated(mob, owner))) {
+            mob.discard();
+            return Placed.fail("cancelled");
+        }
         Summons.SPAWNING.set(true);
         try {
             level.addFreshEntity(mob);

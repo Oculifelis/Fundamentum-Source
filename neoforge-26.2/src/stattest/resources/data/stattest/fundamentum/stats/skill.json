@@ -1,0 +1,1 @@
+{ "type": "count", "source": { "type": "unlock", "id": "stattest:skill" } }

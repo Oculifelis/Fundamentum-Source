@@ -1,0 +1,1 @@
+{ "type": "count", "source": { "type": "vanilla_stat", "stat": "minecraft:custom", "value": "minecraft:jump" } }

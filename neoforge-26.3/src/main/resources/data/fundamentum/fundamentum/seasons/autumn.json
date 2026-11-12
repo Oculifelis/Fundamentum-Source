@@ -1,0 +1,9 @@
+{
+  "order": 2,
+  "length": 8,
+  "temperature": -0.1,
+  "crop_growth": 0.75,
+  "grass": "#A99550",
+  "foliage": "#D9752B",
+  "tint": 0.45
+}

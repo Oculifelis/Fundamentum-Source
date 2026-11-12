@@ -1,0 +1,6 @@
+{
+  "icon": "minecraft:bread",
+  "color": "#D9B44A",
+  "items": ["minecraft:wheat", "minecraft:bread", "#c:foods/bread", "#c:crops/wheat", "#forge:crops/wheat", "#forge:bread"],
+  "tags": ["diet:grains"]
+}

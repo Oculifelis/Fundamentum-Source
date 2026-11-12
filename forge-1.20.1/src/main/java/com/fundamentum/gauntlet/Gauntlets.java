@@ -1,5 +1,7 @@
 package com.fundamentum.gauntlet;
 
+import com.fundamentum.config.Timers;
+import com.fundamentum.port.FLife;
 import com.fundamentum.compat.BetterCombat;
 import com.fundamentum.data.DataTable;
 import com.fundamentum.data.DataTables;
@@ -31,7 +33,6 @@ import net.minecraftforge.event.entity.living.LivingDamageEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.event.entity.player.AttackEntityEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.event.TickEvent;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -254,11 +255,11 @@ public final class Gauntlets {
         }
     }
 
-    /** Keeps the attack speed at the held gauntlet's punch rate. */
-    private static void tick(TickEvent.PlayerTickEvent e) {
-        if (e.phase != TickEvent.Phase.END || !(e.player instanceof ServerPlayer player) || player.tickCount % 5 != 0) {
-            return;
-        }
+    /**
+     * Keeps the attack speed at the held gauntlet's punch rate. Runs when the player's held items change, with a slow
+     * safety net ({@code gauntlets_recheck_seconds} in the {@code fundamentum:performance} config).
+     */
+    private static void apply(ServerPlayer player) {
         AttributeInstance speed = player.getAttribute(Attributes.ATTACK_SPEED);
         if (speed == null) {
             return;
@@ -286,7 +287,8 @@ public final class Gauntlets {
         MinecraftForge.EVENT_BUS.addListener(Gauntlets::attack);
         MinecraftForge.EVENT_BUS.addListener(Gauntlets::incoming);
         MinecraftForge.EVENT_BUS.addListener(Gauntlets::landed);
-        MinecraftForge.EVENT_BUS.addListener(Gauntlets::tick);
+        FLife.handsChanged(Gauntlets::apply);
+        Timers.perPlayer("gauntlets_recheck_seconds", 30, Gauntlets::apply);
         MinecraftForge.EVENT_BUS.addListener((PlayerEvent.PlayerLoggedOutEvent e) -> PUNCHERS.remove(e.getEntity().getUUID()));
     }
 

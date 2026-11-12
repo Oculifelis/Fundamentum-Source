@@ -1,46 +1,62 @@
 package com.fundamentum.client;
 
 import com.fundamentum.api.ItemHud;
+import com.fundamentum.hud.HudLayout;
+import com.fundamentum.hud.client.HudLayerRenderer;
 import java.util.List;
-import net.minecraft.client.AttackIndicatorStatus;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.entity.HumanoidArm;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
-import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 /**
- * Draws {@link ItemHud}'s lines: asks the providers once a client tick and keeps the lines, then each frame draws them
- * against the configured anchor ({@link ItemHudConfig}) in the game's font. Hidden with F1.
+ * Draws {@link ItemHud}'s lines as the HUD element {@code fundamentum:item_hud}: asks the providers once a client tick,
+ * keeps the lines and measures them only when they change, then each frame draws them where the HUD layout puts the
+ * element. Text style comes from {@link ItemHudConfig}; its anchor, x, y and scale are the element's default placement
+ * until the player moves it in the HUD editor. Hidden with F1.
  */
 @EventBusSubscriber(modid = "fundamentum", value = Dist.CLIENT)
 public final class ItemHudOverlay {
+    public static final ResourceLocation LAYER = ResourceLocation.fromNamespaceAndPath("fundamentum", "item_hud");
     /** Line spacing; the last line is 8 high (7-pixel glyphs and their shadow). */
     private static final int LINE = 10;
     private static final int TEXT_H = 8;
 
     private static List<Component> lines = List.of();
+    private static int contentW;
 
     private ItemHudOverlay() {
     }
 
     @SubscribeEvent
     public static void layers(RegisterGuiLayersEvent event) {
-        event.registerAbove(VanillaGuiLayers.HOTBAR, ResourceLocation.fromNamespaceAndPath("fundamentum", "item_hud"), ItemHudOverlay::render);
+        HudLayout.Placement defaults;
+        try {
+            defaults = new HudLayout.Placement(ItemHudConfig.ANCHOR.get(), ItemHudConfig.X.get(), ItemHudConfig.Y.get(),
+                ItemHudConfig.SCALE.get().floatValue(), 1);
+        } catch (RuntimeException notLoaded) {
+            defaults = new HudLayout.Placement(HudBox.Anchor.HOTBAR_RIGHT, 0, 0);
+        }
+        HudLayerRenderer.register(LAYER, 300, true, defaults, ItemHudOverlay::width, ItemHudOverlay::height, ItemHudOverlay::render);
     }
 
     @SubscribeEvent
     public static void tick(ClientTickEvent.Post event) {
         Minecraft mc = Minecraft.getInstance();
-        lines = mc.player == null || !ItemHudConfig.ENABLED.get() ? List.of() : ItemHud.lines(mc.player);
+        List<Component> now = mc.player == null || !ItemHudConfig.ENABLED.get() ? List.of() : ItemHud.lines(mc.player);
+        if (now.equals(lines)) return;
+        int w = 0;
+        for (Component line : now) {
+            w = Math.max(w, mc.font.width(line));
+        }
+        lines = now;
+        contentW = w;
     }
 
     /** The lines on screen now (as of the last tick). */
@@ -48,43 +64,42 @@ public final class ItemHudOverlay {
         return lines;
     }
 
+    private static int pad() {
+        return ItemHudConfig.BACKGROUND.get() ? 3 : 0;
+    }
+
+    private static int width() {
+        if (lines.isEmpty()) return 0;
+        int pad = pad();
+        // the backdrop sits 3 pixels out on the left and top, 2 on the right and bottom (the text shadow fills the rest)
+        return pad + contentW + Math.max(0, pad - 1);
+    }
+
+    private static int height() {
+        if (lines.isEmpty()) return 0;
+        int pad = pad();
+        return pad + (lines.size() - 1) * LINE + TEXT_H + Math.max(0, pad - 1);
+    }
+
     private static void render(GuiGraphics g, DeltaTracker delta) {
         List<Component> shown = lines;
         Minecraft mc = Minecraft.getInstance();
-        if (shown.isEmpty() || mc.options.hideGui || mc.player == null) {
+        if (shown.isEmpty() || mc.player == null) {
             return;
         }
-        Font font = mc.font;
-        int contentW = 0;
-        for (Component line : shown) {
-            contentW = Math.max(contentW, font.width(line));
-        }
-        // the backdrop sits 3 pixels out on the left and top, 2 on the right and bottom (the text shadow fills the rest)
-        int pad = ItemHudConfig.BACKGROUND.get() ? 3 : 0;
-        int w = pad + contentW + Math.max(0, pad - 1);
-        int h = pad + (shown.size() - 1) * LINE + TEXT_H + Math.max(0, pad - 1);
-        float s = ItemHudConfig.SCALE.get().floatValue();
-        HumanoidArm offArm = mc.player.getMainArm().getOpposite();
-        int hotbarX = HudBox.hotbarRight(g.guiWidth(), offArm == HumanoidArm.RIGHT && !mc.player.getOffhandItem().isEmpty(),
-            offArm == HumanoidArm.LEFT && mc.options.attackIndicator().get() == AttackIndicatorStatus.HOTBAR);
-        int[] at = HudBox.place(ItemHudConfig.ANCHOR.get(), g.guiWidth(), g.guiHeight(), (int) Math.ceil(w * s), (int) Math.ceil(h * s),
-            hotbarX, ItemHudConfig.X.get(), ItemHudConfig.Y.get());
-        g.pose().pushPose();
-        g.pose().translate(at[0], at[1], 0);
-        g.pose().scale(s, s, 1);
+        int pad = pad();
         if (pad > 0) {
             int alpha = (int) Math.round(ItemHudConfig.BACKGROUND_OPACITY.get() * 255);
             if (alpha > 0) {
-                g.fill(0, 0, w, h, alpha << 24);
+                g.fill(0, 0, width(), height(), HudLayerRenderer.fade(alpha << 24));
             }
         }
-        int color = HudBox.argb(ItemHudConfig.TEXT_COLOR.get(), ItemHudConfig.TEXT_OPACITY.get());
+        int color = HudLayerRenderer.fade(HudBox.argb(ItemHudConfig.TEXT_COLOR.get(), ItemHudConfig.TEXT_OPACITY.get()));
         boolean shadow = ItemHudConfig.SHADOW.get();
         int y = pad;
         for (Component line : shown) {
-            g.drawString(font, line, pad, y, color, shadow);
+            g.drawString(mc.font, line, pad, y, color, shadow);
             y += LINE;
         }
-        g.pose().popPose();
     }
 }

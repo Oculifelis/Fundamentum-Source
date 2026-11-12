@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
 /**
  * The config test, only in {@code gradlew runServer -Pconfigtest} (world under run-configtest). The same file on every
  * version. Declares a config in code, reads one declared by the test datapack, and checks the JSON5 reader, datapack
- * defaults, the written file and its comments, file and per-world layers picked up by the 2-second watcher, ranges,
+ * defaults, the written file and its comments, file and per-world layers picked up by the folder watcher, ranges,
  * startup entries, client entries, writes and resets, sync messages, the operator check on edits, and the screen
  * model. Writes configtest-result.txt and stops the server. Log lines start with CONFIGTEST.
  */

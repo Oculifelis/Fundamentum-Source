@@ -1,0 +1,11 @@
+{
+  "criteria": {
+    "done": {
+      "trigger": "fundamentum:event",
+      "conditions": {
+        "event": "fundamentum:quest_accepted",
+        "player": {"flags": {"is_on_fire": true}}
+      }
+    }
+  }
+}

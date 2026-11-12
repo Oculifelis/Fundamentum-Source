@@ -19,7 +19,7 @@ import org.jetbrains.annotations.Nullable;
  * A base for summoned mounts: the rider steers it like a horse (WASD, the horse jump bar on space), or, when it flies
  * (no gravity), it flies where the rider looks while moving forward. Its speed, jump and flight speed are its
  * movement_speed, jump_strength and flying_speed attributes, which {@link Mounts} sets from the mount's data. It is
- * never saved with the world, never despawns, takes no fall damage and has no behaviour of its own. Mods subclass it for their
+ * never saved with the world, never despawns, takes no fall damage and never moves on its own. Mods subclass it for their
  * own mounts and register a renderer; nothing else is needed. Don't build the mount's {@code EntityType} with
  * {@code noSave()}: the server refuses to seat a player on an entity whose type can't be saved, so the player never
  * boards (Fundamentum discards summoned mounts itself instead).

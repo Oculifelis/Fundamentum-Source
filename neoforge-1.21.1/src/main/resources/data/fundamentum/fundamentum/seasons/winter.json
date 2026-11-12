@@ -1,0 +1,12 @@
+{
+  "order": 3,
+  "length": 8,
+  "temperature": -0.35,
+  "crop_growth": 0.25,
+  "biomes": [
+    {"biomes": ["#minecraft:is_jungle", "minecraft:desert", "#minecraft:is_badlands"], "temperature": -0.1}
+  ],
+  "grass": "#8E9A84",
+  "foliage": "#8C8270",
+  "tint": 0.35
+}

@@ -1,12 +1,14 @@
 package com.fundamentum.mixin;
 
 import com.fundamentum.mount.Mounts;
+import com.fundamentum.port.FLife;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.player.Player;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
@@ -21,5 +23,12 @@ public abstract class MobMixin {
         if (self.getFirstPassenger() instanceof Player rider && Mounts.steers(self)) {
             cir.setReturnValue(rider);
         }
+    }
+
+    /** Tells {@link FLife#targetChanged} listeners when a mob on the server picks or drops a target. */
+    @Inject(method = "setTarget", at = @At("TAIL"))
+    private void fundamentum$targetChanged(LivingEntity target, CallbackInfo ci) {
+        Mob self = (Mob) (Object) this;
+        if (!self.level().isClientSide()) FLife.fireTargetChanged(self, target);
     }
 }

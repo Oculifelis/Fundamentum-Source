@@ -11,6 +11,7 @@ import java.util.TreeMap;
 import net.minecraft.resources.FileToIdConverter;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -18,6 +19,11 @@ import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimplePreparableReloadListener;
+import net.minecraftforge.event.OnDatapackSyncEvent;
+import net.minecraftforge.event.entity.living.LivingEquipmentChangeEvent;
+import net.minecraftforge.event.entity.living.MobEffectEvent;
+import net.minecraftforge.event.level.ChunkWatchEvent;
+import net.minecraftforge.event.entity.player.AdvancementEvent;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.capabilities.RegisterCapabilitiesEvent;
@@ -60,6 +66,21 @@ public final class Port {
         bus.addGenericListener(Level.class, (AttachCapabilitiesEvent<Level> e) -> FAttach.attach(e));
         bus.addGenericListener(BlockEntity.class, (AttachCapabilitiesEvent<BlockEntity> e) -> FAttach.attach(e));
         bus.addListener((PlayerEvent.Clone e) -> FAttach.clone(e));
+        bus.addListener((ServerStartedEvent e) -> FLife.fireDataReloaded(e.getServer()));
+        bus.addListener((OnDatapackSyncEvent e) -> {
+            // no player means a /reload finished for everyone
+            if (e.getPlayer() == null) FLife.fireDataReloaded(e.getPlayerList().getServer());
+        });
+        bus.addListener((AdvancementEvent.AdvancementEarnEvent e) -> {
+            if (e.getEntity() instanceof ServerPlayer p) FLife.fireAdvancementEarned(p, FId.from(e.getAdvancement().getId()));
+        });
+        bus.addListener((MobEffectEvent.Added e) -> FLife.fireEffectsChanged(e.getEntity()));
+        bus.addListener((MobEffectEvent.Remove e) -> FLife.fireEffectsChanged(e.getEntity()));
+        bus.addListener((MobEffectEvent.Expired e) -> FLife.fireEffectsChanged(e.getEntity()));
+        bus.addListener((LivingEquipmentChangeEvent e) -> {
+            if (e.getSlot().getType() == EquipmentSlot.Type.HAND && e.getEntity() instanceof ServerPlayer p) FLife.fireHandChanged(p);
+        });
+        bus.addListener((ChunkWatchEvent.Watch e) -> FLife.fireChunkWatched(e.getPlayer(), e.getLevel(), e.getPos().x, e.getPos().z));
         bus.addListener((PlayerEvent.StartTracking e) -> FAttach.startTracking(e));
         bus.addListener((PlayerEvent.PlayerRespawnEvent e) -> FAttach.playerReady(e.getEntity()));
         bus.addListener((PlayerEvent.PlayerChangedDimensionEvent e) -> {

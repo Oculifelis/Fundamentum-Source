@@ -1,0 +1,10 @@
+{
+  "mods": ["minecraft", "create", "thermal", "mekanism", "immersiveengineering", "modern_industrialization", "ae2", "tconstruct", "occultism", "silentgear"],
+  "tags": [
+    "c:ingots/*", "c:nuggets/*", "c:dusts/*", "c:plates/*", "c:gears/*", "c:rods/*", "c:wires/*",
+    "c:storage_blocks/*", "c:raw_materials/*", "c:gems/*", "c:ores/*"
+  ],
+  "ignore_tags": [],
+  "ignore_items": [],
+  "materials": {}
+}

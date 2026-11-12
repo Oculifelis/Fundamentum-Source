@@ -94,6 +94,76 @@ minecraft {
                 property 'fundamentum.eventtest', 'true'
                 workingDirectory project.file('run-eventtest')
             }
+            // gradlew runServer -Punlocktest: unlocks, teams, grant sources, conditions and the command (unlock/UnlockSelfTest), stops the server when done
+            if (project.hasProperty('unlocktest')) {
+                property 'fundamentum.unlocktest', 'true'
+                workingDirectory project.file('run-unlocktest')
+            }
+            // gradlew runServer -Pstattest: stats, their sources, items, entities and the command (stat/StatSelfTest), stops the server when done
+            if (project.hasProperty('stattest')) {
+                property 'fundamentum.stattest', 'true'
+                workingDirectory project.file('run-stattest')
+            }
+            // gradlew runServer -Ptransfertest: fluid and energy transfer, tanks, item-to-fluid declarations and the command (transfer/TransferSelfTest), stops the server when done
+            if (project.hasProperty('transfertest')) {
+                property 'fundamentum.transfertest', 'true'
+                workingDirectory project.file('run-transfertest')
+            }
+            // gradlew runServer -Pgoaltest: data-driven mob goals and their behaviour (MobGoalSelfTest), stops the server when done
+            if (project.hasProperty('goaltest')) {
+                property 'fundamentum.goaltest', 'true'
+                workingDirectory project.file('run-goaltest')
+            }
+            // gradlew runServer -Pclimatetest: seasons, temperature, humidity, crop growth and the commands (climate/ClimateSelfTest), stops the server when done
+            if (project.hasProperty('climatetest')) {
+                property 'fundamentum.climatetest', 'true'
+                workingDirectory project.file('run-climatetest')
+            }
+            // gradlew runServer -Pfoodtest: the food hooks, modifiers, cancelling, drinks and food groups (food/FoodSelfTest), stops the server when done
+            if (project.hasProperty('foodtest')) {
+                property 'fundamentum.foodtest', 'true'
+                workingDirectory project.file('run-foodtest')
+            }
+            // gradlew runServer -Psurvivaltest: survival meters: drain, climate, thresholds, drinking and death resets (survival/SurvivalSelfTest), stops the server when done
+            if (project.hasProperty('survivaltest')) {
+                property 'fundamentum.survivaltest', 'true'
+                workingDirectory project.file('run-survivaltest')
+            }
+            // gradlew runServer -Pmusictest: music rules, boss and combat state, the client sync (music/MusicSelfTest), stops the server when done
+            if (project.hasProperty('musictest')) {
+                property 'fundamentum.musictest', 'true'
+                workingDirectory project.file('run-musictest')
+            }
+            // gradlew runServer -Pguidetest: guide pages, chapters, search and unlock gating (guide/GuideSelfTest), stops the server when done
+            if (project.hasProperty('guidetest')) {
+                property 'fundamentum.guidetest', 'true'
+                workingDirectory project.file('run-guidetest')
+            }
+            // gradlew runServer -Precipeviewtest: the recipe viewer declarations and adapters (recipeview/RecipeViewSelfTest), stops the server when done
+            if (project.hasProperty('recipeviewtest')) {
+                property 'fundamentum.recipeviewtest', 'true'
+                workingDirectory project.file('run-recipeviewtest')
+            }
+            if (project.hasProperty('relictest')) {
+                property 'fundamentum.relictest', 'true'
+                workingDirectory project.file('run-relictest')
+            }
+            // gradlew runServer -Pslottest: the Curios slots, their events and the cosmetic armour screen
+            // (slots/SlotSelfTest), stops the server when done
+            if (project.hasProperty('slottest')) {
+                property 'fundamentum.slottest', 'true'
+                workingDirectory project.file('run-slottest')
+            }
+            // gradlew runServer -Punifytest: material unification, recipes, items, containers and ores (unify/UnifySelfTest), stops the server when done
+            if (project.hasProperty('unifytest')) {
+                property 'fundamentum.unifytest', 'true'
+                workingDirectory project.file('run-unifytest')
+            }
+            // gradlew runServer -Pmultiblocktest: multiblock patterns, matching, forming and the viewer page (multiblock/MultiblockSelfTest), stops the server when done
+            if (project.hasProperty('multiblocktest')) {
+                property 'fundamentum.multiblocktest', 'true'
+                workingDirectory project.file('run-multiblocktest')
+            }
             // gradlew runServer -Pbiometest: the biome slice test (biome/BiomeSliceSelfTest) in a fresh world, own injector;
             // -Pbiometest=tb runs it with TerraBlender on the run classpath (run-biometest-tb)
             if (project.hasProperty('biometest')) {
@@ -116,6 +186,21 @@ repositories {
         content { includeGroup 'mezz.jei' }
     }
     maven {
+        name = 'Shedaniel (REI)'
+        url = 'https://maven.shedaniel.me/'
+        content { includeGroup 'me.shedaniel'; includeGroup 'me.shedaniel.cloth' }
+    }
+    maven {
+        name = 'Architectury'
+        url = 'https://maven.architectury.dev/'
+        content { includeGroup 'dev.architectury' }
+    }
+    maven {
+        name = 'EMI (TerraformersMC)'
+        url = 'https://maven.terraformersmc.com/releases/'
+        content { includeGroup 'dev.emi' }
+    }
+    maven {
         name = 'Modrinth (Jade)'
         url = 'https://api.modrinth.com/maven'
         content { includeGroup 'maven.modrinth' }
@@ -124,12 +209,18 @@ repositories {
 
 dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
-    // Curios is required (Oculifelis, 2026-10-25): the wings, mount and hook slots live in it. Dev runs always load it.
-    compileOnly fg.deobf("top.theillusivec4.curios:curios-forge:${curios_version}:api")
-    runtimeOnly fg.deobf("top.theillusivec4.curios:curios-forge:${curios_version}")
-    // JEI is optional: compiled against its API only (the portal crafting category in compat/jei)
+    // Curios is required: the wings, mount, hook, summon and quiver slots are Curios slots (slots/Slots).
+    implementation fg.deobf("top.theillusivec4.curios:curios-forge:${curios_version}")
+    // Recipe viewers are optional: compiled against only (recipeview/jei, recipeview/rei, recipeview/emi), never in the jar
     compileOnly fg.deobf("mezz.jei:jei-${minecraft_version}-common-api:${jei_version}")
     compileOnly fg.deobf("mezz.jei:jei-${minecraft_version}-forge-api:${jei_version}")
+    compileOnly(fg.deobf("me.shedaniel:RoughlyEnoughItems-api-forge:${rei_version}")) { transitive = false }
+    compileOnly(fg.deobf("me.shedaniel:RoughlyEnoughItems-default-plugin-forge:${rei_version}")) { transitive = false }
+    compileOnly(fg.deobf("me.shedaniel:RoughlyEnoughItems-forge:${rei_version}")) { transitive = false }
+    compileOnly(fg.deobf("me.shedaniel.cloth:cloth-config-forge:${cloth_config_version}")) { transitive = false }
+    compileOnly("me.shedaniel.cloth:basic-math:${basic_math_version}") { transitive = false }
+    compileOnly(fg.deobf("dev.architectury:architectury-forge:${architectury_version}")) { transitive = false }
+    compileOnly(fg.deobf("dev.emi:emi-forge:${emi_version}:api")) { transitive = false }
     // Jade is optional: compiled against its jar only (the jukebox progress line in compat/jade); never in the jar
     compileOnly fg.deobf("maven.modrinth:jade:${jade_version}")
     // TerraBlender is optional: biome slices register a region subclass when it is loaded (biome/TerraBlenderRegion); never in the jar
@@ -204,10 +295,76 @@ if (project.hasProperty('configtest')) {
     sourceSets.main.resources.srcDir 'src/configtest/resources'
 }
 
+// The recipe viewer test's code, only in -Precipeviewtest runs
+if (project.hasProperty('recipeviewtest')) {
+    sourceSets.main.java.srcDir 'src/recipeviewtest/java'
+}
+
+// The relic test's code and relic files, only in -Prelictest runs
+if (project.hasProperty('relictest')) {
+    sourceSets.main.java.srcDir 'src/relictest/java'
+    sourceSets.main.resources.srcDir 'src/relictest/resources'
+}
+
+// The slot test's code and item tags, only in -Pslottest runs
+if (project.hasProperty('slottest')) {
+    sourceSets.main.java.srcDir 'src/slottest/java'
+    sourceSets.main.resources.srcDir 'src/slottest/resources'
+}
+
 // The event test's code and data, only in -Peventtest runs
 if (project.hasProperty('eventtest')) {
     sourceSets.main.java.srcDir 'src/eventtest/java'
     sourceSets.main.resources.srcDir 'src/eventtest/resources'
+}
+
+// The unlock test's code and data, only in -Punlocktest runs
+if (project.hasProperty('unlocktest')) {
+    sourceSets.main.java.srcDir 'src/unlocktest/java'
+    sourceSets.main.resources.srcDir 'src/unlocktest/resources'
+}
+
+// The stat test's code and data, only in -Pstattest runs
+if (project.hasProperty('stattest')) {
+    sourceSets.main.java.srcDir 'src/stattest/java'
+    sourceSets.main.resources.srcDir 'src/stattest/resources'
+}
+
+// The unify test's code and data, only in -Punifytest runs
+if (project.hasProperty('unifytest')) {
+    sourceSets.main.java.srcDir 'src/unifytest/java'
+    sourceSets.main.resources.srcDir 'src/unifytest/resources'
+}
+
+// The multiblock test's code and data, only in -Pmultiblocktest runs
+if (project.hasProperty('multiblocktest')) {
+    sourceSets.main.java.srcDir 'src/multiblocktest/java'
+    sourceSets.main.resources.srcDir 'src/multiblocktest/resources'
+}
+// The transfer test's code and data, only in -Ptransfertest runs
+if (project.hasProperty('transfertest')) {
+    sourceSets.main.java.srcDir 'src/transfertest/java'
+    sourceSets.main.resources.srcDir 'src/transfertest/resources'
+}
+// The mob goal test's code and data, only in -Pgoaltest runs
+if (project.hasProperty('goaltest')) {
+    sourceSets.main.java.srcDir 'src/goaltest/java'
+    sourceSets.main.resources.srcDir 'src/goaltest/resources'
+}
+// The climate test's code and data, only in -Pclimatetest runs
+if (project.hasProperty('climatetest')) {
+    sourceSets.main.java.srcDir 'src/climatetest/java'
+    sourceSets.main.resources.srcDir 'src/climatetest/resources'
+}
+// The food test's code and data, only in -Pfoodtest runs
+if (project.hasProperty('foodtest')) {
+    sourceSets.main.java.srcDir 'src/foodtest/java'
+    sourceSets.main.resources.srcDir 'src/foodtest/resources'
+}
+// The survival test's code and data, only in -Psurvivaltest runs
+if (project.hasProperty('survivaltest')) {
+    sourceSets.main.java.srcDir 'src/survivaltest/java'
+    sourceSets.main.resources.srcDir 'src/survivaltest/resources'
 }
 // The biome slice test's code and data, only in -Pbiometest runs (never build a jar with -Pbiometest)
 if (project.hasProperty('biometest')) {
@@ -234,6 +391,8 @@ tasks.named('processResources', ProcessResources).configure {
             mod_version            : mod_version,
             curios_range           : curios_range,
             jei_range              : jei_range,
+            rei_range              : rei_range,
+            emi_range              : emi_range,
             jade_range             : jade_range,
     ]
     inputs.properties replaceProperties
@@ -272,5 +431,33 @@ tasks.withType(JavaCompile).configureEach {
 tasks.named('jar') {
     from([rootProject.file('../LICENSE'), rootProject.file('../COPYING'), rootProject.file('../CREDITS.md')]) {
         into 'META-INF'
+    }
+}
+
+// The music test's code and data, only in -Pmusictest runs
+if (project.hasProperty('musictest')) {
+    sourceSets.main.java.srcDir 'src/musictest/java'
+    sourceSets.main.resources.srcDir 'src/musictest/resources'
+}
+
+// The guide test's code and pages, only in -Pguidetest runs
+if (project.hasProperty('guidetest')) {
+    sourceSets.main.java.srcDir 'src/guidetest/java'
+    sourceSets.main.resources.srcDir 'src/guidetest/resources'
+}
+
+// gradlew runClient -Phudshot[=perf]: hudshot/HudPerf times the HUD layers and hudshot/HudShot walks the HUD editor, the
+// guide, the multiblock views and the ghost preview off screen, muted and without taking the mouse, saving screenshots in
+// run-hudshot, then closes. Test runs only: never build a jar with -Phudshot.
+if (project.hasProperty('hudshot')) {
+    sourceSets.main.java.srcDir 'src/hudshot/java'
+    ['hudshot', 'guidetest', 'multiblocktest', 'stattest', 'survivaltest'].each { sourceSets.main.resources.srcDir "src/${it}/resources" }
+    tasks.named('processResources').configure { duplicatesStrategy = DuplicatesStrategy.INCLUDE }
+    minecraft.runs.client {
+        property 'fundamentum.hudshot', project.property('hudshot').toString() ?: 'true'
+        property 'fundamentum.nofocus', 'true'
+        workingDirectory project.file('run-hudshot')
+        // the test-only mixin that keeps the cursor free is named only in this run
+        args '-mixin.config=fundamentum-hudshot.mixins.json'
     }
 }

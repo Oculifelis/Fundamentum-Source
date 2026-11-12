@@ -1,0 +1,20 @@
+{
+  "min": 0,
+  "max": 20,
+  "respawn": 15,
+  "rules": [
+    {"amount": -1},
+    {"amount": -2, "when": "sprinting"},
+    {"amount": -4, "when": ["sprinting", {"type": "activity", "is": "sneaking"}]}
+  ],
+  "consume": [
+    {"items": ["minecraft:potion"], "amount": 5},
+    {"items": ["#survivaltest:drinks"], "amount": 3}
+  ],
+  "drink_blocks": [{"blocks": ["minecraft:water"], "amount": 4}],
+  "thresholds": [
+    {"below": 6, "effect": "minecraft:slowness", "amplifier": 1},
+    {"at_most": 0, "damage": 2, "damage_type": "minecraft:out_of_world", "interval": 2}
+  ],
+  "hud": {"style": "bar", "color": "#3F76E4", "side": "right"}
+}

@@ -1,0 +1,9 @@
+{
+  "values": [
+    "fundamentum:thirst",
+    "fundamentum:overheating",
+    "fundamentum:hypothermia",
+    "fundamentum:exhaustion",
+    "fundamentum:meter"
+  ]
+}

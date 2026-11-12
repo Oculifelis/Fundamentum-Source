@@ -1,0 +1,6 @@
+{
+  "boss": "minecraft:elder_guardian",
+  "size": 2,
+  "name": "Pair Test Relic",
+  "base": { "tint": "#8040ff" }
+}

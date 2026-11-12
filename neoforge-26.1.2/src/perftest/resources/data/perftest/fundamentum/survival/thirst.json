@@ -1,0 +1,1 @@
+{"min": 0, "max": 20, "rules": [{"amount": -0.05}, {"amount": -0.1, "when": "sprinting"}], "thresholds": [{"below": 6, "effect": "minecraft:slowness"}, {"at_most": 0, "damage": 1, "interval": 4}]}

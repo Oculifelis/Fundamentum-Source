@@ -1,5 +1,7 @@
 package com.fundamentum.spear;
 
+import com.fundamentum.config.Timers;
+import com.fundamentum.port.FLife;
 import com.fundamentum.attribute.StatAttributes;
 import com.fundamentum.compat.BetterCombat;
 import com.fundamentum.data.DataTable;
@@ -33,7 +35,6 @@ import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.registries.RegistryObject;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
-import net.minecraftforge.event.TickEvent;
 
 /**
  * Spears on Minecraft 1.20.1: this version has no vanilla spears, so {@code #fundamentum:spears} starts empty and other
@@ -123,13 +124,6 @@ public final class Spears {
         return spear;
     }
 
-    private static void reachTick(TickEvent.PlayerTickEvent e) {
-        Player player = e.player;
-        if (e.phase == TickEvent.Phase.END && !player.level().isClientSide() && player.tickCount % 5 == 0) {
-            syncReach(player);
-        }
-    }
-
     /** Puts {@code fundamentum:spear_reach} on the player's entity reach (Forge's entity_reach) while a spear is in the main hand. */
     public static void syncReach(Player player) {
         AttributeInstance reach = player.getAttribute(ForgeMod.ENTITY_REACH.get());
@@ -150,7 +144,9 @@ public final class Spears {
 
     public static void init(IEventBus modBus) {
         ENTITIES.register(modBus);
-        MinecraftForge.EVENT_BUS.addListener(Spears::reachTick);
+        // reach follows the held spear: set when the hands change, with a slow safety net
+        FLife.handsChanged(Spears::syncReach);
+        Timers.perPlayer("spears_recheck_seconds", 30, Spears::syncReach);
         // The held charge's hits scale with spear_charge_damage.
         MinecraftForge.EVENT_BUS.addListener((LivingHurtEvent e) -> {
             Entity attacker = e.getSource().getEntity();

@@ -1,0 +1,9 @@
+{
+  "order": 1,
+  "length": 8,
+  "temperature": 0.15,
+  "rainfall": -0.1,
+  "crop_growth": 1.25,
+  "grass": "#A6B84E",
+  "tint": 0.2
+}

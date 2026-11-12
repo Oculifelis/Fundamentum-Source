@@ -54,6 +54,8 @@ public final class FConfigScreen extends Screen {
         int w = Math.min(this.width - 20, 420);
         int left = (this.width - w) / 2;
         addRenderableWidget(new StringWidget(left, 6, w, 12, this.title, this.font));
+        addRenderableWidget(Button.builder(Component.translatable("fundamentum.hud_editor.open"), b ->
+            this.minecraft.setScreen(new com.fundamentum.hud.client.HudEditorScreen(this))).bounds(left + w - 70, 3, 70, 18).build());
 
         this.searchBox = new EditBox(this.font, left, 24, w / 2 - 4, 18, Component.literal("Search"));
         this.searchBox.setHint(Component.literal("Search"));

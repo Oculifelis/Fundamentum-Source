@@ -1,0 +1,10 @@
+{
+  "icon": "minecraft:cooked_beef",
+  "color": "#A8663E",
+  "items": ["minecraft:beef", "minecraft:cooked_beef", "minecraft:porkchop", "minecraft:cooked_porkchop", "minecraft:chicken", "minecraft:cooked_chicken",
+    "minecraft:mutton", "minecraft:cooked_mutton", "minecraft:rabbit", "minecraft:cooked_rabbit", "minecraft:rabbit_stew", "minecraft:cod",
+    "minecraft:cooked_cod", "minecraft:salmon", "minecraft:cooked_salmon", "minecraft:tropical_fish", "minecraft:pufferfish", "minecraft:egg",
+    "minecraft:rotten_flesh", "minecraft:spider_eye",
+    "#c:foods/raw_meat", "#c:foods/cooked_meat", "#c:foods/raw_fish", "#c:foods/cooked_fish", "#c:eggs", "#forge:eggs"],
+  "tags": ["diet:proteins"]
+}

@@ -1,0 +1,11 @@
+{
+  "stat": "survivaltest:kept",
+  "max": 100,
+  "start": 5,
+  "reset_on_death": false,
+  "rules": [
+    {"amount": 1, "when": {"type": "climate", "value": "temperature", "min": -100}},
+    {"amount": 2, "when": {"type": "activity", "is": "sneaking"}},
+    {"amount": 50, "when": {"type": "climate", "value": "humidity", "min": 5}}
+  ]
+}

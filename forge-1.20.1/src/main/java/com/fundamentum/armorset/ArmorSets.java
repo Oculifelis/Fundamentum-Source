@@ -1,7 +1,10 @@
 package com.fundamentum.armorset;
 
+import com.fundamentum.event.Events;
+import com.fundamentum.event.FEvents;
+import com.fundamentum.port.FId;
 import com.fundamentum.attribute.AttributeBonus;
-import com.fundamentum.curios.Slots;
+import com.fundamentum.slots.Slots;
 import com.fundamentum.data.DataTable;
 import com.fundamentum.data.DataTables;
 import com.fundamentum.effect.Effects;
@@ -194,6 +197,9 @@ public final class ArmorSets {
                 }
                 List<ArmorSetDefinition.Tier> still = new ArrayList<>(w.tiers());
                 still.retainAll(keep);
+                if (still.isEmpty() && !w.tiers().isEmpty() && entity instanceof net.minecraft.server.level.ServerPlayer sp) {
+                    FEvents.post(new Events.SetBonusOff(sp, FId.from(w.set().id())));
+                }
                 if (!still.isEmpty()) {
                     next.put(w.set().id(), new Worn(w.set(), List.copyOf(still)));
                 }
@@ -213,6 +219,9 @@ public final class ArmorSets {
                     grant(entity, set, t);
                     granted.add(t);
                     MinecraftForge.EVENT_BUS.post(new ArmorSetEvent.TierGained(entity, set, t, count));
+                    if (entity instanceof net.minecraft.server.level.ServerPlayer sp) {
+                        FEvents.post(new Events.SetBonusOn(sp, FId.from(set.id()), count));
+                    }
                 }
             }
             next.put(set.id(), new Worn(set, List.copyOf(granted)));

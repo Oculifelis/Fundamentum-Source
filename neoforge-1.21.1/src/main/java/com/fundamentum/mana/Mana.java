@@ -1,5 +1,8 @@
 package com.fundamentum.mana;
 
+import com.fundamentum.event.Events;
+import com.fundamentum.event.FEvents;
+import com.fundamentum.port.FId;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -106,7 +109,10 @@ public final class Mana {
     public static boolean spend(LivingEntity entity, double amount) {
         if (amount <= 0) return amount == 0;
         Optional<ManaSource> s = source(entity);
-        return s.isPresent() && s.get().get(entity) >= amount && s.get().spend(entity, amount);
+        if (s.isEmpty() || s.get().get(entity) < amount) return false;
+        double now = s.get().get(entity);
+        if (FEvents.post(new Events.ManaSpent(entity, (int) Math.ceil(amount), (int) Math.floor(now - amount)))) return false;
+        return s.get().spend(entity, amount);
     }
 
     /** Adds up to {@code amount}, stopping at the pool's max; returns how much was added (0 with no pool). */

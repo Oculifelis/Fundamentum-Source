@@ -1,0 +1,11 @@
+{
+  "criteria": {
+    "done": {
+      "trigger": "fundamentum:event",
+      "conditions": {
+        "event": "fundamentum:quest_accepted",
+        "player": {"type": "minecraft:entity_properties", "entity": "this", "predicate": {"flags": {"is_on_fire": true}}}
+      }
+    }
+  }
+}

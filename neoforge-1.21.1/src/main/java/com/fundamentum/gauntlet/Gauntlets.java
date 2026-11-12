@@ -1,5 +1,7 @@
 package com.fundamentum.gauntlet;
 
+import com.fundamentum.config.Timers;
+import com.fundamentum.port.FLife;
 import com.fundamentum.compat.BetterCombat;
 import com.fundamentum.data.DataTable;
 import com.fundamentum.data.DataTables;
@@ -255,11 +257,11 @@ public final class Gauntlets {
         }
     }
 
-    /** Keeps the attack speed at the held gauntlet's punch rate. */
-    private static void tick(PlayerTickEvent.Post e) {
-        if (!(e.getEntity() instanceof ServerPlayer player) || player.tickCount % 5 != 0) {
-            return;
-        }
+    /**
+     * Keeps the attack speed at the held gauntlet's punch rate. Runs when the player's held items change, with a slow
+     * safety net ({@code gauntlets_recheck_seconds} in the {@code fundamentum:performance} config).
+     */
+    private static void apply(ServerPlayer player) {
         AttributeInstance speed = player.getAttribute(Attributes.ATTACK_SPEED);
         if (speed == null) {
             return;
@@ -287,7 +289,8 @@ public final class Gauntlets {
         NeoForge.EVENT_BUS.addListener(Gauntlets::attack);
         NeoForge.EVENT_BUS.addListener(Gauntlets::incoming);
         NeoForge.EVENT_BUS.addListener(Gauntlets::landed);
-        NeoForge.EVENT_BUS.addListener(Gauntlets::tick);
+        FLife.handsChanged(Gauntlets::apply);
+        Timers.perPlayer("gauntlets_recheck_seconds", 30, Gauntlets::apply);
         NeoForge.EVENT_BUS.addListener((PlayerEvent.PlayerLoggedOutEvent e) -> PUNCHERS.remove(e.getEntity().getUUID()));
     }
 

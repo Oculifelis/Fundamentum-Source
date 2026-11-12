@@ -309,4 +309,45 @@ public final class FVanilla {
     public static int playTime(ServerPlayer player) {
         return player.getStats().getValue(Stats.CUSTOM.get(Stats.PLAY_TIME));
     }
+
+    // ---- statistics and scoreboard
+
+    /**
+     * A vanilla statistic of the player: {@code type} is the stat type ({@code minecraft:custom},
+     * {@code minecraft:mined}, ...) and {@code value} the thing counted ({@code minecraft:jump}, {@code minecraft:stone}).
+     * 0 when either is unknown.
+     */
+    public static int statValue(ServerPlayer player, FId type, FId value) {
+        if (!BuiltInRegistries.STAT_TYPE.containsKey(type.vanilla())) return 0;
+        return statValue(player, BuiltInRegistries.STAT_TYPE.get(type.vanilla()), value);
+    }
+
+    private static <T> int statValue(ServerPlayer player, net.minecraft.stats.StatType<T> type, FId value) {
+        if (!type.getRegistry().containsKey(value.vanilla())) return 0;
+        return player.getStats().getValue(type.get(type.getRegistry().get(value.vanilla())));
+    }
+
+    /** The holder's score in the objective (holder is a player name or any score holder name), or null when unset. */
+    public static Integer score(MinecraftServer server, String holder, String objective) {
+        net.minecraft.world.scores.Scoreboard board = server.getScoreboard();
+        net.minecraft.world.scores.Objective o = board.getObjective(objective);
+        if (o == null) return null;
+        if (!board.hasPlayerScore(holder, o)) return null;
+        return board.getOrCreatePlayerScore(holder, o).getScore();
+    }
+
+    /** Sets the holder's score; false when the objective does not exist. */
+    public static boolean setScore(MinecraftServer server, String holder, String objective, int value) {
+        net.minecraft.world.scores.Scoreboard board = server.getScoreboard();
+        net.minecraft.world.scores.Objective o = board.getObjective(objective);
+        if (o == null) return false;
+        board.getOrCreatePlayerScore(holder, o).setScore(value);
+        return true;
+    }
+
+    /** Whether a piece of the structure {@code id} covers {@code pos} (false for an unknown id). */
+    public static boolean structurePieceAt(ServerLevel level, BlockPos pos, FId id) {
+        ResourceKey<net.minecraft.world.level.levelgen.structure.Structure> key = ResourceKey.create(Registries.STRUCTURE, id.vanilla());
+        return level.structureManager().getStructureWithPieceAt(pos, key).isValid();
+    }
 }

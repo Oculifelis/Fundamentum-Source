@@ -1,7 +1,10 @@
 package com.fundamentum.wings;
 
+import com.fundamentum.event.Events;
+import com.fundamentum.event.FEvents;
+import com.fundamentum.port.FId;
 import com.fundamentum.attribute.StatAttributes;
-import com.fundamentum.curios.Slots;
+import com.fundamentum.slots.Slots;
 import com.fundamentum.data.DataTable;
 import com.fundamentum.data.DataTables;
 import com.google.gson.JsonObject;
@@ -161,6 +164,17 @@ public final class Wings {
         return AIRBORNE.getOrDefault(player.getUUID(), FOLDED);
     }
 
+    /**
+     * What a checked {@code wing_state} packet does: a folded player taking off posts {@code fundamentum:wings_take_off},
+     * and a cancelled take-off keeps the server side folded.
+     */
+    public static void requestPhase(ServerPlayer player, byte phase) {
+        if (phase != FOLDED && phase(player) == FOLDED && FEvents.post(new Events.WingsTakeOff(player, worn(player).copy()))) {
+            phase = FOLDED;
+        }
+        setPhase(player, phase);
+    }
+
     private static void setPhase(ServerPlayer player, byte phase) {
         Byte old = phase == FOLDED ? AIRBORNE.remove(player.getUUID()) : AIRBORNE.put(player.getUUID(), phase);
         if ((old == null ? FOLDED : old) != phase) {
@@ -202,7 +216,7 @@ public final class Wings {
         static void handle(StatePayload payload, IPayloadContext context) {
             if (context.player() instanceof ServerPlayer player) {
                 byte phase = payload.phase >= RISING && payload.phase <= GLIDING && !worn(player).isEmpty() ? payload.phase : FOLDED;
-                setPhase(player, phase);
+                requestPhase(player, phase);
             }
         }
     }

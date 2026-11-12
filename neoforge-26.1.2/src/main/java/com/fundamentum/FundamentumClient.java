@@ -18,5 +18,8 @@ public final class FundamentumClient {
         ConfigClient.init();
         PortalCraftingClient.init();
         com.fundamentum.armorset.ArmorSetTooltip.init();
+        com.fundamentum.stat.client.StatClient.init();
+        com.fundamentum.survival.client.SurvivalClient.init();
+        com.fundamentum.climate.Seasons.clientRefresh(com.fundamentum.port.FClimateClient::refreshTints);
     }
 }

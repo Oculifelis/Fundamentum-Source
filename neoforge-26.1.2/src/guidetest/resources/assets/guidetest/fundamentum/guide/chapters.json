@@ -1,0 +1,9 @@
+{
+  "title": "Guide Test",
+  "icon": "minecraft:book",
+  "openers": ["minecraft:writable_book"],
+  "chapters": [
+    { "id": "start", "title": "Getting Started", "icon": "minecraft:crafting_table" },
+    { "id": "advanced", "title": "Advanced", "unlock": "advanced_ch", "order": 5 }
+  ]
+}

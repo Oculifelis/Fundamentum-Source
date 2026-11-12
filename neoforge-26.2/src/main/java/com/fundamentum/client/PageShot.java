@@ -57,7 +57,6 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import org.lwjgl.glfw.GLFW;
-import top.theillusivec4.curios.api.CuriosApi;
 
 /**
  * Dev client only ({@code gradlew runClient -Ppageshot} or {@code -Ppageshot=shaders}, in its own run-pageshot folder,
@@ -429,9 +428,9 @@ public final class PageShot {
                 for (ItemEntity e : p.level().getEntitiesOfClass(ItemEntity.class, p.getBoundingBox().inflate(16))) {
                     e.discard();
                 }
-                CuriosApi.getCuriosInventory(p).flatMap(inv -> inv.getStacksHandler("summon")).ifPresentOrElse(
-                    h -> h.getStacks().setStackInSlot(0, item("ostentum:bottled_dragonling")),
-                    () -> fail("no summon slot"));
+                if (!com.fundamentum.slots.Slots.set(p, com.fundamentum.slots.Slots.SUMMON, 0, item("ostentum:bottled_dragonling"))) {
+                    fail("no summon slot");
+                }
                 BlockPos b = portalBase != null ? portalBase : p.blockPosition().offset(0, 0, 3);
                 p.teleportTo(p.level(), b.getX() + 0.5, b.getY(), b.getZ() - 2.0, java.util.Set.of(), 180.0F, 8.0F, true);
             });

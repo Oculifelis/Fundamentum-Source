@@ -1,14 +1,13 @@
 package com.fundamentum.relic.client;
 
+import com.fundamentum.relic.RelicBases;
 import com.fundamentum.relic.RelicBlock;
 import com.fundamentum.relic.RelicBlockEntity;
 import com.fundamentum.relic.RelicDef;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import net.minecraft.client.model.geom.ModelLayerLocation;
@@ -20,6 +19,7 @@ import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
@@ -46,10 +46,6 @@ import org.slf4j.LoggerFactory;
  */
 public class RelicRenderer implements BlockEntityRenderer<RelicBlockEntity> {
     private static final Logger LOG = LoggerFactory.getLogger("fundamentum");
-
-    /** One entity-mode figure on the relic: its stand-in, where it stands and the box it fits. */
-    private record Figure(Entity entity, String key, float x, float z, float wide, float tall, float lift, float yaw, float scale,
-                          float @Nullable [] bounds) {}
 
     /** One stand-in per entity and phase per world. */
     private static final Map<String, Entity> STAND_INS = new HashMap<>();
@@ -134,25 +130,81 @@ public class RelicRenderer implements BlockEntityRenderer<RelicBlockEntity> {
     @Override
     public void render(RelicBlockEntity be, float partial, PoseStack pose, MultiBufferSource buffers, int light, int overlay) {
         Level level = be.getLevel();
-        RelicDef def = be.def();
-        if (level == null || def == null) {
+        if (level == null || !(be.getBlockState().getBlock() instanceof RelicBlock anchor)) {
             return;
         }
+        RelicDef def = be.def();
         Direction facing = be.getBlockState().getValue(RelicBlock.FACING);
         float time = (level.getGameTime() % 24000L) + partial;
-        float bob = def.bob(time);
+        float bob = def == null ? 0F : def.bob(time);
         float angle = be.spin().angle(partial);
-        this.draw(def, facing, angle, bob, this.figures(def, level, angle, bob), partial, pose, buffers, light, true);
+        this.draw(anchor, def, level, facing, angle, bob, partial, pose, buffers, light);
     }
 
-    /** Entity mode: one stand-in per declared phase, placed round the middle; none in model mode. */
-    private List<Figure> figures(RelicDef def, Level level, float angle, float bob) {
-        List<Figure> out = new ArrayList<>();
-        if (def.figure.model()) {
-            return out;
+    /**
+     * The base (the anchor's look, retinted when the relic's file gives the base a tint) and, for a known relic, the figure
+     * (model mode, or entity mode when there is a world): at {@code angle}, lifted by {@code bob}, round the stand's true
+     * centre. A stand whose relic is unknown draws its base alone.
+     */
+    private void draw(RelicBlock anchor, @Nullable RelicDef def, @Nullable Level level, Direction facing, float angle, float bob,
+                      float partial, PoseStack pose, MultiBufferSource buffers, int light) {
+        RelicBases.Look look = RelicBases.look(anchor, def);
+        double[] c = RelicBlock.centre(facing, anchor.size());
+        float cx = (float) c[0];
+        float cz = (float) c[1];
+        if (look.layer() != null && look.texture() != null) {
+            ModelPart base = this.layer(look.layer());
+            if (base != null) {
+                boolean tinted = def != null && def.base.tint != null && def.base.tint.length > 0;
+                pose.pushPose();
+                pose.translate(0.5F + cx, 0.0F, 0.5F + cz);
+                pose.mulPose(Axis.YP.rotationDegrees(180.0F - facing.toYRot()));
+                pose.scale(-1.0F, -1.0F, 1.0F);                 // model space, as for mobs: y down, front toward -z
+                pose.scale(look.scale(), look.scale(), look.scale());
+                if (tinted) {
+                    part(new RelicGold(def.base.tint, def.tintFloor).gold(buffers), pose, base, look.texture(), look.glow(), light);
+                    part(new RelicGold(def.base.tint, def.tintFloor).through(buffers), pose, base, look.texture(), null, light);
+                } else {
+                    part(buffers, pose, base, look.texture(), look.glow(), light);
+                }
+                pose.popPose();
+            }
         }
+        if (def == null) {
+            return;
+        }
+        if (def.figure.model()) {
+            ModelPart model = this.layer(def.figure.layer);
+            if (model != null) {
+                float[] o = def.figure.offset;
+                float s = def.figure.scale;
+                pose.pushPose();
+                pose.translate(0.5F + cx, 0.0F, 0.5F + cz);
+                pose.mulPose(Axis.YP.rotationDegrees(180.0F + angle));
+                pose.scale(-1.0F, -1.0F, 1.0F);
+                pose.translate(o[0] / 16.0F, o[1] / 16.0F - bob, o[2] / 16.0F);
+                pose.scale(s, s, s);
+                if (def.tinted) {
+                    part(new RelicGold(def.tint, def.tintFloor).gold(buffers), pose, model, def.figure.texture, def.figure.glow, light);
+                    part(new RelicGold(def.tint, def.tintFloor).through(buffers), pose, model, def.figure.texture, null, light);
+                } else {
+                    part(buffers, pose, model, def.figure.texture, def.figure.glow, light);
+                }
+                pose.popPose();
+            }
+            return;
+        }
+        if (level != null) {
+            this.figures(def, look, cx, cz, level, angle, bob, partial, pose, buffers, light);
+        }
+    }
+
+    /** Entity mode: one stand-in per declared phase, placed round the middle, fitted and gilded. */
+    private void figures(RelicDef def, RelicBases.Look look, float cx, float cz, Level level, float angle, float bob, float partial, PoseStack pose, MultiBufferSource buffers, int light) {
         RelicDef.Figure fig = def.figure;
         int n = fig.phases.length;
+        MultiBufferSource gold = null;
+        MultiBufferSource through = null;
         for (int i = 0; i < n; i++) {
             String key = fig.entity + "#" + fig.phases[i];
             Entity e = standIn(fig.entity, fig.phases[i], level);
@@ -170,6 +222,23 @@ public class RelicRenderer implements BlockEntityRenderer<RelicBlockEntity> {
                 l.hurtTime = 0;
                 l.deathTime = 0;
             }
+            EntityRenderer<? super Entity> renderer;
+            float[] b = fig.bounds;
+            try {
+                renderer = this.entities.getRenderer(e);
+                if (b == null) {
+                    b = BOUNDS.get(key);
+                    if (b == null) {
+                        b = measure(renderer, e, partial, light);
+                        BOUNDS.put(key, b);
+                    }
+                }
+            } catch (RuntimeException ex) {
+                LOG.warn("cannot draw the relic of {}", fig.entity, ex);
+                FAILED.add(key);
+                STAND_INS.remove(key);
+                continue;
+            }
             float x = 0F;
             float z = 0F;
             float yaw = angle;
@@ -180,95 +249,37 @@ public class RelicRenderer implements BlockEntityRenderer<RelicBlockEntity> {
                 z = (float) Math.cos(a) * fig.radius;
                 yaw = (float) (angle + i * 360.0 / n);
             }
-            out.add(new Figure(e, key, x, z, fig.wide / 16F, fig.tall / 16F, def.base.top / 16F + fig.floatBy / 16F + bob, yaw,
-                fig.scale, fig.bounds));
-        }
-        return out;
-    }
-
-    /** The base and the figure: at {@code angle}, lifted by {@code bob}; entity-mode figures gilded unless only measured. */
-    private void draw(RelicDef def, Direction facing, float angle, float bob, List<Figure> figures, float partial, PoseStack pose,
-                      MultiBufferSource buffers, int light, boolean gild) {
-        if (def.base.layer != null) {
-            ModelPart base = this.layer(def.base.layer);
-            if (base != null) {
-                pose.pushPose();
-                pose.translate(0.5F, 0.0F, 0.5F);
-                pose.mulPose(Axis.YP.rotationDegrees(180.0F - facing.toYRot()));
-                pose.scale(-1.0F, -1.0F, 1.0F);                 // model space, as for mobs: y down, front toward -z
-                part(buffers, pose, base, def.base.texture, def.base.glow, light);
-                pose.popPose();
-            }
-        }
-        if (def.figure.model()) {
-            ModelPart model = this.layer(def.figure.layer);
-            if (model != null) {
-                float[] o = def.figure.offset;
-                float s = def.figure.scale;
-                pose.pushPose();
-                pose.translate(0.5F, 0.0F, 0.5F);
-                pose.mulPose(Axis.YP.rotationDegrees(180.0F + angle));
-                pose.scale(-1.0F, -1.0F, 1.0F);
-                pose.translate(o[0] / 16.0F, o[1] / 16.0F - bob, o[2] / 16.0F);
-                pose.scale(s, s, s);
-                part(buffers, pose, model, def.figure.texture, def.figure.glow, light);
-                pose.popPose();
-            }
-            return;
-        }
-        if (figures.isEmpty()) {
-            return;
-        }
-        RelicGold gold = gild ? new RelicGold(def.tint, def.tintFloor) : null;
-        for (Figure f : figures) {
-            float[] b = f.bounds();
-            if (b == null) {
-                b = BOUNDS.get(f.key());
-                if (b == null) {
-                    b = this.measure(f.entity(), partial);
-                    BOUNDS.put(f.key(), b);
-                }
-            }
+            float lift = look.top() / 16F + fig.floatBy / 16F + bob;
             // fit the model as drawn (not its hitbox): the circle it sweeps as it turns and its height, centred, lowest point on the lift
             float across = Math.max(0.05F, (float) Math.hypot(b[3] - b[0], b[5] - b[2]));
             float high = Math.max(0.05F, b[4] - b[1]);
-            float k = Float.isNaN(f.scale()) ? Math.min(f.wide() / across, f.tall() / high) : f.scale();
+            float k = Float.isNaN(fig.scale) ? Math.min(fig.wide / 16F / across, fig.tall / 16F / high) : fig.scale;
+            if (gold == null) {
+                gold = new RelicGold(def.tint, def.tintFloor).gold(buffers);
+                through = new RelicGold(def.tint, def.tintFloor).through(buffers);
+            }
             pose.pushPose();
-            pose.translate(0.5F + f.x(), f.lift(), 0.5F + f.z());
-            pose.mulPose(Axis.YP.rotationDegrees(f.yaw()));
+            pose.translate(0.5F + cx + x, lift, 0.5F + cz + z);
+            pose.mulPose(Axis.YP.rotationDegrees(yaw));
             pose.scale(k, k, k);
             pose.translate(-(b[0] + b[3]) / 2F, -b[1], -(b[2] + b[5]) / 2F);
-            if (gold == null) {
-                this.entity(f, partial, pose, buffers, light);
-            } else {
-                // two passes (see RelicGold): the gold body with its glows, then the colour shining through
-                this.entity(f, partial, pose, gold.gold(buffers), light);
-                this.entity(f, partial, pose, gold.through(buffers), light);
+            try {
+                renderer.render(e, 0F, partial, pose, gold, light);
+                renderer.render(e, 0F, partial, pose, through, light);
+            } catch (RuntimeException ex) {
+                LOG.warn("cannot draw the relic of {}", fig.entity, ex);
+                FAILED.add(key);
+                STAND_INS.remove(key);
             }
             pose.popPose();
         }
     }
 
-    /** The boss's own renderer, called directly: no shadow, no flames and (with no custom name) no name tag. */
-    private void entity(Figure f, float partial, PoseStack pose, MultiBufferSource buffers, int light) {
-        if (FAILED.contains(f.key())) {
-            return;
-        }
-        try {
-            EntityRenderer<? super Entity> r = this.entities.getRenderer(f.entity());
-            r.render(f.entity(), 0F, partial, pose, buffers, light);
-        } catch (RuntimeException ex) {
-            LOG.warn("cannot draw the relic of {}", f.key(), ex);
-            FAILED.add(f.key());
-            STAND_INS.remove(f.key());
-        }
-    }
-
     /** The likeness's extents as its renderer draws it at scale 1 (blocks; min x, y, z, max x, y, z). */
-    private float[] measure(Entity e, float partial) {
+    private static float[] measure(EntityRenderer<? super Entity> renderer, Entity e, float partial, int light) {
         RelicMeasure m = new RelicMeasure();
         try {
-            this.entities.getRenderer(e).render(e, 0F, partial, new PoseStack(), m, 0xF000F0);
+            renderer.render(e, 0F, partial, new PoseStack(), m, light);
         } catch (RuntimeException ex) {
             LOG.warn("could not measure a relic likeness", ex);
         }
@@ -277,30 +288,36 @@ public class RelicRenderer implements BlockEntityRenderer<RelicBlockEntity> {
 
     /**
      * The relic as an item: a small copy of the placed relic, front forward, at rest (no bob, not turning), fitted into the
-     * one-block cube the item's display transforms expect (a grand relic shrinks to fit too). In entity mode the base is the
-     * block's own model, and the figure needs a world to make its stand-in in (without one, only the base is drawn).
+     * one-block cube the item's display transforms expect (a wide relic shrinks to fit too). A block-model base is the
+     * anchor's own model, and an entity-mode figure needs a world to make its stand-in in (without one, only the base is
+     * drawn).
      */
-    void drawItem(RelicBlock block, PoseStack pose, MultiBufferSource buffers, int light, int overlay) {
-        RelicDef def = com.fundamentum.relic.Relics.def(block);
+    void drawItem(RelicDef def, PoseStack pose, MultiBufferSource buffers, int light, int overlay) {
+        RelicBlock anchor = RelicBases.anchorFor(def);
+        if (anchor == null) {
+            return;
+        }
         Direction facing = Direction.NORTH;
         float angle = com.fundamentum.relic.RelicSpin.rest(facing.toYRot());
         Level level = net.minecraft.client.Minecraft.getInstance().level;
-        List<Figure> figures = level == null ? List.of() : this.figures(def, level, angle, 0F);
-        boolean whole = def.figure.model() || !figures.isEmpty();
+        RelicBases.Look look = RelicBases.look(anchor, def);
+        double[] c = RelicBlock.centre(facing, anchor.size());
+        boolean whole = def.figure.model() || level != null;
         float[] b = whole ? ITEM_BOUNDS.get(def) : null;
         if (b == null) {
             RelicMeasure m = new RelicMeasure();
-            float lo = def.grand() ? -1F : 0F;
-            float hi = def.grand() ? 2F : 1F;
-            if (def.base.layer == null) {
-                m.box(lo, 0F, lo, hi, def.base.top / 16F, hi);
+            float n = anchor.size();
+            float lo0 = 0.5F + (float) c[0] - n / 2F;
+            float lo2 = 0.5F + (float) c[1] - n / 2F;
+            if (look.layer() == null) {
+                m.box(lo0, 0F, lo2, lo0 + n, look.top() / 16F, lo2 + n);
             }
             try {
-                this.draw(def, facing, angle, 0F, figures, 0F, new PoseStack(), m, light, false);
+                this.draw(anchor, def, level, facing, angle, 0F, 0F, new PoseStack(), m, light);
             } catch (RuntimeException ex) {
-                LOG.warn("could not measure the relic item {}", block, ex);
+                LOG.warn("could not measure a relic item", ex);
             }
-            b = m.empty() ? new float[] {lo, 0F, lo, hi, 1F, hi} : m.b.clone();
+            b = m.empty() ? new float[] {lo0, 0F, lo2, lo0 + n, 1F, lo2 + n} : m.b.clone();
             if (whole) {
                 ITEM_BOUNDS.put(def, b);
             }
@@ -311,10 +328,10 @@ public class RelicRenderer implements BlockEntityRenderer<RelicBlockEntity> {
         pose.translate(0.5F, (1F - (b[4] - b[1]) * k) / 2F, 0.5F);
         pose.scale(k, k, k);
         pose.translate(-(b[0] + b[3]) / 2F, -b[1], -(b[2] + b[5]) / 2F);
-        if (def.base.layer == null) {
-            net.minecraft.client.Minecraft.getInstance().getBlockRenderer().renderSingleBlock(block.defaultBlockState(), pose, buffers, light, overlay);
+        if (look.layer() == null) {
+            net.minecraft.client.Minecraft.getInstance().getBlockRenderer().renderSingleBlock(anchor.defaultBlockState(), pose, buffers, light, overlay);
         }
-        this.draw(def, facing, angle, 0F, figures, 0F, pose, buffers, light, true);
+        this.draw(anchor, def, level, facing, angle, 0F, 0F, pose, buffers, light);
         pose.popPose();
     }
 

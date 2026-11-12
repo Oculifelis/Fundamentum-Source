@@ -1,5 +1,8 @@
 package com.fundamentum.boss;
 
+import com.fundamentum.event.Events;
+import com.fundamentum.event.FEvents;
+import com.fundamentum.port.FId;
 import com.fundamentum.data.DataTable;
 import com.fundamentum.data.DataTables;
 import com.google.gson.JsonElement;
@@ -158,6 +161,7 @@ public final class Bosses {
             pos = new Vec3(Double.parseDouble(p[0]), Double.parseDouble(p[1]), Double.parseDouble(p[2]));
         } else {
             entity.getPersistentData().putString(TAG_HOME, pos.x + "," + pos.y + "," + pos.z);
+            FEvents.post(new Events.BossSpawned(entity, FId.from(spec.id())));
         }
         Boss boss = new Boss(entity, spec, pos);
         ACTIVE.put(entity, boss);
@@ -190,11 +194,16 @@ public final class Bosses {
         Boss b = ACTIVE.remove(event.getEntity());
         if (b == null || !(event.getEntity().level() instanceof ServerLevel level)) return;
         if (event.getSource().getEntity() instanceof ServerPlayer p) b.addFighter(p);
-        defeat(level.getServer(), b);
+        defeat(level.getServer(), b, event.getSource().getEntity() instanceof ServerPlayer killer ? killer : null);
     }
 
     /** Records the defeat, posts {@link BossEvents.Defeated} and ends the bar (called on death; tests may call it). */
     public static void defeat(MinecraftServer server, Boss b) {
+        defeat(server, b, null);
+    }
+
+    /** {@link #defeat(MinecraftServer, Boss)} naming who landed the killing blow (may be null), for {@code fundamentum:boss_killed}. */
+    public static void defeat(MinecraftServer server, Boss b, @Nullable ServerPlayer killer) {
         BossRecords records = BossRecords.get(server);
         Identifier id = b.spec().id();
         Set<UUID> fighters = b.fighters();
@@ -207,6 +216,7 @@ public final class Bosses {
         b.end();
         ACTIVE.remove(b.entity());
         NeoForge.EVENT_BUS.post(new BossEvents.Defeated(b, fighters, first, firstInWorld));
+        FEvents.post(new Events.BossKilled(b.entity(), FId.from(id), killer));
     }
 
     private static void tick(ServerTickEvent.Post event) {

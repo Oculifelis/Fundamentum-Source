@@ -43,6 +43,20 @@ The shared groundwork under Oculifelis's mods: data tables, shared stats, creatu
     side="CLIENT"
 
 [[dependencies.${mod_id}]]
+    modId="roughlyenoughitems"
+    mandatory=false
+    versionRange="${rei_range}"
+    ordering="NONE"
+    side="CLIENT"
+
+[[dependencies.${mod_id}]]
+    modId="emi"
+    mandatory=false
+    versionRange="${emi_range}"
+    ordering="NONE"
+    side="CLIENT"
+
+[[dependencies.${mod_id}]]
     modId="jade"
     mandatory=false
     versionRange="${jade_range}"

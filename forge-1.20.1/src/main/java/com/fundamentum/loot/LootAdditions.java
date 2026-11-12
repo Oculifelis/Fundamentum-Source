@@ -1,5 +1,8 @@
 package com.fundamentum.loot;
 
+import com.fundamentum.event.Events;
+import com.fundamentum.event.FEvents;
+import com.fundamentum.port.FId;
 import com.fundamentum.data.DataTable;
 import com.fundamentum.data.DataTables;
 import com.google.gson.JsonArray;
@@ -133,10 +136,12 @@ public final class LootAdditions {
 
     /** Runs every matching addition on a table's loot (the global loot modifier calls this). */
     public static void apply(ResourceLocation tableId, List<ItemStack> loot, LootContext context) {
-        for (Addition a : all().values()) {
+        for (var entry : all().entrySet()) {
+            Addition a = entry.getValue();
             if (!a.matches(tableId) || !a.test(context)) continue;
             List<ItemStack> extra = new ArrayList<>();
             a.roll(context, extra::add);
+            if (FEvents.post(new Events.LootAdded(FId.from(tableId), FId.from(entry.getKey()), extra.size()))) continue;
             if (a.replace) loot.clear();
             loot.addAll(extra);
         }

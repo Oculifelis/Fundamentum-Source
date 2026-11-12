@@ -1,0 +1,6 @@
+{
+  "layers": [["ICI"]],
+  "key": {"I": "minecraft:iron_block", "C": "minecraft:fletching_table"},
+  "controller": "C",
+  "rotate": false
+}

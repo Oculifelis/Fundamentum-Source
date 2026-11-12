@@ -1,5 +1,7 @@
 package com.fundamentum.whip;
 
+import com.fundamentum.config.Timers;
+import com.fundamentum.port.FLife;
 import com.fundamentum.net.Net;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.network.simple.SimpleChannel;
@@ -15,7 +17,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.event.TickEvent;
 import com.fundamentum.net.IPayloadContext;
 
 /**
@@ -39,13 +40,8 @@ public final class WhipHip {
         return Optional.empty();
     }
 
-    private static void tick(TickEvent.PlayerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) {
-            return;
-        }
-        if (!(event.player instanceof ServerPlayer player) || player.tickCount % 5 != 0) {
-            return;
-        }
+    /** Sends the hip whip when it changed: after hotbar or held item changes, with a slow safety net (whip_hip_recheck_seconds). */
+    private static void update(ServerPlayer player) {
         Optional<ResourceLocation> now = player.isSpectator() ? Optional.empty() : hip(player);
         if (!now.equals(SENT.get(player.getUUID()))) {
             SENT.put(player.getUUID(), now);
@@ -57,7 +53,9 @@ public final class WhipHip {
 
     static void init(IEventBus modBus) {
         Net.toClient(CHANNEL, 0, HipPayload.class, HipPayload::encode, HipPayload::decode, HipPayload::handle);
-        MinecraftForge.EVENT_BUS.addListener(WhipHip::tick);
+        FLife.handsChanged(WhipHip::update);
+        FLife.inventoryChanged(WhipHip::update);
+        Timers.perPlayer("whip_hip_recheck_seconds", 30, WhipHip::update);
         MinecraftForge.EVENT_BUS.addListener((PlayerEvent.PlayerLoggedOutEvent e) -> SENT.remove(e.getEntity().getUUID()));
         MinecraftForge.EVENT_BUS.addListener((PlayerEvent.StartTracking e) -> {
             if (e.getTarget() instanceof ServerPlayer target && e.getEntity() instanceof ServerPlayer watcher) {

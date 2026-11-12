@@ -31,7 +31,12 @@ class RelicDefTest {
         assertArrayEquals(new float[] {1, 0, 1, 15, 9, 15}, d.shape.get(0));
         assertEquals(RelicDef.Drop.NONE, d.drop);
         assertNull(d.base.layer);
-        assertEquals(8.6F, d.base.top);
+        assertTrue(Float.isNaN(d.base.top));
+        assertEquals(RelicDef.DEFAULT_BASE, d.base.id);
+        assertNull(d.base.tint);
+        assertEquals(1, d.span);
+        assertFalse(d.tinted);
+        assertNull(d.name);
         assertEquals("ultimaratio:cyvercry", d.figure.entity);
         assertArrayEquals(new int[] {1}, d.figure.phases);
         assertEquals(18F, d.figure.wide);
@@ -52,7 +57,7 @@ class RelicDefTest {
         assertTrue(d.grand());
         assertEquals("relic_part", d.part);
         assertEquals("epic", d.rarity);
-        assertEquals(14.8F, d.base.top);
+        assertEquals(3, d.span);
         assertEquals(26F, d.figure.wide);
         assertEquals(36F, d.figure.tall);
         assertEquals(2, d.shape.size());
@@ -102,6 +107,38 @@ class RelicDefTest {
     }
 
     @Test
+    void sizesOneToFiveAndAStringBase() {
+        RelicDef d = parse("{\"boss\": \"a:b\", \"size\": 4, \"base\": \"mymod:altar\", \"name\": \"Big one\"}", "x");
+        assertEquals(4, d.span);
+        assertTrue(d.grand());
+        assertEquals("mymod:altar", d.base.id);
+        assertEquals("Big one", d.name);
+        assertEquals(46F * 4 / 3, d.figure.wide, 1e-4F);
+        assertEquals(2, parse("{\"boss\": \"a:b\", \"size\": 2}", "x").span);
+        assertEquals(1, parse("{\"boss\": \"a:b\", \"size\": \"single\"}", "x").span);
+        assertEquals("minecraft:stone", parse("{\"boss\": \"a:b\", \"base\": \"stone\"}", "x").base.id);
+        RelicDef o = parse("{\"boss\": \"a:b\", \"base\": {\"id\": \"m:s\", \"top\": 12, \"tint\": \"#ff0000\"}}", "x");
+        assertEquals("m:s", o.base.id);
+        assertEquals(12F, o.base.top);
+        assertEquals(5, o.base.tint.length);
+        assertEquals(0xFF0000, o.base.tint[3]);
+    }
+
+    @Test
+    void oneTintColourMakesARampAndBlankMeansGold() {
+        RelicDef d = parse("{\"boss\": \"a:b\", \"tint\": \"#4080c0\"}", "x");
+        assertTrue(d.tinted);
+        assertEquals(5, d.tint.length);
+        assertEquals(0x4080C0, d.tint[3]);
+        assertTrue((d.tint[0] & 255) < (d.tint[3] & 255) && (d.tint[4] & 255) > (d.tint[3] & 255));
+        RelicDef f = parse("{\"boss\": \"a:b\", \"figure\": {\"tint\": \"#00ff00\"}}", "x");
+        assertEquals(0x00FF00, f.tint[3]);
+        RelicDef blank = parse("{\"boss\": \"a:b\", \"tint\": \"\"}", "x");
+        assertFalse(blank.tinted);
+        assertArrayEquals(RelicDef.GOLD, blank.tint);
+    }
+
+    @Test
     void badFilesAreRefused() {
         assertThrows(IllegalArgumentException.class, () -> parse("{}", "x"));
         assertThrows(IllegalArgumentException.class, () -> parse("{\"boss\": \"a:b\", \"size\": \"huge\"}", "x"));
@@ -109,6 +146,8 @@ class RelicDefTest {
         assertThrows(IllegalArgumentException.class, () -> parse("{\"boss\": \"a:b\", \"figure\": {\"bounds\": [1, 2]}}", "x"));
         assertThrows(IllegalArgumentException.class, () -> parse("{\"boss\": \"a:b\", \"tint\": [\"#fff\"]}", "x"));
         assertThrows(IllegalArgumentException.class, () -> parse("{\"boss\": \"a:b\", \"figure\": {\"phases\": []}}", "x"));
+        assertThrows(IllegalArgumentException.class, () -> parse("{\"boss\": \"a:b\", \"size\": 6}", "x"));
+        assertThrows(IllegalArgumentException.class, () -> parse("{\"boss\": \"a:b\", \"size\": 0}", "x"));
     }
 
     @Test

@@ -198,6 +198,37 @@ public final class EventSelfTest {
         check(!EventTrigger.done(player, id("ritual")), "a cancelled event does not count for advancements");
         FEvents.post(new Events.RitualStarted(player, id("rain"), BlockPos.ZERO));
         check(EventTrigger.done(player, id("ritual")), "the same event, not cancelled, does");
+
+        // player conditions, through a real advancement and through read()
+        player.setRemainingFireTicks(0);
+        FEvents.post(new Events.QuestAccepted(player, id("first")));
+        check(EventTrigger.known(server, id("burning")) && !EventTrigger.done(player, id("burning")), "an event does not count when the player conditions fail");
+        player.setRemainingFireTicks(200);
+        FEvents.post(new Events.QuestAccepted(player, id("first")));
+        check(EventTrigger.done(player, id("burning")), "the same event counts once the player conditions hold");
+        EventTrigger.Instance burning = EventTrigger.read(JsonParser.parseString("{\"event\": \"fundamentum:quest_accepted\", \"player\": " + OnFire.PLAYER + "}"));
+        boolean onFire = burning.testPlayer(player);
+        player.setRemainingFireTicks(0);
+        check(onFire && !burning.testPlayer(player), "player conditions read from JSON are kept");
+
+        // every event Fundamentum's own systems post is registered, with the right cancel flag
+        String[][] own = {
+            {"shield_blocked", "false"}, {"effect_applied", "true"}, {"effect_ended", "false"}, {"effect_tick", "true"},
+            {"loot_added", "true"}, {"boss_loot_dropped", "false"}, {"music_changed", "false"}, {"moon_rose", "false"},
+            {"moon_set", "false"}, {"night_event_started", "false"}, {"night_event_ended", "false"},
+            {"meter_threshold", "false"}, {"element_reacted", "false"}, {"boss_spawned", "false"},
+            {"boss_phase_changed", "false"}, {"boss_killed", "false"}, {"set_bonus_on", "false"}, {"set_bonus_off", "false"},
+            {"ammo_drawn", "true"}, {"thrown_weapon_hit", "true"}, {"wings_take_off", "true"}, {"mana_spent", "true"},
+            {"summon_created", "true"}};
+        List<String> wrong = new ArrayList<>();
+        for (String[] e : own) {
+            FEvents.Type t = FEvents.type(FId.of("fundamentum", e[0]));
+            if (t == null || t.cancellable() != Boolean.parseBoolean(e[1])) wrong.add(e[0]);
+        }
+        // the records in Events, plus fundamentum:config_changed, which Events registers for the config system
+        long count = FEvents.types().stream().filter(t -> t.type().getEnclosingClass() == Events.class).count()
+            + (FEvents.type(FId.of("fundamentum", "config_changed")) != null ? 1 : 0);
+        check(wrong.isEmpty() && count == 47, "Events holds its 47 event types " + (wrong.isEmpty() ? "(" + count + ")" : wrong));
     }
 
     private static JsonObject obj(String json) {

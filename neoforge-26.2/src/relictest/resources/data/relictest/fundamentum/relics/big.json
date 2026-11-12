@@ -1,0 +1,7 @@
+{
+  "boss": "minecraft:wither",
+  "size": 3,
+  "name": "Big Test Relic",
+  "drop": "killer",
+  "light": 7
+}

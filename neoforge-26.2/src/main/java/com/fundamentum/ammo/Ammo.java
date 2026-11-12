@@ -1,7 +1,10 @@
 package com.fundamentum.ammo;
 
+import com.fundamentum.event.Events;
+import com.fundamentum.event.FEvents;
+import com.fundamentum.port.FId;
 import com.fundamentum.attribute.StatAttributes;
-import com.fundamentum.curios.Slots;
+import com.fundamentum.slots.Slots;
 import com.fundamentum.data.DataTable;
 import com.fundamentum.data.DataTables;
 import com.google.gson.JsonElement;
@@ -181,6 +184,9 @@ public final class Ammo {
         AmmoConsumeEvent event = new AmmoConsumeEvent(shooter, weapon, found, amount, conservation(shooter));
         NeoForge.EVENT_BUS.post(event);
         if (event.isCanceled()) {
+            return 0;
+        }
+        if (FEvents.post(new Events.AmmoDrawn(shooter, weapon, found.stack()))) {
             return 0;
         }
         int take = 0;

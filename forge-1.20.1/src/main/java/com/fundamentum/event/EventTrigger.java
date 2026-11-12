@@ -9,11 +9,13 @@ import net.minecraft.advancements.CriterionTrigger;
 import net.minecraft.advancements.critereon.AbstractCriterionTriggerInstance;
 import net.minecraft.advancements.critereon.ContextAwarePredicate;
 import net.minecraft.advancements.critereon.DeserializationContext;
+import net.minecraft.advancements.critereon.EntityPredicate;
 import net.minecraft.advancements.critereon.SerializationContext;
 import net.minecraft.advancements.critereon.SimpleCriterionTrigger;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraftforge.server.ServerLifecycleHooks;
 
 /**
  * The {@code fundamentum:event} advancement trigger: completes when an ecosystem event about the player fires.
@@ -40,6 +42,11 @@ public final class EventTrigger extends SimpleCriterionTrigger<EventTrigger.Inst
 
         public String event() {
             return this.event;
+        }
+
+        /** True when the player meets the {@code player} conditions (or there are none). */
+        public boolean testPlayer(ServerPlayer p) {
+            return getPlayerPredicate().matches(EntityPredicate.createContext(p, p));
         }
 
         public boolean test(FEvents.Type type, Record event) {
@@ -87,9 +94,15 @@ public final class EventTrigger extends SimpleCriterionTrigger<EventTrigger.Inst
         });
     }
 
-    /** Reads trigger conditions from JSON (for checks and tools; the {@code player} conditions are left out here). */
+    /** Reads trigger conditions from JSON (for checks and tools), {@code player} conditions included while a server runs. */
     public static Instance read(JsonElement conditions) {
-        return fromJson(conditions.getAsJsonObject(), ContextAwarePredicate.ANY);
+        JsonObject json = conditions.getAsJsonObject();
+        ContextAwarePredicate player = ContextAwarePredicate.ANY;
+        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+        if (json.has("player") && server != null) {
+            player = EntityPredicate.fromJson(json, "player", new DeserializationContext(ID.vanilla(), server.getLootData()));
+        }
+        return fromJson(json, player);
     }
 
     /** True when the player has completed the advancement. */
