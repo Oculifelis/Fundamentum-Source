@@ -68,19 +68,27 @@ jobs:
           git clone -q --depth 1 https://github.com/Oculifelis/Fundamentum-Source.git "$RUNNER_TEMP/fundamentum"
           cd "$RUNNER_TEMP/fundamentum/$loader-$mc"
           tr -d '\015' < gradlew > gradlew.unix && mv gradlew.unix gradlew && chmod +x gradlew
-          ./gradlew publish -x test "-Pfundamentum_publish_repo=$RUNNER_TEMP/fundamentum-repo" $JDKS
+          ./gradlew publish -x test --no-daemon --max-workers=2 "-Dorg.gradle.jvmargs=-Xmx4g" "-Pfundamentum_publish_repo=$RUNNER_TEMP/fundamentum-repo" $JDKS
           have="$(sed -n 's/^mod_version=//p' gradle.properties | tr -d '\015')+$mc"
           cat > "$RUNNER_TEMP/fundamentum.gradle" <<EOF
           allprojects { repositories { maven { url = uri("$RUNNER_TEMP/fundamentum-repo"); content { includeGroup "com.fundamentum" } } } }
           EOF
           echo "Built Fundamentum $have (the project names $want)."
           echo "DEPS=--init-script $RUNNER_TEMP/fundamentum.gradle -Pfundamentum_version=$have" >> "$GITHUB_ENV"
+      - name: Download compile and server-test dependencies
+        run: |
+          if [ -f tools/fetch_libs.sh ]; then bash tools/fetch_libs.sh; fi
+          if [ -f tools/set_mods.sh ]; then bash tools/set_mods.sh run-gametest full; fi
       - name: Compile and unit tests
-        run: ./gradlew build --stacktrace $JDKS $DEPS
+        run: ./gradlew build --no-daemon --max-workers=2 "-Dorg.gradle.jvmargs=-Xmx4g" --stacktrace $JDKS $DEPS
       - name: GameTests
         run: |
           if grep -qs 'gameTestServer' build.gradle build.gradle.kts; then
-            ./gradlew runGameTestServer --stacktrace $JDKS $DEPS
+            verify=
+            # Some projects keep server checks in an explicit test-only source tree.
+            target=$(basename "$PWD")
+            if [ -d "../verification/$target" ]; then verify=-Pverification; fi
+            ./gradlew runGameTestServer --no-daemon --max-workers=2 "-Dorg.gradle.jvmargs=-Xmx4g" --stacktrace $JDKS $DEPS $verify
           else
             echo "This project has no GameTest server run: compile and unit tests only."
           fi
