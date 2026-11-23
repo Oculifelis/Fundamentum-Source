@@ -1,4 +1,0 @@
-{
-  "entities": ["player"],
-  "slots": ["wings", "mount", "hook", "summon", "quiver"]
-}

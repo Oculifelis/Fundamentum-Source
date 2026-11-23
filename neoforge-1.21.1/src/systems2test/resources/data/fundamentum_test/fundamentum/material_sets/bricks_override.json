@@ -1,5 +1,0 @@
-{
-  "set": "minecraft:bricks",
-  "roles": {"wall": "minecraft:nether_brick_wall"},
-  "tags": ["test_override"]
-}

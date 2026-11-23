@@ -1,4 +1,0 @@
-{
-  "cures": ["fundamentum:cures/holy"],
-  "effects": ["minecraft:wither", "minecraft:poison", "fundamentum:potion_sickness"]
-}
