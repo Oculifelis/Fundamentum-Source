@@ -1,5 +1,0 @@
-{
-  "biome": "fundamentum_test:shared_plains",
-  "requires": ["no_such_mod_here"],
-  "share": {"with": "minecraft:forest"}
-}

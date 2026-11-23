@@ -65,8 +65,13 @@ jobs:
           mc=${want#*+}
           loader=neoforge
           if grep -qs 'minecraftforge' build.gradle; then loader=forge; fi
-          git clone -q --depth 1 https://github.com/Oculifelis/Fundamentum-Source.git "$RUNNER_TEMP/fundamentum"
-          cd "$RUNNER_TEMP/fundamentum/$loader-$mc"
+          # Fundamentum-Source keeps one branch per Minecraft version.
+          if git clone -q --depth 1 -b "$mc" https://github.com/Oculifelis/Fundamentum-Source.git "$RUNNER_TEMP/fundamentum"; then
+            cd "$RUNNER_TEMP/fundamentum"
+          else
+            git clone -q --depth 1 https://github.com/Oculifelis/Fundamentum-Source.git "$RUNNER_TEMP/fundamentum"
+            cd "$RUNNER_TEMP/fundamentum/$loader-$mc"
+          fi
           tr -d '\015' < gradlew > gradlew.unix && mv gradlew.unix gradlew && chmod +x gradlew
           ./gradlew publish -x test --no-daemon --max-workers=2 "-Dorg.gradle.jvmargs=-Xmx4g" "-Pfundamentum_publish_repo=$RUNNER_TEMP/fundamentum-repo" $JDKS
           have="$(sed -n 's/^mod_version=//p' gradle.properties | tr -d '\015')+$mc"

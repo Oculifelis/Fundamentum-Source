@@ -1,7 +1,0 @@
-{
-  "title": "Shot Guide",
-  "icon": "minecraft:iron_block",
-  "chapters": [
-    { "id": "views", "title": "Views", "icon": "minecraft:crafting_table" }
-  ]
-}
