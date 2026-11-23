@@ -1,6 +1,0 @@
-{
-  "type": "fundamentum:portal_crafting",
-  "ingredient": { "item": "minecraft:dirt" },
-  "portal": "minecraft:end_portal",
-  "result": "minecraft:diamond"
-}
