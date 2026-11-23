@@ -1,8 +1,0 @@
-{
-  "criteria": {
-    "got": {
-      "trigger": "fundamentum:unlocked",
-      "conditions": { "id": "unlocktest:root" }
-    }
-  }
-}

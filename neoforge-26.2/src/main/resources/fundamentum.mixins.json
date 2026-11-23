@@ -1,9 +1,0 @@
-{
-  "required": true,
-  "minVersion": "0.8",
-  "package": "com.fundamentum.mixin",
-  "compatibilityLevel": "JAVA_21",
-  "mixins": ["LivingEntityMixin", "MobMixin", "SoulBurnMixin", "SpearReachMixin", "BiomeSourceMixin", "MultiNoiseBiomeSourceMixin", "NoiseGeneratorSettingsMixin", "UnifyRecipeManagerMixin", "UnifyHopperMixin", "UnifyItemHandlerMixin", "FoodFinishMixin", "GameEventsMixin", "InventoryEventsMixin"],
-  "client": ["SoulFireRenderStateMixin", "SoulFireExtractMixin", "SoulFlameMixin", "SoulScreenFireMixin", "SkyColorMixin", "WindowMixin", "EntityGlowMixin", "QuadEmissionMixin", "RenderSetupSamplersMixin", "JukeboxEventsMixin", "BiomeTintMixin", "GhostBlockMixin"],
-  "injectors": {"defaultRequire": 1}
-}

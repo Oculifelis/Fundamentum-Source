@@ -1,7 +1,0 @@
-{
-  "item": "fundamentum:example_flail_links",
-  "physics": "links",
-  "material": "fundamentum:iron",
-  "kind": "fundamentum:multi",
-  "damage": 5
-}
