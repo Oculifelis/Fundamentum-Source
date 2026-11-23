@@ -1,5 +1,0 @@
-{
-  "type": "minecraft:crafting_shapeless",
-  "ingredients": ["minecraft:gravel"],
-  "result": { "id": "unifytest:copper_ingot" }
-}
