@@ -1,0 +1,7 @@
+{
+  "values": {
+    "minecraft:golden_helmet": {"aspects": {"thaumaturge:ignis": 3, "thaumaturge:perditio": 7}},
+    "#discounttest:cheap": {"aspects": {"thaumaturge:ignis": 5}},
+    "minecraft:leather_chestplate": {"aspects": {"thaumaturge:ignis": -50}}
+  }
+}

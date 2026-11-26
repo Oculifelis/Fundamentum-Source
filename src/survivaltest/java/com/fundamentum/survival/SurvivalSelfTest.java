@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
  * The survival meter test, only in {@code gradlew runServer -Psurvivaltest} (world under run-survivaltest). The same
  * file on every version. Checks that meters load from data (broken and disabled files left out), start values, drain
  * rules with activities and conditions, the climate rule and conditions, threshold effects and damage, eating and
- * drinking items through the food hooks, drinking from water, death resets, the client sync message, the HUD layout
+ * drinking items through the food hooks, drinking from water, death resets, event-driven updates and scheduling, the client sync message, the HUD layout
  * and the command. Writes survivaltest-result.txt and stops the server. Log lines start with SURVIVALTEST.
  */
 public final class SurvivalSelfTest {
@@ -145,7 +145,7 @@ public final class SurvivalSelfTest {
 
         // data
         Set<FId> ids = Survival.meters().keySet();
-        check(ids.equals(Set.of(THIRST, WARMTH, KEEP)), "three meters load, the broken and disabled files left out " + ids);
+        check(ids.equals(Set.of(THIRST, WARMTH, KEEP)), "three meters load; the broken, disabled and mod-gated files left out " + ids);
         Meter thirst = Survival.meter(THIRST);
         Meter warmth = Survival.meter(WARMTH);
         Meter keep = Survival.meter(KEEP);
@@ -186,6 +186,25 @@ public final class SurvivalSelfTest {
         p.setShiftKeyDown(false);
         check(Survival.activity(p, "still") && !Survival.activity(p, "moving") && !Survival.activity(p, "in_water") && !Survival.activity(p, "nonsense"),
             "activities read the player");
+
+        // events and scheduling
+        check(Survival.pending(p), "a sprint or sneak change marks the plan for a rebuild");
+        Survival.evaluate(p);
+        check(!Survival.pending(p), "an update rebuilds the plan");
+        long next = Survival.nextUpdate(p);
+        check(next > 0 && next <= 20, "a draining meter wakes within a second (" + next + ")");
+        p.setSprinting(true);
+        check(Survival.pending(p), "starting a sprint marks the plan");
+        p.setSprinting(false);
+        Survival.evaluate(p);
+        Stats.set(p, THIRST, 12);
+        check(Survival.pending(p), "another writer of the meter's stat marks the plan");
+        Survival.evaluate(p);
+        Survival.set(p, thirst, 11);
+        check(near(Survival.get(p, thirst), 11), "the meter's own writes still land");
+        check(Survival.evented(JsonParser.parseString("\"sprinting\"")) && Survival.evented(JsonParser.parseString("[\"sneaking\", \"swimming\"]"))
+            && !Survival.evented(JsonParser.parseString("\"moving\""))
+            && !Survival.evented(JsonParser.parseString("{\"type\": \"climate\"}")), "rules that read only evented activities need no polling");
 
         // thresholds
         Survival.set(p, thirst, 6);

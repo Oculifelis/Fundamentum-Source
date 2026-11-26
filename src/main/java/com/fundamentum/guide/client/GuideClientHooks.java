@@ -76,8 +76,8 @@ public final class GuideClientHooks {
         return pageOf(hovered);
     }
 
-    private static final java.util.Map<Item, java.util.Optional<GuidePage>> PAGES = new java.util.HashMap<>();
-    private static final java.util.Map<Item, java.util.Optional<Guides.Book>> BOOKS = new java.util.HashMap<>();
+    private static final java.util.Map<Item, java.util.Optional<GuidePage>> PAGES = new java.util.concurrent.ConcurrentHashMap<>();
+    private static final java.util.Map<Item, java.util.Optional<Guides.Book>> BOOKS = new java.util.concurrent.ConcurrentHashMap<>();
     private static Object cachedLib;
     private static Object cachedUnlocks;
     private static int cachedEpoch = -1;

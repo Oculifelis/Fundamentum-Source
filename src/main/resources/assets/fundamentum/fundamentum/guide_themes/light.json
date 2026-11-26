@@ -1,0 +1,46 @@
+{
+  "name": "Light",
+  "tags": [
+    "light",
+    "editor"
+  ],
+  "style": "flat",
+  "backdrop": "#8C000000",
+  "colors": {
+    "fill": "#F5F6F6F4",
+    "frame": "#BEC0C4",
+    "rule": "#DCDEE2",
+    "title": "#1E2024",
+    "muted": "#80848C",
+    "text": "#1E2024",
+    "strong": "#1E2024",
+    "soft": "#585C64",
+    "mod": "#585C64",
+    "nav": "#585C64"
+  },
+  "shadow": false,
+  "accent": {
+    "shift": -0.4,
+    "selection": 40
+  },
+  "well": {
+    "fill": "#E8E9EC",
+    "light": "#E8E9EC",
+    "shadow": "#BEC0C4",
+    "line": "#DCDEE2"
+  },
+  "page": {
+    "text": "#1E2024",
+    "muted": "#80848C",
+    "code": "#8A5A00",
+    "rule": [
+      "#DCDEE2",
+      "#DCDEE2"
+    ],
+    "shadow": false
+  },
+  "slot": {
+    "fill": "#E8E9EC",
+    "edge": "#BEC0C4"
+  }
+}

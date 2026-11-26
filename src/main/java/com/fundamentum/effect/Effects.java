@@ -463,6 +463,7 @@ public final class Effects {
     }
 
     private static void removeById(LivingEntity entity, Identifier id) {
+        com.fundamentum.stat.Stats.removeModifiers(entity, com.fundamentum.port.FId.of(id.toString()));
         BuiltInRegistries.ATTRIBUTE.listElements().forEach(attribute -> {
             AttributeInstance instance = entity.getAttribute(attribute);
             if (instance != null) {

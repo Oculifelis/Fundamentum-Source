@@ -1,0 +1,36 @@
+{
+  "description": {
+    "translate": "enchantment.fundamentum.spiked"
+  },
+  "supported_items": "#fundamentum:enchantable/shield",
+  "weight": 5,
+  "max_level": 3,
+  "min_cost": {
+    "base": 8,
+    "per_level_above_first": 10
+  },
+  "max_cost": {
+    "base": 58,
+    "per_level_above_first": 10
+  },
+  "anvil_cost": 2,
+  "slots": [
+    "hand"
+  ],
+  "effects": {
+    "fundamentum:weapon_effects": {
+      "hook": "on_bash",
+      "effects": [
+        {
+          "type": "modify",
+          "field": "damage",
+          "op": "add",
+          "value": {
+            "base": 2,
+            "per_level_above_first": 1.5
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "name": "High Contrast",
+  "tags": [
+    "dark",
+    "high contrast"
+  ],
+  "style": "flat",
+  "backdrop": "#E6000000",
+  "colors": {
+    "fill": "#FF000000",
+    "frame": "#FFFFFF",
+    "rule": "#FFFFFF",
+    "title": "#FFFFFF",
+    "muted": "#FFFF00",
+    "text": "#FFFFFF",
+    "strong": "#FFFFFF",
+    "soft": "#FFFFFF",
+    "mod": "#FFFFFF",
+    "nav": "#FFFFFF"
+  },
+  "shadow": true,
+  "accent": {
+    "shift": 0.0,
+    "selection": 110
+  },
+  "well": {
+    "fill": "#FFFFFF",
+    "light": "#FFFFFF",
+    "shadow": "#FFFF00",
+    "line": "#FFFFFF"
+  },
+  "page": {
+    "text": "#FFFFFF",
+    "muted": "#FFFF00",
+    "code": "#00FFFF",
+    "rule": [
+      "#FFFFFF",
+      "#FFFFFF"
+    ],
+    "shadow": true
+  },
+  "slot": {
+    "fill": "#FFFFFF",
+    "edge": "#FFFF00"
+  }
+}

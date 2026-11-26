@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    {
+      "id": "thaumaturgictinkerer:ichorium_nugget",
+      "required": false
+    }
+  ]
+}

@@ -1,5 +1,8 @@
 package com.fundamentum.scythe;
 
+import com.fundamentum.enchant.FEnchantments;
+import com.fundamentum.enchant.WeaponHook;
+
 import com.fundamentum.compat.BetterCombat;
 import com.fundamentum.data.DataTable;
 import com.fundamentum.data.DataTables;
@@ -164,8 +167,9 @@ public final class Scythes {
         ScytheSpec.ReapPull r = spec.reapPull;
         ServerLevel level = player.level();
         WhipVec eye = vec(player.getEyePosition()), look = vec(player.getLookAngle());
-        for (LivingEntity t : around(player, r.range())) {
-            if (!ScytheMath.inArc(eye, look, vec(t.getBoundingBox().getCenter()), r.range(), r.arc()) || !seen(player, t)) {
+        double range = r.range() * sweep(player, stack, "reap_pull", r.range());
+        for (LivingEntity t : around(player, range)) {
+            if (!ScytheMath.inArc(eye, look, vec(t.getBoundingBox().getCenter()), range, r.arc()) || !seen(player, t)) {
                 continue;
             }
             double resist = 1.0 - t.getAttributeValue(Attributes.KNOCKBACK_RESISTANCE);
@@ -224,7 +228,9 @@ public final class Scythes {
                     || !w.hit().add(t.getId())) {
                     continue;
                 }
+                move = "crescent_wave";
                 hit(player, w.stack(), w.spec(), t, cw.damage());
+                move = "";
                 if (w.hit().size() >= cw.pierce()) {
                     stop = true;
                     break;
@@ -266,7 +272,8 @@ public final class Scythes {
         }
         if (ScytheMath.whirlHits(w, s.whirlTicks)) {
             double mult = ScytheMath.whirl(w, s.whirlTicks);
-            for (LivingEntity t : around(player, w.radius())) {
+            double radius = w.radius() * sweep(player, stack, "whirl", w.radius());
+            for (LivingEntity t : around(player, radius)) {
                 if (seen(player, t)) {
                     hit(player, stack, spec, t, mult);
                 }
@@ -278,6 +285,14 @@ public final class Scythes {
         if (w.maxTicks() > 0 && s.whirlTicks >= w.maxTicks()) {
             stopWhirl(player, s, spec);
         }
+    }
+
+    /**
+     * Fires on_sweep for one of the scythe's sweeps ({@code kind}: backswing, whirl or reap_pull) and returns the
+     * multiplier on its reach. Listeners see the final reach as {@code reach * radius}.
+     */
+    private static double sweep(ServerPlayer player, ItemStack stack, String kind, double reach) {
+        return FEnchantments.fire(new WeaponHook("on_sweep", player.level(), player, stack, null).reach(reach).mode(kind)).radius;
     }
 
     /** Creatures within {@code r} of the player that a scythe may hit. */
@@ -300,12 +315,16 @@ public final class Scythes {
     }
 
     /** One of the scythe's own hits, for {@code mult} times its damage (souls on top). */
+    /** The move whose hit is being dealt, passed to on_scythe_hit listeners as the hook's mode (only the crescent wave sets one). */
+    private static String move = "";
+
     private static void hit(ServerPlayer player, ItemStack stack, ScytheSpec spec, LivingEntity t, double mult) {
         ServerLevel level = player.level();
         double amount = spec.damage * mult;
         if (spec.harvestSouls != null) {
             amount *= ScytheMath.souls(spec.harvestSouls, souls(player));
         }
+        amount = FEnchantments.fire(new WeaponHook("on_scythe_hit", level, player, stack, t).damage((float) amount).charge(mult).mode(move)).damage;
         DamageSource source = player.damageSources().playerAttack(player);
         float dealt = EnchantmentHelper.modifyDamage(level, stack, t, source, (float) amount);
         OURS.set(Boolean.TRUE);
@@ -384,8 +403,9 @@ public final class Scythes {
     public static int backswing(ServerPlayer player, ItemStack stack, ScytheSpec spec) {
         WhipVec eye = vec(player.getEyePosition()), look = vec(player.getLookAngle());
         int n = 0;
-        for (LivingEntity t : around(player, spec.reach + 1)) {
-            if (ScytheMath.inArc(eye, look, vec(t.getBoundingBox().getCenter()), spec.reach + t.getBbWidth() * 0.5, spec.backswing.arc())
+        double reach = spec.reach * sweep(player, stack, "backswing", spec.reach);
+        for (LivingEntity t : around(player, reach + 1)) {
+            if (ScytheMath.inArc(eye, look, vec(t.getBoundingBox().getCenter()), reach + t.getBbWidth() * 0.5, spec.backswing.arc())
                 && seen(player, t)) {
                 hit(player, stack, spec, t, spec.backswing.damage());
                 n++;

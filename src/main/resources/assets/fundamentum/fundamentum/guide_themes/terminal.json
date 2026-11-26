@@ -1,0 +1,47 @@
+{
+  "name": "Terminal",
+  "tags": [
+    "dark",
+    "neon",
+    "high contrast"
+  ],
+  "style": "flat",
+  "backdrop": "#BF000000",
+  "colors": {
+    "fill": "#FA050805",
+    "frame": "#143014",
+    "rule": "#143014",
+    "title": "#B4FFB4",
+    "muted": "#3A9A3A",
+    "text": "#7CFF7C",
+    "strong": "#7CFF7C",
+    "soft": "#5ADC5A",
+    "mod": "#5ADC5A",
+    "nav": "#5ADC5A"
+  },
+  "shadow": true,
+  "accent": {
+    "shift": 0.2,
+    "selection": 60
+  },
+  "well": {
+    "fill": "#143014",
+    "light": "#143014",
+    "shadow": "#3A9A3A",
+    "line": "#143014"
+  },
+  "page": {
+    "text": "#7CFF7C",
+    "muted": "#3A9A3A",
+    "code": "#FFFF7C",
+    "rule": [
+      "#143014",
+      "#143014"
+    ],
+    "shadow": true
+  },
+  "slot": {
+    "fill": "#143014",
+    "edge": "#3A9A3A"
+  }
+}

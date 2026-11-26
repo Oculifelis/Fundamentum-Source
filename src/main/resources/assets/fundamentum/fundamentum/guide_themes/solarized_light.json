@@ -1,0 +1,46 @@
+{
+  "name": "Solarized Light",
+  "tags": [
+    "light",
+    "editor"
+  ],
+  "style": "flat",
+  "backdrop": "#8C000000",
+  "colors": {
+    "fill": "#F5FDF6E3",
+    "frame": "#D8D0B8",
+    "rule": "#EEE8D5",
+    "title": "#3C4E55",
+    "muted": "#6E8288",
+    "text": "#3C4E55",
+    "strong": "#3C4E55",
+    "soft": "#4D6066",
+    "mod": "#4D6066",
+    "nav": "#4D6066"
+  },
+  "shadow": false,
+  "accent": {
+    "shift": -0.4,
+    "selection": 50
+  },
+  "well": {
+    "fill": "#EEE8D5",
+    "light": "#EEE8D5",
+    "shadow": "#C8C0A8",
+    "line": "#EEE8D5"
+  },
+  "page": {
+    "text": "#3C4E55",
+    "muted": "#6E8288",
+    "code": "#8A5A00",
+    "rule": [
+      "#EEE8D5",
+      "#EEE8D5"
+    ],
+    "shadow": false
+  },
+  "slot": {
+    "fill": "#EEE8D5",
+    "edge": "#C8C0A8"
+  }
+}

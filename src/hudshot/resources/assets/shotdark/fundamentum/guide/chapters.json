@@ -1,0 +1,22 @@
+{
+  "title": "Dark Page Guide",
+  "icon": "minecraft:deepslate",
+  "chapters": [
+    {
+      "id": "start",
+      "title": "Getting Started",
+      "icon": "minecraft:crafting_table"
+    },
+    {
+      "id": "power",
+      "title": "Power",
+      "icon": "minecraft:redstone"
+    },
+    {
+      "id": "late",
+      "title": "Late Game",
+      "icon": "minecraft:nether_star"
+    }
+  ],
+  "theme": "fundamentum:dark"
+}

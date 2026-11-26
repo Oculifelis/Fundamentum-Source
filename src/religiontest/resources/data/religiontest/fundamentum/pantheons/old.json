@@ -1,0 +1,7 @@
+{
+  "name": "Old Gods",
+  "gods": [
+    "religiontest:moon"
+  ],
+  "exclusive": true
+}

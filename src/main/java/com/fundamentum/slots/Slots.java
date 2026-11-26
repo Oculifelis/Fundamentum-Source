@@ -13,9 +13,14 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.ContainerListener;
 import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.entity.player.PlayerContainerEvent;
 import top.theillusivec4.curios.api.CuriosApi;
 import top.theillusivec4.curios.api.event.CurioChangeEvent;
+import top.theillusivec4.curios.api.type.ICuriosMenu;
 import top.theillusivec4.curios.api.type.capability.ICuriosItemHandler;
 import top.theillusivec4.curios.api.type.inventory.ICurioStacksHandler;
 import top.theillusivec4.curios.api.type.inventory.IDynamicStackHandler;
@@ -30,7 +35,8 @@ import top.theillusivec4.curios.api.type.inventory.IDynamicStackHandler;
  * {@link #validator} added for that slot. Every Curios slot change posts {@link Events.SlotEquipped} and
  * {@link Events.SlotUnequipped} on the server, for every slot type, Fundamentum's and other mods' alike. Curios reports
  * changes to worn items as the entity ticks; a cosmetic twin changed through {@link #setCosmetic} posts the events at
- * once. Renderers draw {@link #shown}: the cosmetic twin when it holds something, else the worn item.
+ * once, and one changed by hand in Curios' screen posts them as the screen's slots change (at the latest when it closes).
+ * Renderers draw {@link #shown}: the cosmetic twin when it holds something, else the worn item.
  */
 public final class Slots {
     public static final String WINGS = "wings";
@@ -50,10 +56,18 @@ public final class Slots {
     public static synchronized void init() {
         if (initialised) return;
         initialised = true;
+        SlotMigration.init();
         // Curios checks every slot of every type for changes as each entity ticks
         NeoForge.EVENT_BUS.addListener((CurioChangeEvent.Item event) -> changed(event.getEntity(),
             event.getSlotContext().identifier(), event.getSlotContext().index(), event.getSlotContext().cosmetic(),
             event.getFrom(), event.getTo()));
+        // Curios never reports cosmetic twins, so watch its screen while it is open
+        NeoForge.EVENT_BUS.addListener((PlayerContainerEvent.Open event) -> {
+            if (event.getEntity() instanceof ServerPlayer p) menuOpened(p, event.getContainer());
+        });
+        NeoForge.EVENT_BUS.addListener((PlayerContainerEvent.Close event) -> {
+            if (event.getEntity() instanceof ServerPlayer p) menuClosed(p);
+        });
     }
 
     /**
@@ -228,6 +242,96 @@ public final class Slots {
         for (Consumer<LivingEntity> l : LISTENERS) l.accept(entity);
     }
 
+    // ---- cosmetic twins changed in Curios' screen
+
+    /** Cosmetic twins as they were when last looked at, per player with a Curios screen open. */
+    private static final Map<ServerPlayer, Map<String, List<ItemStack>>> WATCHED = new java.util.WeakHashMap<>();
+
+    /** A menu opened: when it is Curios' screen, remember the cosmetic twins and compare them as its slots change. */
+    static boolean menuOpened(ServerPlayer player, AbstractContainerMenu menu) {
+        if (!(menu instanceof ICuriosMenu)) return false;
+        watch(player, menu);
+        return true;
+    }
+
+    /** Watches {@code menu} for slot changes that may have changed {@code player}'s cosmetic twins. */
+    static void watch(ServerPlayer player, AbstractContainerMenu menu) {
+        synchronized (WATCHED) {
+            WATCHED.put(player, cosmetics(player));
+        }
+        menu.addSlotListener(new ContainerListener() {
+            @Override
+            public void slotChanged(AbstractContainerMenu m, int slot, ItemStack stack) {
+                compareCosmetics(player);
+            }
+
+            @Override
+            public void dataChanged(AbstractContainerMenu m, int index, int value) { }
+        });
+    }
+
+    /** A menu closed: a last comparison, then stop watching. */
+    static void menuClosed(ServerPlayer player) {
+        compareCosmetics(player);
+        synchronized (WATCHED) {
+            WATCHED.remove(player);
+        }
+    }
+
+    /** Posts the slot events for every cosmetic twin that differs from the remembered copy, then remembers the new ones. */
+    static void compareCosmetics(ServerPlayer player) {
+        Map<String, List<ItemStack>> was;
+        synchronized (WATCHED) {
+            was = WATCHED.get(player);
+        }
+        if (was == null) return;
+        Map<String, List<ItemStack>> now = cosmetics(player);
+        synchronized (WATCHED) {
+            if (WATCHED.containsKey(player)) WATCHED.put(player, now);
+        }
+        now.forEach((slot, stacks) -> {
+            List<ItemStack> old = was.getOrDefault(slot, List.of());
+            for (int i = 0; i < stacks.size(); i++) {
+                changed(player, slot, i, true, i < old.size() ? old.get(i) : ItemStack.EMPTY, stacks.get(i));
+            }
+        });
+    }
+
+    /** Keeps a watched player's remembered copy in step with a change already posted. */
+    private static void remember(ServerPlayer player, String slot, int index, ItemStack stack) {
+        synchronized (WATCHED) {
+            Map<String, List<ItemStack>> m = WATCHED.get(player);
+            if (m == null) return;
+            List<ItemStack> l = m.get(slot);
+            if (l != null && index < l.size()) l.set(index, stack.copy());
+        }
+    }
+
+    /** Copies of every cosmetic twin, by slot type. */
+    private static Map<String, List<ItemStack>> cosmetics(LivingEntity entity) {
+        Map<String, List<ItemStack>> out = new java.util.HashMap<>();
+        ICuriosItemHandler inventory = inventory(entity);
+        if (inventory == null) return out;
+        inventory.getCurios().forEach((id, h) -> {
+            if (!h.hasCosmetic()) return;
+            IDynamicStackHandler s = h.getCosmeticStacks();
+            List<ItemStack> copies = new ArrayList<>(s.getSlots());
+            for (int i = 0; i < s.getSlots(); i++) copies.add(s.getStackInSlot(i).copy());
+            out.put(id, copies);
+        });
+        return out;
+    }
+
+    /** Sets a slot straight in Curios, posting nothing, as Curios' screen does; for the self test. */
+    static boolean setQuietly(LivingEntity entity, String slot, int index, boolean cosmetic, ItemStack stack) {
+        ICurioStacksHandler h = handler(entity, slot);
+        if (h == null || cosmetic && !h.hasCosmetic()) return false;
+        IDynamicStackHandler s = stacks(h, cosmetic);
+        if (index < 0 || index >= s.getSlots()) return false;
+        s.setStackInSlot(index, stack);
+        return true;
+    }
+
     // ---- Curios
 
     private static ICuriosItemHandler inventory(LivingEntity entity) {
@@ -264,7 +368,10 @@ public final class Slots {
         ItemStack was = s.getStackInSlot(index).copy();
         s.setStackInSlot(index, stack);
         // Curios reports worn items as the entity ticks, but never cosmetic twins
-        if (cosmetic) changed(entity, slot, index, true, was, stack);
+        if (cosmetic) {
+            changed(entity, slot, index, true, was, stack);
+            if (entity instanceof ServerPlayer p) remember(p, slot, index, stack);
+        }
         return true;
     }
 

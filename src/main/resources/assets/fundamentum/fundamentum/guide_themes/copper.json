@@ -1,0 +1,46 @@
+{
+  "name": "Copper",
+  "tags": [
+    "dark",
+    "minecraft"
+  ],
+  "style": "flat",
+  "backdrop": "#BF000000",
+  "colors": {
+    "fill": "#F52A1A14",
+    "frame": "#4A2E22",
+    "rule": "#4A2E22",
+    "title": "#E8925C",
+    "muted": "#B07A5A",
+    "text": "#F2DCC8",
+    "strong": "#F2DCC8",
+    "soft": "#DAB9A1",
+    "mod": "#DAB9A1",
+    "nav": "#DAB9A1"
+  },
+  "shadow": true,
+  "accent": {
+    "shift": 0.0,
+    "selection": 60
+  },
+  "well": {
+    "fill": "#4A2E22",
+    "light": "#4A2E22",
+    "shadow": "#B07A5A",
+    "line": "#4A2E22"
+  },
+  "page": {
+    "text": "#F2DCC8",
+    "muted": "#B07A5A",
+    "code": "#7FD8B8",
+    "rule": [
+      "#4A2E22",
+      "#4A2E22"
+    ],
+    "shadow": true
+  },
+  "slot": {
+    "fill": "#4A2E22",
+    "edge": "#B07A5A"
+  }
+}

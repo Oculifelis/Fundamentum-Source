@@ -1,0 +1,46 @@
+{
+  "name": "Midnight Neon",
+  "tags": [
+    "dark",
+    "neon"
+  ],
+  "style": "flat",
+  "backdrop": "#BF000000",
+  "colors": {
+    "fill": "#F50C0C16",
+    "frame": "#FF40C8",
+    "rule": "#2A1A3A",
+    "title": "#40F0FF",
+    "muted": "#FF40C8",
+    "text": "#E0F8FF",
+    "strong": "#E0F8FF",
+    "soft": "#EAB7EB",
+    "mod": "#EAB7EB",
+    "nav": "#EAB7EB"
+  },
+  "shadow": true,
+  "accent": {
+    "shift": 0.3,
+    "selection": 60
+  },
+  "well": {
+    "fill": "#2A1A3A",
+    "light": "#2A1A3A",
+    "shadow": "#FF40C8",
+    "line": "#2A1A3A"
+  },
+  "page": {
+    "text": "#E0F8FF",
+    "muted": "#FF40C8",
+    "code": "#40F0FF",
+    "rule": [
+      "#2A1A3A",
+      "#2A1A3A"
+    ],
+    "shadow": true
+  },
+  "slot": {
+    "fill": "#2A1A3A",
+    "edge": "#FF40C8"
+  }
+}

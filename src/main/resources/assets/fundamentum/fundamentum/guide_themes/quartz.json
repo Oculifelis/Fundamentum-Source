@@ -1,0 +1,55 @@
+{
+  "name": "Quartz",
+  "tags": [
+    "light",
+    "textured",
+    "minecraft"
+  ],
+  "style": "textured",
+  "backdrop": "#99000000",
+  "colors": {
+    "fill": "#FFFAF8F4",
+    "frame": "#000000",
+    "rule": "#D8D2C8",
+    "title": "#24201C",
+    "muted": "#6A645C",
+    "text": "#24201C",
+    "strong": "#24201C",
+    "soft": "#3C3732",
+    "mod": "#3C3732",
+    "nav": "#24201C"
+  },
+  "shadow": false,
+  "accent": {
+    "shift": -0.5,
+    "selection": 70
+  },
+  "well": {
+    "fill": "#D8D2C8",
+    "light": "#D8D2C8",
+    "shadow": "#6A645C",
+    "line": "#8A847A"
+  },
+  "page": {
+    "text": "#24201C",
+    "muted": "#6A645C",
+    "code": "#8A5A00",
+    "rule": [
+      "#D8D2C8",
+      "#D8D2C8"
+    ],
+    "shadow": false
+  },
+  "slot": {
+    "fill": "#D8D2C8",
+    "edge": "#6A645C"
+  },
+  "texture": {
+    "background": "minecraft:textures/block/quartz_bricks.png",
+    "border": "minecraft:textures/block/smooth_stone.png",
+    "tint": "#0AFFFFFF",
+    "border_tint": "#3C000000",
+    "border_width": 5,
+    "well": "#E6FAF8F4"
+  }
+}

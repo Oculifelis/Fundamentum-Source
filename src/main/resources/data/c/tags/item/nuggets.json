@@ -1,0 +1,13 @@
+{
+  "replace": false,
+  "values": [
+    {
+      "id": "#c:nuggets/bismuth",
+      "required": false
+    },
+    {
+      "id": "#c:nuggets/ichorium",
+      "required": false
+    }
+  ]
+}

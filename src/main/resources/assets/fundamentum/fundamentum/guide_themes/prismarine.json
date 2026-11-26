@@ -1,0 +1,55 @@
+{
+  "name": "Prismarine",
+  "tags": [
+    "dark",
+    "textured",
+    "minecraft"
+  ],
+  "style": "textured",
+  "backdrop": "#99000000",
+  "colors": {
+    "fill": "#FF0E2A2A",
+    "frame": "#000000",
+    "rule": "#2A5A54",
+    "title": "#9FF0DC",
+    "muted": "#8AC2B6",
+    "text": "#DFF6F0",
+    "strong": "#DFF6F0",
+    "soft": "#C1E3DB",
+    "mod": "#C1E3DB",
+    "nav": "#C1E3DB"
+  },
+  "shadow": true,
+  "accent": {
+    "shift": 0.0,
+    "selection": 70
+  },
+  "well": {
+    "fill": "#2A5A54",
+    "light": "#2A5A54",
+    "shadow": "#8AC2B6",
+    "line": "#000000"
+  },
+  "page": {
+    "text": "#DFF6F0",
+    "muted": "#8AC2B6",
+    "code": "#E6C07B",
+    "rule": [
+      "#2A5A54",
+      "#2A5A54"
+    ],
+    "shadow": true
+  },
+  "slot": {
+    "fill": "#2A5A54",
+    "edge": "#8AC2B6"
+  },
+  "texture": {
+    "background": "minecraft:textures/block/prismarine_bricks.png",
+    "border": "minecraft:textures/block/deepslate_tiles.png",
+    "tint": "#5F000000",
+    "border_tint": "#3C000000",
+    "border_width": 5,
+    "well": "#B9061416"
+  }
+}

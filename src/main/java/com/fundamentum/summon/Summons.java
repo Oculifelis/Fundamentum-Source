@@ -68,7 +68,8 @@ import org.jspecify.annotations.Nullable;
  * minion that dies comes back "respawn" ticks later (5 s by default); one further than "leash" blocks from its player
  * is brought back to them. Minions drop nothing, are never saved and are dismissed when the item leaves the slot, or
  * when the player dies, logs out or changes dimension (they come back with the player). Any creature works; tamable
- * ones are tamed to the player, and creatures with no attack of their own get a melee one.
+ * ones are tamed to the player, and creatures with no attack of their own get a melee one. A player can switch all
+ * of their summons off and on with the Toggle Summons key ({@link SummonToggle}).
  */
 public final class Summons {
     /** One summon item's definition. Stats left null keep the creature's own values. */
@@ -163,10 +164,14 @@ public final class Summons {
     // ------------------------------------------------------------------------------------------------ keeping the party
     /** Every half second: call missing minions, send away ones whose item left the slot, bring back strays, pick targets. */
     private static void tick(PlayerTickEvent.Post event) {
-        if (!(event.getEntity() instanceof ServerPlayer player) || player.tickCount % 10 != 0) {
-            return;
+        if (event.getEntity() instanceof ServerPlayer player && player.tickCount % 10 == 0) {
+            update(player);
         }
-        if (!player.isAlive() || player.isSpectator()) {
+    }
+
+    /** One check of a player's party (the half-second tick runs this); public for tests and tools. */
+    public static void update(ServerPlayer player) {
+        if (!player.isAlive() || player.isSpectator() || !SummonToggle.enabled(player)) {
             dismiss(player);
             return;
         }

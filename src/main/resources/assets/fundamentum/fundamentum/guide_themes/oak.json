@@ -1,0 +1,50 @@
+{
+  "name": "Oak",
+  "tags": [
+    "light",
+    "minecraft"
+  ],
+  "style": "bevel",
+  "backdrop": "#A1000000",
+  "colors": {
+    "fill": "#FFB8925A",
+    "frame": "#000000",
+    "rule": "#6A4E2A",
+    "title": "#24180A",
+    "muted": "#5A4024",
+    "text": "#24180A",
+    "strong": "#24180A",
+    "soft": "#24180A",
+    "mod": "#24180A",
+    "nav": "#24180A"
+  },
+  "shadow": true,
+  "accent": {
+    "shift": -0.5,
+    "selection": 60
+  },
+  "well": {
+    "fill": "#C8A46C",
+    "light": "#E8C890",
+    "shadow": "#6A4E2A",
+    "line": "#000000"
+  },
+  "page": {
+    "text": "#24180A",
+    "muted": "#5A4024",
+    "code": "#6A2A00",
+    "rule": [
+      "#6A4E2A",
+      "#E8C890"
+    ],
+    "shadow": true
+  },
+  "slot": {
+    "fill": "#C8A46C",
+    "edge": "#6A4E2A"
+  },
+  "bevel": {
+    "light": "#D8B47A",
+    "shadow": "#5A4024"
+  }
+}

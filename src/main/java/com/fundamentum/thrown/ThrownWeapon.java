@@ -1,5 +1,8 @@
 package com.fundamentum.thrown;
 
+import com.fundamentum.enchant.FEnchantments;
+import com.fundamentum.enchant.WeaponHook;
+
 import com.fundamentum.event.Events;
 import com.fundamentum.event.FEvents;
 import com.fundamentum.port.FId;
@@ -145,6 +148,9 @@ public class ThrownWeapon extends ThrowableItemProjectile {
                 return;
             }
             boolean wasReturning = flight.returning();
+            if (flight.phase() == ThrownFlight.Phase.OUTBOUND && stats().returns() != null && stats().returns().seek() > 0) {
+                seek(level, owner);
+            }
             WhipVec v = flight.tick(pos, vec(getDeltaMovement()), home);
             if (flight.returning() && !wasReturning) {
                 hit.clear();
@@ -157,6 +163,20 @@ public class ThrownWeapon extends ThrowableItemProjectile {
             return;
         }
         super.tick();
+        if (!waterDrag() && isInWater() && !isStuck()) {
+            // Undo the water's drag (vanilla keeps 0.8 of the speed a tick in water, 0.99 in air).
+            setDeltaMovement(getDeltaMovement().scale(0.99 / 0.8));
+        }
+    }
+
+    /** False for weapons that fly through water as fast as through air: those tagged {@code #fundamentum:thrown/no_water_drag}. */
+    protected boolean waterDrag() {
+        return !getItem().is(ThrownWeapons.NO_WATER_DRAG);
+    }
+
+    /** The damage of a hit on {@code target}, after enchantments; subclasses may change it. */
+    protected float strikeDamage(ServerLevel level, Entity target, float damage) {
+        return damage;
     }
 
     @Override
@@ -175,6 +195,11 @@ public class ThrownWeapon extends ThrowableItemProjectile {
         DamageSource source = damageSources().thrown(this, owner == null ? this : owner);
         ItemStack weapon = getItem();
         float damage = EnchantmentHelper.modifyDamage(level, weapon, target, source, (float) stats().hitDamage());
+        if (owner instanceof LivingEntity user) {
+            damage = FEnchantments.fire(new WeaponHook("on_thrown_hit", level, user, weapon, target).damage(damage)
+                .mode(flight.returning() ? "return" : "out")).damage;
+        }
+        damage = strikeDamage(level, target, damage);
         // fundamentum:thrown_weapon_hit, cancelled: no damage
         boolean struck = !FEvents.post(new Events.ThrownWeaponHit(owner instanceof LivingEntity thrower ? thrower : null, target, weapon));
         boolean hurt = struck && target.hurtServer(level, source, damage);
@@ -204,6 +229,28 @@ public class ThrownWeapon extends ThrowableItemProjectile {
             case BREAK -> breakApart(level);
             default -> { }
         }
+    }
+
+    /** Turns the outbound heading part of the way toward the nearest enemy within {@code seek} (a shulker bullet's chase). */
+    protected void seek(ServerLevel level, @Nullable Entity owner) {
+        ThrownStats.Returns back = stats().returns();
+        LivingEntity best = null;
+        double bestD = back.seek() * back.seek();
+        for (LivingEntity e : level.getEntitiesOfClass(LivingEntity.class, getBoundingBox().inflate(back.seek()),
+            e -> e.isAlive() && e != owner && e instanceof Enemy && !hit.contains(e.getId()))) {
+            double d = e.distanceToSqr(this);
+            if (d < bestD) {
+                bestD = d;
+                best = e;
+            }
+        }
+        Vec3 move = getDeltaMovement();
+        if (best == null || move.lengthSqr() < 1.0E-6) {
+            return;
+        }
+        Vec3 to = best.getBoundingBox().getCenter().subtract(position()).normalize();
+        Vec3 dir = move.normalize();
+        setDeltaMovement(dir.add(to.subtract(dir).scale(back.seekTurn())).normalize().scale(move.length()));
     }
 
     /** The nearest living enemy in ricochet reach not yet hit this leg, or null. */
@@ -281,7 +328,7 @@ public class ThrownWeapon extends ThrowableItemProjectile {
 
     /** Every server tick in flight, after the flight has moved on: trails, sounds, effects on the ground below. */
     protected void flightTick(ServerLevel level) {
-        if (stats().returning() && tickCount % 4 == 0) {
+        if (stats().returning() && !stats().returns().silentReturn() && tickCount % 4 == 0) {
             level.playSound(null, blockPosition(), SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.PLAYERS, 0.4F, 1.6F);
         }
     }

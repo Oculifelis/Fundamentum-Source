@@ -15,7 +15,9 @@ import java.util.Map;
  * (Ultima Ratio's files name that last block "ultimaratio"; both are read). The files open and edit in Blockbench.
  *
  * <p>Bones: "right_arm" and "left_arm" (third person, written for a right-handed player; {@link PosePlayer} mirrors them
- * for a left-handed one) and "first_person" (the held hand in first person). Third-person rotations are degrees in the
+ * for a left-handed one), "head", "body", "right_leg", "left_leg" and "item" (offsets added to the pose the player already
+ * has, mirrored the same way; "item" moves the held item in the main hand) and "first_person" (the held hand in first
+ * person). Third-person rotations are degrees in the
  * model's own convention (x negative raises the arm forward), positions model pixels; each arm's value is added to its
  * base ("rest": hanging, or "aim": along the head's look, from the clip's "fundamentum" block: {"base": {"right_arm":
  * "aim"}, "blend_in": 2, "blend_out": 3, "fit": "reload"}). First-person rotations are degrees about the grip (x pitch

@@ -45,21 +45,35 @@ public record ThrownStats(double throwSpeed, double gravity, int pierce, double 
      * @param returnAccel  blocks per tick gained each tick on the way home
      * @param hitsOnReturn whether it hits creatures on the way home too (each creature once per leg)
      * @param bounces      ricochets: a hit on the way out flies on to the nearest other enemy, a block hit glances off
+     * @param bounceSpeedup multiplier on the outbound speed after each bounce (1 keeps it the same)
+     * @param seek         blocks around it in which the outbound flight steers toward the nearest enemy (0 flies straight)
+     * @param seekTurn     how much of the way toward that enemy the heading turns each tick (0 to 1)
+     * @param silentReturn no whoosh on the way home
      */
-    public record Returns(double range, double returnSpeed, double returnAccel, boolean hitsOnReturn, int bounces) {
+    public record Returns(double range, double returnSpeed, double returnAccel, boolean hitsOnReturn, int bounces,
+                          double bounceSpeedup, double seek, double seekTurn, boolean silentReturn) {
         public static final Returns DEFAULT = new Returns(16, 1.6, 0.08, true, 0);
+
+        public Returns(double range, double returnSpeed, double returnAccel, boolean hitsOnReturn, int bounces) {
+            this(range, returnSpeed, returnAccel, hitsOnReturn, bounces, 1, 0, 0.25, false);
+        }
 
         public Returns {
             range = clamp(range, 0.5, 256);
             returnSpeed = clamp(returnSpeed, 0.05, 10);
             returnAccel = clamp(returnAccel, 0.001, 10);
             bounces = Math.max(0, bounces);
+            bounceSpeedup = clamp(bounceSpeedup, 0.1, 4);
+            seek = clamp(seek, 0, 64);
+            seekTurn = clamp(seekTurn, 0, 1);
         }
 
         /** These fields with the ones present in {@code json} laid over. */
         public Returns withJson(JsonObject json) {
             return new Returns(num(json, "range", range), num(json, "return_speed", returnSpeed), num(json, "return_accel", returnAccel),
-                bool(json, "hits_on_return", hitsOnReturn), (int) Math.round(num(json, "bounces", bounces)));
+                bool(json, "hits_on_return", hitsOnReturn), (int) Math.round(num(json, "bounces", bounces)),
+                num(json, "bounce_speedup", bounceSpeedup), num(json, "seek", seek), num(json, "seek_turn", seekTurn),
+                bool(json, "silent_return", silentReturn));
         }
 
         public JsonObject toJson() {
@@ -69,6 +83,10 @@ public record ThrownStats(double throwSpeed, double gravity, int pierce, double 
             o.addProperty("return_accel", returnAccel);
             o.addProperty("hits_on_return", hitsOnReturn);
             o.addProperty("bounces", bounces);
+            o.addProperty("bounce_speedup", bounceSpeedup);
+            o.addProperty("seek", seek);
+            o.addProperty("seek_turn", seekTurn);
+            o.addProperty("silent_return", silentReturn);
             return o;
         }
     }
@@ -96,7 +114,8 @@ public record ThrownStats(double throwSpeed, double gravity, int pierce, double 
      * These stats with the fields present in {@code json} laid over: {@code throw_speed}, {@code gravity}, {@code pierce},
      * {@code damage}, {@code damage_multiplier}, {@code sticks_in_target}, {@code breaks_on_hit}, {@code consumable},
      * {@code max_ticks}, and {@code returns}: an object of {@link Returns} fields ({@code range}, {@code return_speed},
-     * {@code return_accel}, {@code hits_on_return}, {@code bounces}) laid over this throw's (or the defaults), {@code true}
+     * {@code return_accel}, {@code hits_on_return}, {@code bounces}, {@code bounce_speedup}, {@code seek}, {@code seek_turn},
+     * {@code silent_return}) laid over this throw's (or the defaults), {@code true}
      * for the defaults, or {@code false} for a throw that does not come back. Each number can also be a step object
      * ({@code {"multiply": 1.5}}, {@code {"add": 2}}, with {@code set}, {@code min}, {@code max}), applied to the value below.
      */
@@ -134,7 +153,7 @@ public record ThrownStats(double throwSpeed, double gravity, int pierce, double 
         Returns back = returns;
         if (back != null) {
             back = new Returns(back.range * rangeMul, back.returnSpeed * returnMul, back.returnAccel * Math.max(1, returnMul),
-                back.hitsOnReturn, back.bounces + bounceAdd);
+                back.hitsOnReturn, back.bounces + bounceAdd, back.bounceSpeedup, back.seek, back.seekTurn, back.silentReturn);
             ticks = Math.max(ticks, (int) Math.ceil(3 * back.range / Math.min(speed, back.returnSpeed)) + 40);
         }
         return new ThrownStats(speed, gravity, pierce == UNLIMITED ? UNLIMITED : pierce + pierceAdd, damage, damageMultiplier,

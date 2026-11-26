@@ -6,9 +6,9 @@
   "key": {
     "I": "minecraft:iron_block",
     "C": "minecraft:crafting_table",
-    "G": "minecraft:gold_block",
+    "G": {"block": "minecraft:gold_block", "socket": true, "role": "arc_electrode", "tier": {"min": 2}},
     "L": "#minecraft:logs",
-    "F": {"block": "minecraft:furnace", "state": {"facing": "north"}}
+    "F": {"block": "minecraft:furnace", "state": {"facing": "north"}, "role": "heater"}
   },
   "controller": "C"
 }

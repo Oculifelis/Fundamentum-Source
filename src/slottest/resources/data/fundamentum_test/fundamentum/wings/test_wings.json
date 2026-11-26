@@ -1,0 +1,7 @@
+{
+  "item": "minecraft:elytra",
+  "flight_ticks": 200,
+  "rise_speed": 0.5,
+  "glide_fall_speed": 0.01,
+  "fx": {"burst": "minecraft:cloud", "flap": ["minecraft:cloud", "minecraft:end_rod"], "flap_speed": 0.01}
+}

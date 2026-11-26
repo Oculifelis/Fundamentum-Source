@@ -1,0 +1,55 @@
+{
+  "name": "Oak Planks",
+  "tags": [
+    "light",
+    "textured",
+    "minecraft"
+  ],
+  "style": "textured",
+  "backdrop": "#99000000",
+  "colors": {
+    "fill": "#FFEFE3C8",
+    "frame": "#000000",
+    "rule": "#C8B088",
+    "title": "#2A1C0C",
+    "muted": "#5A4024",
+    "text": "#2A1C0C",
+    "strong": "#2A1C0C",
+    "soft": "#3A2814",
+    "mod": "#3A2814",
+    "nav": "#2A1C0C"
+  },
+  "shadow": false,
+  "accent": {
+    "shift": -0.5,
+    "selection": 70
+  },
+  "well": {
+    "fill": "#C8B088",
+    "light": "#C8B088",
+    "shadow": "#5A4024",
+    "line": "#6A4A24"
+  },
+  "page": {
+    "text": "#2A1C0C",
+    "muted": "#5A4024",
+    "code": "#8A5A00",
+    "rule": [
+      "#C8B088",
+      "#C8B088"
+    ],
+    "shadow": false
+  },
+  "slot": {
+    "fill": "#C8B088",
+    "edge": "#5A4024"
+  },
+  "texture": {
+    "background": "minecraft:textures/block/oak_planks.png",
+    "border": "minecraft:textures/block/dark_oak_planks.png",
+    "tint": "#14FFFFFF",
+    "border_tint": "#3C000000",
+    "border_width": 5,
+    "well": "#E1EFE3C8"
+  }
+}

@@ -22,6 +22,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.material.Fluids;
 import org.slf4j.Logger;
@@ -31,8 +32,8 @@ import org.slf4j.LoggerFactory;
  * The transfer test, only in {@code gradlew runServer -Ptransfertest} (world under run-transfertest). The same file on
  * every version. Exposes buffers and tanks on vanilla barrels, then checks reads through the loader capability, limits,
  * simulation, sides, pushing to neighbours, tank filters and access, change listeners, the save and sync codecs, the
- * client tank map, item-to-fluid declarations (data, code, overrides, bad files), the recipe view category and the
- * command. Writes transfertest-result.txt and stops the server. Log lines start with TRANSFERTEST.
+ * client tank map, item-to-fluid declarations (data, code, overrides, bad files), the recipe view category, essentia
+ * buffers and the aspect power table (and the Thaumaturge bridge when Thaumaturge is on the classpath) and the command. Writes transfertest-result.txt and stops the server. Log lines start with TRANSFERTEST.
  */
 public final class TransferSelfTest {
     private TransferSelfTest() { }
@@ -41,6 +42,7 @@ public final class TransferSelfTest {
     private static final List<String> LINES = new ArrayList<>();
     private static final Map<BlockPos, EnergyBuffer> ENERGY = new HashMap<>();
     private static final Map<BlockPos, FluidTanks> FLUIDS = new HashMap<>();
+    private static final Map<BlockPos, EssentiaBuffer> ESSENTIA = new HashMap<>();
     private static final BlockPos A = new BlockPos(0, 200, 0);
     private static final BlockPos B = A.east();
     private static boolean failed;
@@ -54,6 +56,7 @@ public final class TransferSelfTest {
             return ENERGY.get(be.getBlockPos());
         });
         Transfer.exposeFluids(barrel, (be, side) -> FLUIDS.get(be.getBlockPos()));
+        Essentia.expose(barrel, (be, side) -> ESSENTIA.get(be.getBlockPos()));
         ItemFluids.add(FId.of("transfertest", "code_water"), FId.of("minecraft", "water_bucket"), FId.of("minecraft", "water"), 1000,
             FId.of("minecraft", "bucket"));
         ItemFluids.add(FId.of("transfertest", "override"), FId.of("minecraft", "honey_bottle"), FId.of("minecraft", "water"), 1, null);
@@ -199,6 +202,61 @@ public final class TransferSelfTest {
         check(FNet.roundTrip(sync, server.registryAccess()).equals(sync), "the declarations survive the network codec");
         ViewCategory<?> cat = RecipeViews.find(ItemFluids.CATEGORY);
         check(cat != null && cat.build().size() == 3, "the recipe view category lists the declarations");
+
+        // essentia
+        FId ignis = FId.of("thaumaturge", "ignis");
+        FId aqua = FId.of("thaumaturge", "aqua");
+        FId vitium = FId.of("thaumaturge", "vitium");
+        int[] essChanges = {0};
+        EssentiaBuffer etank = new EssentiaBuffer(500).onChange(() -> essChanges[0]++);
+        EssentiaBuffer jar = new EssentiaBuffer(100, 1);
+        ESSENTIA.put(A, etank);
+        ESSENTIA.put(B, jar);
+        check(Essentia.find(level, A, null) == etank && Essentia.find(level, B, Direction.WEST) == jar, "an exposed essentia buffer is found");
+        check(Essentia.find(level, stone, null) == null, "blocks without essentia give null");
+        check(etank.insert(ignis, 300, false) == 300 && etank.insert(aqua, 300, false) == 200 && etank.total() == 500,
+            "aspects share one capacity");
+        check(essChanges[0] == 2, "each real insert runs the change listener once (" + essChanges[0] + ")");
+        long rev = etank.revision();
+        check(etank.extract(ignis, 10, true) == 10 && etank.amount(ignis) == 300 && etank.revision() == rev && essChanges[0] == 2,
+            "a simulated extract changes nothing");
+        check(jar.insert(ignis, 50, false) == 50 && jar.insert(aqua, 10, false) == 0, "a one-aspect jar refuses a second aspect");
+        int epushed = Essentia.push(level, A, etank, ignis, 1000);
+        check(epushed == 50 && jar.amount(ignis) == 100 && etank.amount(ignis) == 250, "push fills the neighbouring jar (" + epushed + ")");
+        check(Essentia.move(etank, jar, aqua, 10) == 0, "moving into a full jar moves nothing");
+        int epulled = Essentia.pull(level, A, etank, null, 30);
+        check(epulled == 30 && etank.amount(ignis) == 280 && jar.amount(ignis) == 70, "pull takes from the neighbour (" + epulled + ")");
+        jar.access(true, false);
+        check(Essentia.pull(level, A, etank, null, 10) == 0 && jar.take(ignis, 1, true) == 1, "outsiders cannot drain a closed buffer, the owner can");
+        jar.access(true, true);
+        etank.filter(a -> !a.equals(vitium));
+        etank.take(aqua, 200, false);
+        check(etank.insert(vitium, 10, false) == 0 && etank.insert(aqua, 5, false) == 5, "a filter keeps an aspect out");
+        Tag esaved = EssentiaBuffer.CODEC.encodeStart(NbtOps.INSTANCE, etank.contents()).result().orElseThrow();
+        EssentiaBuffer ecopy = new EssentiaBuffer(500);
+        ecopy.restore(EssentiaBuffer.CODEC.parse(NbtOps.INSTANCE, esaved).result().orElseThrow());
+        check(ecopy.contents().equals(etank.contents()) && ecopy.amount(ignis) == 280, "essentia survives the save codec");
+        check(AspectPower.power(ignis) == 900 && Math.abs(AspectPower.flux(ignis) - 0.04f) < 1e-6 && AspectPower.power(vitium) == 2000,
+            "the aspect power table reads its data");
+        check(AspectPower.all().size() >= 37 && AspectPower.power(FId.of("transfertest", "none")) == 0,
+            "every aspect has a power entry and unknown ones read 0 (" + AspectPower.all().size() + ")");
+        boolean thaum;
+        try {
+            Class.forName("com.leclowndu93150.thaumaturge.api.essentia.EssentiaCapabilities");
+            thaum = true;
+        } catch (ClassNotFoundException e) {
+            thaum = false;
+        }
+        if (thaum) {
+            check(Essentia.bridged(), "the Thaumaturge bridge is on when Thaumaturge is installed");
+            @SuppressWarnings("unchecked")
+            List<String> fails = (List<String>) Class.forName("com.fundamentum.compat.thaum.ThaumEssentia")
+                .getMethod("selfCheck", Level.class, BlockPos.class).invoke(null, level, B);
+            for (String f : fails) check(false, "Thaumaturge bridge: " + f);
+            check(fails.isEmpty(), "Thaumaturge sees exposed buffers, and the bridge reads and moves its essentia");
+        } else {
+            check(!Essentia.bridged(), "no bridge without Thaumaturge");
+        }
 
         // command
         int r = server.getCommands().getDispatcher().execute("fundamentum transfer 0 200 0", server.createCommandSourceStack().withSuppressedOutput());

@@ -46,9 +46,15 @@ public final class Events {
         reg("slot_unequipped", SlotUnequipped.class, false);
         reg("rep_changed", RepChanged.class, true);
         reg("rank_changed", RankChanged.class, false);
+        reg("faction_joined", FactionJoined.class, true);
+        reg("faction_left", FactionLeft.class, false);
         reg("quest_accepted", QuestAccepted.class, true);
         reg("quest_completed", QuestCompleted.class, false);
+        reg("quest_failed", QuestFailed.class, false);
         reg("devotion_changed", DevotionChanged.class, true);
+        reg("prayed", Prayed.class, true);
+        reg("boon_granted", BoonGranted.class, true);
+        reg("shrine_built", ShrineBuilt.class, false);
         reg("unlock_granted", UnlockGranted.class, true);
         reg("stat_changed", StatChanged.class, false);
         reg("set_bonus_on", SetBonusOn.class, false);
@@ -57,6 +63,8 @@ public final class Events {
         reg("ammo_drawn", AmmoDrawn.class, true);
         reg("thrown_weapon_hit", ThrownWeaponHit.class, true);
         reg("wings_take_off", WingsTakeOff.class, true);
+        reg("dodge_started", DodgeStarted.class, true);
+        reg("attack_dodged", AttackDodged.class, false);
         reg("material_unified", MaterialUnified.class, false);
         reg("multiblock_formed", MultiblockFormed.class, true);
         reg("multiblock_unformed", MultiblockUnformed.class, false);
@@ -68,6 +76,8 @@ public final class Events {
         reg("effect_ended", EffectEnded.class, false);
         reg("loot_added", LootAdded.class, true);
         reg("boss_loot_dropped", BossLootDropped.class, false);
+        reg("boss_bags_left", BossBagsLeft.class, true);
+        reg("boss_bag_opened", BossBagOpened.class, false);
         reg("music_changed", MusicChanged.class, false);
         reg("moon_rose", MoonRose.class, false);
         reg("moon_set", MoonSet.class, false);
@@ -75,6 +85,8 @@ public final class Events {
         reg("night_event_ended", NightEventEnded.class, false);
         reg("meter_threshold", MeterThreshold.class, false);
         reg("element_reacted", ElementReacted.class, false);
+        reg("staggered", Staggered.class, true);
+        reg("stamina_spent", StaminaSpent.class, true);
     }
 
     private static <E extends Record> void reg(String name, Class<E> type, boolean cancellable) {
@@ -134,13 +146,30 @@ public final class Events {
 
     public record RankChanged(ServerPlayer player, FId faction, String from, String to) { }
 
+    /** A player is about to join a faction. Cancel to refuse. */
+    public record FactionJoined(ServerPlayer player, FId faction) { }
+
+    public record FactionLeft(ServerPlayer player, FId faction) { }
+
     /** Cancel to refuse the quest. */
     public record QuestAccepted(ServerPlayer player, FId quest) { }
 
     public record QuestCompleted(ServerPlayer player, FId quest) { }
 
+    /** A quest ran out of time or was abandoned ({@code abandoned}). */
+    public record QuestFailed(ServerPlayer player, FId quest, boolean abandoned) { }
+
     /** Devotion to a deity is about to change. Cancel to keep the old value. */
     public record DevotionChanged(ServerPlayer player, FId deity, int from, int to) { }
+
+    /** A player is about to pray at a shrine. Cancel to refuse the prayer. */
+    public record Prayed(ServerPlayer player, FId deity, BlockPos pos) { }
+
+    /** A god is about to grant a boon. Cancel to refuse it (no favour is spent). */
+    public record BoonGranted(ServerPlayer player, FId deity, String boon) { }
+
+    /** A shrine was built: a one-block shrine placed, or a shrine multiblock formed. {@code player} may be null. */
+    public record ShrineBuilt(ServerPlayer player, FId shrine, FId deity, BlockPos pos) { }
 
     /** Cancel to withhold the unlock. */
     public record UnlockGranted(ServerPlayer player, FId unlock) { }
@@ -169,6 +198,15 @@ public final class Events {
      */
     public record WingsTakeOff(ServerPlayer player, ItemStack wings) { }
 
+    /**
+     * A player is about to dodge with this style, along this motion per tick (blocks). Cancel to stop the dodge; the
+     * charge is not spent.
+     */
+    public record DodgeStarted(ServerPlayer player, FId style, double dx, double dy, double dz) { }
+
+    /** A hit missed a player because they were dodging. {@code attacker} is null for hits with no attacker. */
+    public record AttackDodged(ServerPlayer player, net.minecraft.world.entity.Entity attacker, FId damageType, float amount) { }
+
     /** Items of a tag were turned into the one chosen item. */
     public record MaterialUnified(FId tag, FId from, FId to) { }
 
@@ -187,6 +225,12 @@ public final class Events {
     /** A shield took a hit for its holder. {@code blocked} is the damage it stopped. */
     public record ShieldBlocked(LivingEntity defender, ItemStack shield, float blocked, boolean parried) { }
 
+    /** Poise broke, or a mod staggered the target. Cancel to keep it on its feet. {@code from} may be null. */
+    public record Staggered(LivingEntity target, Entity from, int ticks) { }
+
+    /** Stamina is about to be spent; {@code left} is what remains after. Cancel to refuse the spend. */
+    public record StaminaSpent(LivingEntity entity, double amount, double left) { }
+
     /**
      * A custom status effect is about to be applied (after {@code EffectEvent.Apply}). {@code duration} is in ticks, -1
      * for one that never runs out. Cancel to refuse it.
@@ -201,6 +245,12 @@ public final class Events {
 
     /** A boss's drops were handed out. {@code player} is null when the drop is shared rather than per player. */
     public record BossLootDropped(ServerPlayer player, FId bossId, int stacks) { }
+
+    /** A boss is about to leave treasure bags for {@code bags} players; cancel to leave none. */
+    public record BossBagsLeft(LivingEntity boss, int bags, int xp) { }
+
+    /** A player opened a treasure bag and got {@code items} stacks out of it. */
+    public record BossBagOpened(ServerPlayer player, ItemStack bag, int items) { }
 
     /**
      * The track the server expects a player to hear changed, worked out when their music state changes (biome or

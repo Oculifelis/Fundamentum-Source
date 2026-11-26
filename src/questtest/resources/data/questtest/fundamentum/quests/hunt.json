@@ -1,0 +1,29 @@
+{
+  "name": "Hunt",
+  "description": "Kill two zombies.",
+  "faction": "questtest:guild",
+  "givers": [
+    "minecraft:villager"
+  ],
+  "npcs": [
+    "questtest:abbot"
+  ],
+  "objectives": [
+    {
+      "type": "kill",
+      "target": [
+        "minecraft:zombie",
+        "minecraft:husk"
+      ],
+      "count": 2
+    }
+  ],
+  "rewards": {
+    "items": [
+      {
+        "id": "minecraft:emerald",
+        "count": 2
+      }
+    ]
+  }
+}

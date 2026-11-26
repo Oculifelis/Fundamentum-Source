@@ -29,7 +29,6 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.TamableAnimal;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.neoforge.network.PacketDistributor;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -178,7 +177,7 @@ public final class Mounts {
         // Vanilla would not let the rider steer this one (no stick, no saddle slot, a dolphin): Fundamentum steers it.
         if (mount instanceof Mob && mount.getControllingPassenger() != player) {
             mount.getPersistentData().putBoolean(STEER, true);
-            PacketDistributor.sendToPlayer(player, new SteerPayload(mount.getId(), true));
+            com.fundamentum.port.FNet.send(player, new SteerPayload(mount.getId(), true));
         }
         poof(mount);
         return true;
@@ -221,7 +220,7 @@ public final class Mounts {
     public static void dismiss(Player player) {
         Active active = ACTIVE.remove(player.getUUID());
         if (active != null && active.mount().getPersistentData().getBooleanOr(STEER, false) && player instanceof ServerPlayer sp) {
-            PacketDistributor.sendToPlayer(sp, new SteerPayload(active.mount().getId(), false));
+            com.fundamentum.port.FNet.send(sp, new SteerPayload(active.mount().getId(), false));
         }
         if (active != null && !active.mount().isRemoved()) {
             poof(active.mount());

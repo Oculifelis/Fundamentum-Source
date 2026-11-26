@@ -1,0 +1,4 @@
+{
+  "wear_prefixes": ["test_wear"],
+  "slot_fallback": {"test_slot": "wall"}
+}

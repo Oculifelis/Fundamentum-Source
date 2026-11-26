@@ -1,0 +1,115 @@
+{
+ "name": "Engineer's manual",
+ "colors": {
+  "ink": "e8f0f8",
+  "dim": "a8c4e0",
+  "accent": "f0c040",
+  "rule": "5a8ab8",
+  "card": "1e4a74",
+  "card_edge": "8ab4dc",
+  "page": "2a5a8a",
+  "gold": "9aa0a8",
+  "banner": "e0b030",
+  "leather": "3a3e44"
+ },
+ "title_text": "e0b030",
+ "title_shadow": null,
+ "title_upper": true,
+ "card_text": "e8f0f8",
+ "stamp_text": "e8f0f8",
+ "rule_color": "a8c4e0",
+ "bullet": ">",
+ "numerals": "plain",
+ "right": "standard",
+ "header": "field_notes",
+ "frame": "specimen",
+ "window": {
+  "x": -164,
+  "y": -66,
+  "w": 72,
+  "h": 68,
+  "oval": false,
+  "ground": 54
+ },
+ "caption": null,
+ "stamp_label_dy": 16,
+ "layers": {
+  "spread": {
+   "x": -188,
+   "y": -118,
+   "w": 376,
+   "h": 236,
+   "tw": 376,
+   "th": 236
+  },
+  "closed": {
+   "x": 0,
+   "y": -118,
+   "w": 188,
+   "h": 236,
+   "tw": 188,
+   "th": 236
+  },
+  "title": {
+   "x": -168,
+   "y": -102,
+   "w": 156,
+   "h": 18,
+   "tw": 156,
+   "th": 18
+  },
+  "portrait": {
+   "x": -168,
+   "y": -70,
+   "w": 80,
+   "h": 81,
+   "tw": 80,
+   "th": 81
+  },
+  "stamp_on": {
+   "x": 18,
+   "y": 32,
+   "w": 22,
+   "h": 25,
+   "tw": 22,
+   "th": 25
+  },
+  "stamp_off": {
+   "x": 17,
+   "y": 32,
+   "w": 25,
+   "h": 25,
+   "tw": 25,
+   "th": 25
+  },
+  "tab": {
+   "x": -148,
+   "y": -127,
+   "w": 18,
+   "h": 15,
+   "tw": 18,
+   "th": 15
+  },
+  "tab_up": {
+   "x": -148,
+   "y": -131,
+   "w": 18,
+   "h": 19,
+   "tw": 18,
+   "th": 19
+  }
+ },
+ "animation": {
+  "open_ticks": 16,
+  "turn_ticks": 12,
+  "close_ticks": 16,
+  "stamp_ticks": 11
+ },
+ "sounds": {
+  "open": "minecraft:item.book.page_turn",
+  "turn": "minecraft:item.book.page_turn",
+  "click": "minecraft:ui.button.click",
+  "stamp": "minecraft:item.honeycomb.wax_on",
+  "close": "minecraft:item.book.put"
+ }
+}

@@ -57,6 +57,7 @@ public final class HudShot {
     private static final FId FURNACE_PAGE = FId.of("guidetest", "furnace");
     private static final FId ALTAR = FId.of("hudshot", "altar");
     private static final FId FURNACE = FId.of("multiblocktest", "furnace");
+    private static final FId DRAGONLING = FId.of("ostentum", "dragonling");
 
     private static int t;
     private static int failed;
@@ -71,7 +72,7 @@ public final class HudShot {
 
     @SubscribeEvent
     public static void tick(ClientTickEvent.Post event) {
-        if (!HudPerf.ON || "perf".equals(HudPerf.MODE) || !HudPerf.done) return;
+        if (!HudPerf.ON || "perf".equals(HudPerf.MODE) || "guidesplit".equals(HudPerf.MODE) || "guideextras".equals(HudPerf.MODE) || !HudPerf.done) return;
         Minecraft mc = Minecraft.getInstance();
         MinecraftServer server = mc.getSingleplayerServer();
         if (mc.player == null || server == null) return;
@@ -153,12 +154,12 @@ public final class HudShot {
             }
             case 125 -> HudPerf.shot(mc, "06-guide-link");
             case 130 -> {
-                check(click(mc, Component.translatable("gui.back").getString()), " pressed Back");
+                check(clickBack(mc), " pressed Back");
                 check(String.valueOf(view(mc.screen)).contains("basics"), " Back went to basics: " + view(mc.screen));
             }
             case 150 -> HudPerf.shot(mc, "07-guide-back");
             case 155 -> {
-                check(click(mc, "Furnaces"), " pressed the Furnaces page in the list");
+                check(clickRow(mc, "Furnaces"), " pressed the Furnaces page in the list");
                 check(String.valueOf(view(mc.screen)).contains("furnace"), " the list opened the furnace page: " + view(mc.screen));
             }
             case 175 -> HudPerf.shot(mc, "08-guide-list-page");
@@ -241,7 +242,115 @@ public final class HudShot {
                 p.teleportTo(p.level(), controller.getX() + 5.5, controller.getY() + 3, controller.getZ() - 4.5, java.util.Set.of(), 50.0F, 23.0F, true);
             });
             case 410 -> HudPerf.shot(mc, "15-ghost-blocks-angle");
-            case 420 -> {
+            // the shipped themes and the list tools for big packs: tab pages, folding chapters, pins and recent pages
+            case 430 -> mc.setScreen(GuideScreen.at(FId.of("shotslate", "intro")));
+            case 450 -> {
+                HudPerf.shot(mc, "16-theme-deepslate");
+                String rows = String.valueOf(field(mc.screen, "rows"));
+                check(rows.contains("fold=shotslate:power, open=false"), " other chapters fold shut: " + rows);
+                check(rows.contains("fold=shotslate:start, open=true"), " the open page's chapter is open");
+            }
+            case 455 -> mc.setScreen(GuideScreen.at(FId.of("shotdark", "intro")));
+            case 475 -> HudPerf.shot(mc, "17-theme-dark");
+            case 480 -> mc.setScreen(GuideScreen.at(FId.of("shotbanner", "intro")));
+            case 500 -> HudPerf.shot(mc, "18-theme-cherry");
+            case 505 -> {
+                prefs("togglePin", new Class<?>[] {FId.class}, FId.of("shotbanner", "intro"));
+                mc.setScreen(GuideScreen.at(FId.of("shotbanner", "intro")));
+            }
+            case 525 -> {
+                HudPerf.shot(mc, "19-pinned-star");
+                check(Boolean.TRUE.equals(prefs("isPinned", new Class<?>[] {FId.class}, FId.of("shotbanner", "intro"))), " the star pinned the page");
+                check(field(mc.screen, "pins") instanceof List<?> pins && pins.size() == 1, " the pinned page has a tab on the right: " + field(mc.screen, "pins"));
+                check(!String.valueOf(field(mc.screen, "rows")).contains("fold=#pinned"), " pinned pages are tabs, not a list section");
+            }
+            case 530 -> mc.setScreen(GuideScreen.at(FId.of("shotbooke", "intro")));
+            case 550 -> {
+                HudPerf.shot(mc, "20-tab-scroll");
+                Object tabs = field(mc.screen, "tabs");
+                Object scroll = field(null, "tabScroll");
+                say("book tabs: " + (tabs instanceof List<?> l ? l.size() : tabs) + ", scrolled " + scroll);
+                check(tabs instanceof List<?> l && field(mc.screen, "h") instanceof Integer hh && 8 + l.size() * 29 > hh - 4, " there are more book tabs than fit: " + tabs);
+                check(scroll instanceof Integer n && n > 0, " the tab column scrolled to show the open book's tab: " + scroll);
+            }
+            case 552 -> {
+                // wheel up over the tab column scrolls it back toward the top
+                Object before = field(null, "tabScroll");
+                int x = (Integer) field(mc.screen, "x0") - 14;
+                int y = (Integer) field(mc.screen, "y0") + 40;
+                mc.screen.mouseScrolled(x, y, 0, 3);
+                check(field(null, "tabScroll") instanceof Integer n && before instanceof Integer b && n < b, " the wheel scrolls the book tabs: " + before + " -> " + field(null, "tabScroll"));
+            }
+            case 554 -> HudPerf.shot(mc, "20b-tab-scrolled");
+            case 555 -> {
+                prefs("toggle", new Class<?>[] {String.class, boolean.class}, "shotbooke:power", false);
+                mc.setScreen(GuideScreen.at(FId.of("shotbooke", "intro")));
+            }
+            case 575 -> {
+                HudPerf.shot(mc, "21-chapter-opened");
+                String rows = String.valueOf(field(mc.screen, "rows"));
+                check(rows.contains("Generators"), " opening Power lists its pages");
+                check(rows.contains("depth=2, tree=") , " pages sit two levels down the tree: " + rows);
+            }
+            case 580 -> mc.setScreen(GuideScreen.at(BASICS));
+            case 600 -> {
+                HudPerf.shot(mc, "22-pinned-and-recent");
+                String rows = String.valueOf(field(mc.screen, "rows"));
+                check(rows.contains("fold=#recent, open=true") && rows.contains("Intro"), " Recent lists the pages just read: " + rows);
+                var file = mc.gameDirectory.toPath().resolve("config/fundamentum-guide.json");
+                check(Files.exists(file) && Files.readString(file).contains("shotbanner:intro"), " the pin is saved in " + file.getFileName());
+            }
+            case 605 -> mc.setScreen(new com.fundamentum.guide.client.GuideThemePicker(mc.screen));
+            case 625 -> HudPerf.shot(mc, "23-theme-picker");
+            // the shared bestiary, with Ostentum in the mods folder: locked until a dragonling has been seen, then its stat sheet
+            case 630 -> {
+                if (!net.neoforged.fml.ModList.get().isLoaded("ostentum")) {
+                    say("bestiary skipped: Ostentum is not in run-hudshot/mods");
+                    t = 869;
+                    return;
+                }
+                var book = com.fundamentum.guide.book.GuideBooks.library().books().get(com.fundamentum.guide.client.Bestiary.BOOK);
+                check(book != null, " the bestiary book is loaded");
+                if (book != null) {
+                    var ids = book.entries().stream().map(e -> e.entity().toString()).toList();
+                    say("bestiary entries " + ids);
+                    check(ids.containsAll(List.of("ostentum:dragonling", "ostentum:sky_dolphin", "ostentum:bite_bat", "ostentum:guardian_totem"))
+                        && !ids.contains("ostentum:puff") && !ids.contains("ostentum:zipline"), " the four Ostentum mobs are listed, puff and non-mobs left out");
+                }
+                check(!com.fundamentum.guide.client.BookProgress.seen(DRAGONLING), " the dragonling is not seen yet");
+                mc.setScreen(com.fundamentum.guide.client.BookScreen.of(com.fundamentum.guide.client.Bestiary.BOOK));
+                check(mc.screen instanceof com.fundamentum.guide.client.BookScreen, " the bestiary opens");
+            }
+            case 660 -> HudPerf.shot(mc, "24-bestiary-locked");
+            case 665 -> {
+                mc.setScreen(null);
+                server.execute(() -> {
+                    ServerPlayer p = server.getPlayerList().getPlayers().get(0);
+                    // Ostentum's mobs are noSummon, so the dragonling is spawned from code
+                    int i = 0;
+                    for (String mob : List.of("dragonling", "bite_bat", "sky_dolphin", "guardian_totem")) {
+                        var e = com.fundamentum.port.FVanilla.entityType(FId.of("ostentum", mob)).create(p.level(), net.minecraft.world.entity.EntitySpawnReason.COMMAND);
+                        if (e == null) { say("FAIL " + mob + " could not be made"); continue; }
+                        e.snapTo(p.getX() + 3, p.getY() + 1, p.getZ() + 2 * i++, 0F, 0F);
+                        if (e instanceof net.minecraft.world.entity.Mob m) m.setNoAi(true);
+                        p.level().addFreshEntity(e);
+                    }
+                });
+            }
+            case 720 -> {
+                check(com.fundamentum.guide.client.BookProgress.seen(DRAGONLING), " the dragonling counts as seen");
+                var rows = com.fundamentum.guide.client.Bestiary.rows(DRAGONLING);
+                say("dragonling rows " + rows);
+                check(rows.size() >= 4 && rows.get(0).key().endsWith(".health"), " the dragonling has a stat table");
+                mc.setScreen(com.fundamentum.guide.client.BookScreen.of(com.fundamentum.guide.client.Bestiary.BOOK));
+            }
+            case 745 -> mc.screen.keyPressed(new KeyEvent(GLFW.GLFW_KEY_RIGHT, 0, 0));
+            case 770 -> HudPerf.shot(mc, "25-bestiary-dragonling");
+            case 775, 805, 835 -> mc.screen.keyPressed(new KeyEvent(GLFW.GLFW_KEY_RIGHT, 0, 0));
+            case 800 -> HudPerf.shot(mc, "25b-bestiary-bite-bat");
+            case 830 -> HudPerf.shot(mc, "25c-bestiary-sky-dolphin");
+            case 860 -> HudPerf.shot(mc, "25d-bestiary-guardian-totem");
+            case 870 -> {
                 say("DONE failed=" + failed);
                 mc.stop();
             }
@@ -267,6 +376,27 @@ public final class HudShot {
         }
     }
 
+    private static Object field(Screen s, String name) {
+        try {
+            Field f = GuideScreen.class.getDeclaredField(name);
+            f.setAccessible(true);
+            return f.get(s);
+        } catch (ReflectiveOperationException e) {
+            return "?" + e;
+        }
+    }
+
+    private static Object prefs(String name, Class<?>[] types, Object... args) {
+        try {
+            Method m = Class.forName("com.fundamentum.guide.client.GuidePrefs").getDeclaredMethod(name, types);
+            m.setAccessible(true);
+            return m.invoke(null, args);
+        } catch (ReflectiveOperationException e) {
+            fail("GuidePrefs." + name + " threw " + e);
+            return null;
+        }
+    }
+
     private static Object view(Screen s) {
         try {
             Field f = GuideScreen.class.getDeclaredField("view");
@@ -283,6 +413,45 @@ public final class HudShot {
     }
 
     /** Clicks the active button with this label through the screen's own mouse handling. */
+    /** The guide draws its own back arrow and list rows, so these click where they are drawn. */
+    private static boolean clickBack(Minecraft mc) {
+        Object rx = field(mc.screen, "rx");
+        Object ly = call(mc.screen, "backY");
+        if (!(rx instanceof Integer x) || !(ly instanceof Integer y)) return false;
+        return clickAt(mc, x + 6, y + 8);
+    }
+
+    private static boolean clickRow(Minecraft mc, String label) {
+        if (!(field(mc.screen, "rows") instanceof List<?> rows) || !(field(mc.screen, "lx") instanceof Integer lx)
+            || !(field(mc.screen, "wellY") instanceof Integer wellY) || !(field(mc.screen, "listScroll") instanceof Double scroll)) return false;
+        int y = wellY + 1 - (int) (double) scroll;
+        for (Object r : rows) {
+            int h = (Integer) call(r, "height");
+            if (call(r, "label") instanceof Component c && c.getString().startsWith(label) && call(r, "target") != null) {
+                return clickAt(mc, lx + 20, y + h / 2);
+            }
+            y += h;
+        }
+        return false;
+    }
+
+    private static boolean clickAt(Minecraft mc, double x, double y) {
+        MouseButtonEvent e = new MouseButtonEvent(x, y, new MouseButtonInfo(0, 0));
+        boolean hit = mc.screen.mouseClicked(e, false);
+        mc.screen.mouseReleased(e);
+        return hit;
+    }
+
+    private static Object call(Object o, String name) {
+        try {
+            Method m = o.getClass().getDeclaredMethod(name);
+            m.setAccessible(true);
+            return m.invoke(o);
+        } catch (ReflectiveOperationException e) {
+            return null;
+        }
+    }
+
     private static boolean click(Minecraft mc, String label) {
         for (var w : mc.screen.children()) {
             if (w instanceof Button b && b.active && b.getMessage().getString().equals(label)) {

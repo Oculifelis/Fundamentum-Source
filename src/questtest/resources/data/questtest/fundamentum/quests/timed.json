@@ -1,0 +1,11 @@
+{
+  "time_limit": 20,
+  "faction": "questtest:guild",
+  "objectives": [
+    {
+      "type": "place",
+      "block": "minecraft:stone",
+      "count": 99
+    }
+  ]
+}

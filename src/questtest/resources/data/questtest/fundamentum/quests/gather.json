@@ -1,0 +1,25 @@
+{
+  "name": "Gather",
+  "givers": [
+    "minecraft:villager"
+  ],
+  "turn_in": true,
+  "repeatable": true,
+  "cooldown": 100,
+  "objectives": [
+    {
+      "type": "collect",
+      "item": "minecraft:wheat",
+      "count": 5
+    },
+    {
+      "type": "break",
+      "block": "minecraft:dirt"
+    }
+  ],
+  "rewards": {
+    "unlocks": [
+      "questtest:gathered"
+    ]
+  }
+}
