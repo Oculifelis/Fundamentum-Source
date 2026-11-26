@@ -1,0 +1,46 @@
+{
+  "name": "Sakura",
+  "tags": [
+    "light",
+    "paper"
+  ],
+  "style": "flat",
+  "backdrop": "#80000000",
+  "colors": {
+    "fill": "#F5FBEEF2",
+    "frame": "#E8A8BE",
+    "rule": "#F0D4DE",
+    "title": "#C0507A",
+    "muted": "#8A5A6C",
+    "text": "#3A1E2A",
+    "strong": "#3A1E2A",
+    "soft": "#563341",
+    "mod": "#563341",
+    "nav": "#563341"
+  },
+  "shadow": false,
+  "accent": {
+    "shift": -0.4,
+    "selection": 60
+  },
+  "well": {
+    "fill": "#F0D4DE",
+    "light": "#F0D4DE",
+    "shadow": "#8A5A6C",
+    "line": "#F0D4DE"
+  },
+  "page": {
+    "text": "#3A1E2A",
+    "muted": "#8A5A6C",
+    "code": "#8A5A00",
+    "rule": [
+      "#F0D4DE",
+      "#F0D4DE"
+    ],
+    "shadow": false
+  },
+  "slot": {
+    "fill": "#F0D4DE",
+    "edge": "#8A5A6C"
+  }
+}

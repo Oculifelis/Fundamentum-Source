@@ -32,9 +32,7 @@ import org.slf4j.LoggerFactory;
 final class MaterialDetect {
     private MaterialDetect() { }
 
-    static final String[] WEAR_PREFIXES = {"cracked_", "mossy_", "chiseled_", "polished_", "smooth_", "cut_"};
-    private static final String[] NETHER = {"nether_brick", "red_nether", "blackstone", "basalt", "crimson", "warped", "soul_", "netherrack"};
-    private static final String[] END = {"end_stone", "purpur", "chorus"};
+    // Wear prefixes and dimension name fragments come from MaterialRules (data/<ns>/fundamentum/material_rules).
 
     static Map<ResourceLocation, MaterialSet.Builder> scan() {
         Map<ResourceLocation, MaterialSet.Builder> out = new LinkedHashMap<>();
@@ -70,7 +68,7 @@ final class MaterialDetect {
         for (MaterialSet.Builder b : out.values().toArray(MaterialSet.Builder[]::new)) {
             if (b.kind == MaterialSet.Kind.WOOD) continue;
             String path = b.id.getPath();
-            for (String prefix : WEAR_PREFIXES) {
+            for (String prefix : MaterialRules.wearPrefixes()) {
                 if (!path.startsWith(prefix)) continue;
                 String wear = prefix.substring(0, prefix.length() - 1);
                 MaterialSet.Builder parent = parentOf(out, b.id.getNamespace(), path.substring(prefix.length()));
@@ -89,7 +87,7 @@ final class MaterialDetect {
             Block base = b.get("main", "base", "");
             if (base == null) continue;
             String ns = b.id.getNamespace(), path = b.id.getPath();
-            for (String prefix : WEAR_PREFIXES) {
+            for (String prefix : MaterialRules.wearPrefixes()) {
                 String wear = prefix.substring(0, prefix.length() - 1);
                 if (b.get("main", "base", wear) != null) continue;
                 Block w = block(ns, prefix + path);
@@ -202,8 +200,8 @@ final class MaterialDetect {
     }
 
     private static void dimension(MaterialSet.Builder b, String path) {
-        for (String s : NETHER) if (path.contains(s)) { b.dimension = "nether"; b.tag("nether"); return; }
-        for (String s : END) if (path.contains(s)) { b.dimension = "end"; b.tag("end"); return; }
+        for (String s : MaterialRules.nether()) if (path.contains(s)) { b.dimension = "nether"; b.tag("nether"); return; }
+        for (String s : MaterialRules.end()) if (path.contains(s)) { b.dimension = "end"; b.tag("end"); return; }
     }
 
     /** Tags every set from its colour, namespace and kind once the colour is known. */

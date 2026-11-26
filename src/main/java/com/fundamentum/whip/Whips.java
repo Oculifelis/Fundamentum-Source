@@ -32,7 +32,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import com.fundamentum.attribute.StatAttributes;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.codec.ByteBufCodecs;
@@ -49,6 +51,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
@@ -91,6 +94,26 @@ import org.jetbrains.annotations.Nullable;
  * own attack modifiers), so give whip items no attack damage modifiers beyond what they should add.
  */
 public final class Whips {
+
+    /**
+     * Small mobs (baby zombies on 1.21.1 and older, chickens, silverfish) are thinner than the cord's reach error,
+     * so a well-aimed crack could pass between sample points and miss. Treat anything narrower than this as this wide.
+     */
+    static final double MIN_TARGET_WIDTH = 0.5;
+
+    static AABB atLeastWide(AABB box) {
+        double gx = Math.max(0, MIN_TARGET_WIDTH - box.getXsize()) / 2, gz = Math.max(0, MIN_TARGET_WIDTH - box.getZsize()) / 2;
+        return gx == 0 && gz == 0 ? box : box.inflate(gx, 0, gz);
+    }
+    /** Scales a whip's cord length (the Lash enchantment adds to it). */
+    public static final Holder<Attribute> LENGTH = StatAttributes.add("whip_length", 1, 0.1, 10);
+
+    /** The whip's tuning for {@code user}, with the cord length scaled by {@link #LENGTH}. */
+    public static WhipTuning tuning(LivingEntity user, WhipDefinition whip) {
+        double scale = user.getAttributes().hasAttribute(LENGTH) ? user.getAttributeValue(LENGTH) : 1;
+        return scale == 1 ? whip.tuning : whip.tuning.toBuilder().length(whip.tuning.length() * scale).build();
+    }
+
     private static final Map<ResourceLocation, WhipDefinition> REGISTERED = new ConcurrentHashMap<>();
 
     /** Data overrides and data-only whips, by item id (see {@link WhipDefinition}). */
@@ -233,7 +256,7 @@ public final class Whips {
             looks[k] = vec(aims[k]);
             sent.add(new Vector3f((float) aims[k].x, (float) aims[k].y, (float) aims[k].z));
         }
-        WhipSwing swing = new WhipSwing(whip.tuning, looks, side);
+        WhipSwing swing = new WhipSwing(tuning(player, whip), looks, side);
         swing.start(vec(hand), solids(player.level()));
         ACTIVE.put(player.getUUID(), new Active(whip, stack, swing, hand));
         player.getCooldowns().addCooldown(stack.getItem(), whip.tuning.cooldownTicks());
@@ -253,7 +276,7 @@ public final class Whips {
     static Vec3[] aims(ServerPlayer player, WhipDefinition whip, Vec3 hand) {
         Vec3 look = player.getLookAngle();
         Vec3 eye = player.getEyePosition();
-        double reach = whip.tuning.length() + WhipSwing.HANDLE_REACH;
+        double reach = tuning(player, whip).length() + WhipSwing.HANDLE_REACH;
         int strands = Math.max(1, whip.tuning.strands());
         Vec3[] aims = new Vec3[whip.strandTargets ? strands : 1];
         java.util.Arrays.fill(aims, crosshairAim(player, hand, eye, look, reach));
@@ -325,7 +348,7 @@ public final class Whips {
             return;
         }
         ServerLevel level = player.serverLevel();
-        WhipTuning t = a.whip.tuning;
+        WhipTuning t = tuning(player, a.whip);
         Vec3 hand = hand(player, 1.0F);
         // Everything the cord could reach this tick, found once; each step then tests its swept segments against them.
         AABB reach = new AABB(hand, hand).inflate(t.length() + 2.0);
@@ -372,7 +395,7 @@ public final class Whips {
             double[] swept = cord.sweptBounds(t.hitRadius());
             for (Entity e : near) {
                 Entity whole = WhipTargets.whole(e);
-                AABB box = e.getBoundingBox();
+                AABB box = atLeastWide(e.getBoundingBox());
                 if (a.stopped || a.hit.contains(whole.getUUID()) || box.maxX < swept[0] || box.minX > swept[3] || box.maxY < swept[1]
                     || box.minY > swept[4] || box.maxZ < swept[2] || box.minZ > swept[5]) {
                     continue;
@@ -413,7 +436,7 @@ public final class Whips {
             }
             return;
         }
-        WhipTuning t = a.whip.tuning;
+        WhipTuning t = tuning(player, a.whip);
         a.hit.add(whole.getUUID());
         int index = a.hit.size() - 1;
         if (index + 1 >= t.maxTargets() || !t.sweep()) {

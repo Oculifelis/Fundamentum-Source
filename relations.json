@@ -1,0 +1,13 @@
+{
+  "mods": [
+    {
+      "key": "fundamentum",
+      "modids": [
+        "fundamentum"
+      ],
+      "page_ignore": [
+        "motus"
+      ]
+    }
+  ]
+}

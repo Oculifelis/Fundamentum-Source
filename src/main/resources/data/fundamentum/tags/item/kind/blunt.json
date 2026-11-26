@@ -1,0 +1,21 @@
+{
+  "replace": false,
+  "values": [
+    {
+      "id": "minecraft:mace",
+      "required": false
+    },
+    {
+      "id": "#fundamentum:flails",
+      "required": false
+    },
+    {
+      "id": "#fundamentum:gauntlets",
+      "required": false
+    },
+    {
+      "id": "#minecraft:shovels",
+      "required": false
+    }
+  ]
+}

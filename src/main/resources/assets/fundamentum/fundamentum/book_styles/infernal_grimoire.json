@@ -1,0 +1,115 @@
+{
+ "name": "Infernal grimoire",
+ "colors": {
+  "ink": "2a160e",
+  "dim": "6a4630",
+  "accent": "e0601a",
+  "rule": "8a5a30",
+  "card": "d8c094",
+  "card_edge": "5a3018",
+  "page": "c8ae84",
+  "gold": "d8a830",
+  "banner": "3a3438",
+  "leather": "2a2226"
+ },
+ "title_text": "ffd070",
+ "title_shadow": "7a1a06",
+ "title_upper": true,
+ "card_text": "2a160e",
+ "stamp_text": "2a160e",
+ "rule_color": "8a5a30",
+ "bullet": ">",
+ "numerals": "plain",
+ "right": "standard",
+ "header": "field_notes",
+ "frame": "portal",
+ "window": {
+  "x": -162,
+  "y": -64,
+  "w": 68,
+  "h": 64,
+  "oval": false,
+  "ground": 52
+ },
+ "caption": null,
+ "stamp_label_dy": 16,
+ "layers": {
+  "spread": {
+   "x": -188,
+   "y": -118,
+   "w": 376,
+   "h": 236,
+   "tw": 376,
+   "th": 236
+  },
+  "closed": {
+   "x": 0,
+   "y": -118,
+   "w": 188,
+   "h": 236,
+   "tw": 188,
+   "th": 236
+  },
+  "title": {
+   "x": -160,
+   "y": -103,
+   "w": 140,
+   "h": 22,
+   "tw": 140,
+   "th": 22
+  },
+  "portrait": {
+   "x": -168,
+   "y": -70,
+   "w": 80,
+   "h": 76,
+   "tw": 80,
+   "th": 76
+  },
+  "stamp_on": {
+   "x": 14,
+   "y": 29,
+   "w": 31,
+   "h": 31,
+   "tw": 31,
+   "th": 31
+  },
+  "stamp_off": {
+   "x": 17,
+   "y": 32,
+   "w": 25,
+   "h": 25,
+   "tw": 25,
+   "th": 25
+  },
+  "tab": {
+   "x": -150,
+   "y": -130,
+   "w": 22,
+   "h": 18,
+   "tw": 22,
+   "th": 18
+  },
+  "tab_up": {
+   "x": -150,
+   "y": -134,
+   "w": 22,
+   "h": 22,
+   "tw": 22,
+   "th": 22
+  }
+ },
+ "animation": {
+  "open_ticks": 16,
+  "turn_ticks": 12,
+  "close_ticks": 16,
+  "stamp_ticks": 11
+ },
+ "sounds": {
+  "open": "minecraft:item.book.page_turn",
+  "turn": "minecraft:item.book.page_turn",
+  "click": "minecraft:ui.button.click",
+  "stamp": "minecraft:item.honeycomb.wax_on",
+  "close": "minecraft:item.book.put"
+ }
+}

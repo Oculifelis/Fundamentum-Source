@@ -1,0 +1,5 @@
+{
+  "name": "Script Closed",
+  "ranks": [ { "id": "none", "min": -1000 } ],
+  "membership": { "joinable": true }
+}

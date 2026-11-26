@@ -1,0 +1,17 @@
+{
+  "replace": false,
+  "values": [
+    {
+      "id": "minecraft:trident",
+      "required": false
+    },
+    {
+      "id": "minecraft:arrow",
+      "required": false
+    },
+    {
+      "id": "minecraft:sting",
+      "required": false
+    }
+  ]
+}

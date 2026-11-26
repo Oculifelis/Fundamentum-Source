@@ -19,6 +19,7 @@ import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimplePreparableReloadListener;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.bus.api.IEventBus;
@@ -117,8 +118,24 @@ public final class UnifyHooks {
 
     private static void tabs(BuildCreativeModeTabContentsEvent event) {
         if (!Unify.ENABLED.get() || !Unify.HIDE_CREATIVE.get() || Unify.map().isEmpty()) return;
-        event.getParentEntries().removeIf(Unify::replaced);
-        event.getSearchEntries().removeIf(Unify::replaced);
+        // the event's sets are read-only views on newer NeoForge, so collect first and remove through the event
+        List<ItemStack> gone = new ArrayList<>();
+        for (ItemStack s : event.getParentEntries()) if (Unify.replaced(s)) gone.add(s);
+        for (ItemStack s : event.getSearchEntries()) if (Unify.replaced(s)) gone.add(s);
+        for (ItemStack s : gone) event.remove(s, CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
+    }
+
+    /**
+     * Rebuilds every creative tab the way a client does on joining a world and says whether {@code item} still shows in
+     * a tab or in search (for the unify test).
+     */
+    public static boolean shownInTabs(net.minecraft.server.MinecraftServer server, Item item) {
+        net.minecraft.world.item.CreativeModeTabs.tryRebuildTabContents(server.getWorldData().enabledFeatures(), true, server.registryAccess());
+        for (CreativeModeTab tab : net.minecraft.world.item.CreativeModeTabs.allTabs()) {
+            for (ItemStack s : tab.getDisplayItems()) if (s.is(item)) return true;
+            for (ItemStack s : tab.getSearchTabDisplayItems()) if (s.is(item)) return true;
+        }
+        return false;
     }
 
     /** Publishes the map once the whole datapack load has prepared. */

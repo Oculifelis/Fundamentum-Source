@@ -208,4 +208,16 @@ public final class DataTable<T> {
             }
         }
     }
+
+    /** The entry for a string id such as "minecraft:stone" (a bare path means minecraft), or null when missing or invalid. */
+    public T get(String key) {
+        com.fundamentum.port.FId id = com.fundamentum.port.FId.tryOf(key);
+        return id == null ? null : get(id.vanilla());
+    }
+
+    /** The merged JSON of the entry for a string id, or null. Do not modify it. */
+    public JsonObject raw(String key) {
+        com.fundamentum.port.FId id = com.fundamentum.port.FId.tryOf(key);
+        return id == null ? null : raw(id.vanilla());
+    }
 }

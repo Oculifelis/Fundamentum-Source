@@ -1,0 +1,56 @@
+{
+  "name": "Purpur",
+  "tags": [
+    "dark",
+    "fantasy",
+    "textured",
+    "minecraft"
+  ],
+  "style": "textured",
+  "backdrop": "#99000000",
+  "colors": {
+    "fill": "#FF2A1A2C",
+    "frame": "#000000",
+    "rule": "#4E3450",
+    "title": "#F4E6F4",
+    "muted": "#B894BC",
+    "text": "#F4E6F4",
+    "strong": "#F4E6F4",
+    "soft": "#DFC9E0",
+    "mod": "#DFC9E0",
+    "nav": "#DFC9E0"
+  },
+  "shadow": true,
+  "accent": {
+    "shift": 0.0,
+    "selection": 70
+  },
+  "well": {
+    "fill": "#4E3450",
+    "light": "#4E3450",
+    "shadow": "#B894BC",
+    "line": "#000000"
+  },
+  "page": {
+    "text": "#F4E6F4",
+    "muted": "#B894BC",
+    "code": "#E6C07B",
+    "rule": [
+      "#4E3450",
+      "#4E3450"
+    ],
+    "shadow": true
+  },
+  "slot": {
+    "fill": "#4E3450",
+    "edge": "#B894BC"
+  },
+  "texture": {
+    "background": "minecraft:textures/block/purpur_block.png",
+    "border": "minecraft:textures/block/end_stone_bricks.png",
+    "tint": "#6E000000",
+    "border_tint": "#3C000000",
+    "border_width": 5,
+    "well": "#B9160C18"
+  }
+}

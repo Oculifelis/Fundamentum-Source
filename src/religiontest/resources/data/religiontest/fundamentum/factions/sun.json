@@ -1,0 +1,49 @@
+{
+  "name": "Sun",
+  "kind": "deity",
+  "domain": "sun",
+  "pantheon": "religiontest:old",
+  "ranks": [
+    {
+      "id": "neutral",
+      "min": -1000
+    },
+    {
+      "id": "devout",
+      "min": 20
+    }
+  ],
+  "favour": {
+    "max": 100,
+    "regen": 10
+  },
+  "prayer": {
+    "devotion": 2,
+    "favour": 5,
+    "cooldown": 1200
+  },
+  "offerings": [
+    {
+      "item": "minecraft:gold_ingot",
+      "devotion": 5,
+      "favour": 10
+    }
+  ],
+  "follow": {
+    "forsake": -10
+  },
+  "boons": {
+    "mend": {
+      "cost": 20,
+      "min_rank": "devout",
+      "rewards": {
+        "heal": 10
+      }
+    },
+    "second_life": {
+      "cost": 50,
+      "revive": true,
+      "cooldown": 24000
+    }
+  }
+}

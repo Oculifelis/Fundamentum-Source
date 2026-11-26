@@ -1,0 +1,11 @@
+{
+  "faction": "questtest:guild",
+  "min_rank": "trusted",
+  "weight": 5,
+  "objectives": [
+    {
+      "type": "act",
+      "act": "questtest:ring_bell"
+    }
+  ]
+}

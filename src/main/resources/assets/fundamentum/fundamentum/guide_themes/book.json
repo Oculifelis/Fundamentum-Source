@@ -1,0 +1,46 @@
+{
+  "name": "Book",
+  "tags": [
+    "light",
+    "paper"
+  ],
+  "style": "flat",
+  "backdrop": "#99000000",
+  "colors": {
+    "fill": "#F5EAE3D2",
+    "frame": "#5C4E3E",
+    "rule": "#C4B8A0",
+    "title": "#3C2C1E",
+    "muted": "#8A7C68",
+    "text": "#2C2620",
+    "strong": "#2C2620",
+    "soft": "#4C4439",
+    "mod": "#4C4439",
+    "nav": "#4C4439"
+  },
+  "shadow": false,
+  "accent": {
+    "shift": -0.4,
+    "selection": 50
+  },
+  "well": {
+    "fill": "#DAD0BA",
+    "light": "#DAD0BA",
+    "shadow": "#A89A80",
+    "line": "#C4B8A0"
+  },
+  "page": {
+    "text": "#2C2620",
+    "muted": "#8A7C68",
+    "code": "#8A5A00",
+    "rule": [
+      "#C4B8A0",
+      "#C4B8A0"
+    ],
+    "shadow": false
+  },
+  "slot": {
+    "fill": "#DAD0BA",
+    "edge": "#A89A80"
+  }
+}

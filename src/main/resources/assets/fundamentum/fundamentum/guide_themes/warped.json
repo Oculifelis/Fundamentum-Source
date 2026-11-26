@@ -1,0 +1,56 @@
+{
+  "name": "Warped",
+  "tags": [
+    "dark",
+    "fantasy",
+    "textured",
+    "minecraft"
+  ],
+  "style": "textured",
+  "backdrop": "#99000000",
+  "colors": {
+    "fill": "#FF0A2420",
+    "frame": "#000000",
+    "rule": "#1E4A44",
+    "title": "#5CE8C8",
+    "muted": "#7EC0B0",
+    "text": "#D8F6EE",
+    "strong": "#D8F6EE",
+    "soft": "#B8E3D8",
+    "mod": "#B8E3D8",
+    "nav": "#B8E3D8"
+  },
+  "shadow": true,
+  "accent": {
+    "shift": 0.0,
+    "selection": 70
+  },
+  "well": {
+    "fill": "#1E4A44",
+    "light": "#1E4A44",
+    "shadow": "#7EC0B0",
+    "line": "#000000"
+  },
+  "page": {
+    "text": "#D8F6EE",
+    "muted": "#7EC0B0",
+    "code": "#E6C07B",
+    "rule": [
+      "#1E4A44",
+      "#1E4A44"
+    ],
+    "shadow": true
+  },
+  "slot": {
+    "fill": "#1E4A44",
+    "edge": "#7EC0B0"
+  },
+  "texture": {
+    "background": "minecraft:textures/block/warped_planks.png",
+    "border": "minecraft:textures/block/warped_stem.png",
+    "tint": "#50000000",
+    "border_tint": "#3C000000",
+    "border_width": 5,
+    "well": "#B9041412"
+  }
+}

@@ -11,6 +11,8 @@ import dev.emi.emi.api.recipe.EmiRecipeCategory;
 import dev.emi.emi.api.stack.Comparison;
 import dev.emi.emi.api.stack.EmiIngredient;
 import dev.emi.emi.api.stack.EmiStack;
+import dev.emi.emi.api.stack.EmiStackInteraction;
+import com.fundamentum.recipeview.ViewHover;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -35,6 +37,10 @@ public final class RecipeViewEmi implements EmiPlugin {
             for (ItemStack s : c.catalysts()) r.addWorkstation(cat, EmiStack.of(s));
             for (ViewRecipe recipe : c.build()) r.addRecipe(new EmiViewRecipe(recipe, cat));
         }
+        r.addGenericStackProvider((screen, x, y) -> {
+            ViewHover.Hit h = ViewHover.at(screen, x, y);
+            return h == null ? EmiStackInteraction.EMPTY : new EmiStackInteraction(EmiStack.of(h.stack()));
+        });
         int page = 0;
         for (Map.Entry<List<ItemStack>, List<Component>> e : RecipeViews.builtInfo()) {
             List<EmiIngredient> stacks = new ArrayList<>();

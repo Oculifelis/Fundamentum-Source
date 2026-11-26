@@ -4,6 +4,8 @@ import com.fundamentum.attribute.StatAttributes;
 import com.fundamentum.damage.Elements;
 import com.fundamentum.data.DataTable;
 import com.fundamentum.data.DataTables;
+import com.fundamentum.enchant.FEnchantments;
+import com.fundamentum.enchant.WeaponHook;
 import com.fundamentum.thrown.ThrownStats;
 import com.fundamentum.thrown.ThrownWeapon;
 import com.fundamentum.thrown.ThrownWeapons;
@@ -210,6 +212,10 @@ public final class Shields {
         }
         Entity direct = source.getDirectEntity();
         if (!parried) {
+            // A plain block: enchantments may still send the projectile back, at its own speed.
+            if (direct instanceof Projectile projectile && reflects(level, user, shield, projectile, 0)) {
+                REFLECTIONS.add(new Reflection(projectile, user, source.getEntity(), projectile.getDeltaMovement().length()));
+            }
             if (user instanceof Player player && direct instanceof LivingEntity attacker && attacker.canDisableShield()
                 && stats.disableTicks(5) != 100) {
                 RESCALE.put(player, stats);
@@ -221,7 +227,7 @@ public final class Shields {
         level.playSound(null, user.getX(), user.getY(), user.getZ(), SoundEvents.ANVIL_LAND, user.getSoundSource(), 0.5F,
             1.6F + level.getRandom().nextFloat() * 0.2F);
         if (direct instanceof Projectile projectile) {
-            if (parry.reflect()) {
+            if (reflects(level, user, shield, projectile, parry.reflect() ? 1 : 0)) {
                 REFLECTIONS.add(new Reflection(projectile, user, source.getEntity(), projectile.getDeltaMovement().length() * parry.reflectSpeed()));
             }
         } else if (direct instanceof LivingEntity attacker) {
@@ -295,15 +301,34 @@ public final class Shields {
         RESCALE.clear();
     }
 
-    /** Knocks {@code target} back from {@code from} and slows and weakens it for {@code ticks}. */
+    /** Fires on_block for a blocked projectile and rolls whether it flies back; {@code chance} is the shield's own. */
+    private static boolean reflects(ServerLevel level, LivingEntity user, ItemStack shield, Projectile projectile, double chance) {
+        double c = FEnchantments.fire(new WeaponHook("on_block", level, user, shield, projectile).reflect(chance)).reflect;
+        return c >= 1 || c > 0 && level.getRandom().nextDouble() < c;
+    }
+
+    /**
+     * Knocks {@code target} back from {@code from} and slows and weakens it for {@code ticks}. The shield the target
+     * holds may shorten both (on_staggered).
+     */
     public static void stagger(LivingEntity target, LivingEntity from, double knockback, int ticks) {
+        if (target.level() instanceof ServerLevel level) {
+            ItemStack own = blockingStack(target);
+            if (own == null || stats(own) == null) {
+                own = stats(target.getOffhandItem()) != null ? target.getOffhandItem() : target.getMainHandItem();
+            }
+            if (stats(own) != null) {
+                WeaponHook h = FEnchantments.fire(new WeaponHook("on_staggered", level, target, own, from).knockback(knockback));
+                knockback = h.knockback * h.stagger;
+                ticks = (int) Math.round(ticks * h.stagger);
+            }
+        }
         if (knockback > 0) {
             target.knockback(knockback, from.getX() - target.getX(), from.getZ() - target.getZ());
             target.hurtMarked = true;
         }
-        if (ticks > 0) {
-            target.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, ticks, 2), from);
-            target.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, ticks, 0), from);
+        if (ticks > 0 && !com.fundamentum.poise.Poise.stagger(target, from, ticks)) {
+            return; // a listener cancelled the stagger
         }
         if (target instanceof Mob mob) {
             mob.getNavigation().stop();
@@ -385,10 +410,12 @@ public final class Shields {
             if (!bash.inCone(nx - eye.x, ny - eye.y, nz - eye.z, look.x, look.y, look.z) && !bash.inCone(aim.x, aim.y, aim.z, look.x, look.y, look.z)) {
                 continue;
             }
-            if (bash.damage() > 0) {
-                target.hurt(source, (float) bash.damage());
+            WeaponHook h = FEnchantments.fire(new WeaponHook("on_bash", level, user, stack, target).damage((float) bash.damage())
+                .knockback(bash.knockback()));
+            if (h.damage > 0) {
+                target.hurt(source, h.damage);
             }
-            stagger(target, user, bash.knockback(), bash.staggerTicks());
+            stagger(target, user, h.knockback, (int) Math.round(bash.staggerTicks() * h.stagger));
             hits++;
         }
         level.playSound(null, user.getX(), user.getY(), user.getZ(), SoundEvents.SHIELD_BLOCK, SoundSource.PLAYERS, 1.0F,

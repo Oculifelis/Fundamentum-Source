@@ -282,6 +282,26 @@ public final class ElementSelfTest {
         report("a plain hit with packed ice (#fundamentum_test:element/frost item tag) is frost and leaves its aura",
             frost.matches(bash) && ElementAuras.find(target, ElementRef.parse("#fundamentum_test:element/frost")) != null, describe(target));
 
+        var probe = com.fundamentum.damage.DataElements.parse(id("fundamentum_test", "probe"),
+            com.google.gson.JsonParser.parseString("{\"color\":16711680,\"damage_types\":\"#fundamentum_test:custom_types\"}").getAsJsonObject());
+        report("a numeric colour and a #-prefixed damage_types tag parse", probe.color() == 0xFF0000
+            && probe.damageTypes().location().equals(id("fundamentum_test", "custom_types")), Integer.toHexString(probe.color()) + " " + probe.damageTypes().location());
+        report("weapons defaults to the element's own tag, with no parent or name", probe.weapons().location().equals(id("fundamentum_test", "element/probe"))
+            && probe.parent() == null && probe.name() == null && probe.damage() == null, probe.weapons().location().toString());
+        var green = com.fundamentum.damage.DataElements.parse(id("fundamentum_test", "green"),
+            com.google.gson.JsonParser.parseString("{\"color\":\"00FF00\"}").getAsJsonObject());
+        report("a hex colour without # parses", green.color() == 0x00FF00, Integer.toHexString(green.color()));
+        String badAttr = "no exception";
+        try {
+            com.fundamentum.damage.DataElements.parse(id("fundamentum_test", "bad"),
+                com.google.gson.JsonParser.parseString("{\"damage_attribute\":\"fundamentum_test:no_such_attribute\"}").getAsJsonObject());
+        } catch (IllegalArgumentException e) {
+            badAttr = "IllegalArgumentException";
+        }
+        report("an unknown damage_attribute is refused", badAttr.equals("IllegalArgumentException"), badAttr);
+        report("a broken element file is skipped and the others still load", Elements.get(id("fundamentum_test", "broken")) == null
+            && Elements.get(id("fundamentum_test", "frost")) != null, "");
+
         int listed = 0;
         try {
             listed = server.getCommands().getDispatcher().execute("fundamentum element list", server.createCommandSourceStack().withSuppressedOutput());

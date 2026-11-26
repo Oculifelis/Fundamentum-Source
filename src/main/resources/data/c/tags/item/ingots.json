@@ -1,0 +1,25 @@
+{
+  "replace": false,
+  "values": [
+    {
+      "id": "#c:ingots/bismuth",
+      "required": false
+    },
+    {
+      "id": "#c:ingots/shadowmetal",
+      "required": false
+    },
+    {
+      "id": "#c:ingots/thaumic_alloy",
+      "required": false
+    },
+    {
+      "id": "#c:ingots/ichorium",
+      "required": false
+    },
+    {
+      "id": "#c:ingots/neutronized_metal",
+      "required": false
+    }
+  ]
+}

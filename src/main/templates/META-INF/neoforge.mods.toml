@@ -1,11 +1,13 @@
 modLoader="javafml"
 loaderVersion="[1,)"
 license="${mod_license}"
+issueTrackerURL="https://github.com/Oculifelis/Fundamentum-Source/issues"
 
 [[mods]]
 modId="${mod_id}"
 version="${mod_version}"
 displayName="${mod_name}"
+displayURL="https://www.curseforge.com/minecraft/mc-mods/fundamentum"
 logoFile="fundamentum_logo.png"
 logoBlur=false
 enumExtensions="META-INF/enumextensions.json"
@@ -17,6 +19,9 @@ The shared groundwork under Oculifelis's mods: data tables, shared stats, creatu
 
 [[mixins]]
 config="fundamentum.mixins.json"
+
+[[mixins]]
+config="fundamentum-thaumaturge.mixins.json"
 
 [[dependencies.${mod_id}]]
     modId="neoforge"

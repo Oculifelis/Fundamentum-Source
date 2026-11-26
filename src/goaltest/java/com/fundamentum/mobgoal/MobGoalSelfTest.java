@@ -343,6 +343,33 @@ public final class MobGoalSelfTest {
         } catch (Exception e) {
             check(false, "the mobgoals command ran: " + e);
         }
+        extras(level);
+    }
+
+    /** GoalParams defaults and Glows.apply on the server. */
+    private static void extras(ServerLevel level) {
+        com.google.gson.JsonObject j = com.google.gson.JsonParser.parseString(
+            "{\"speed\":1.5,\"range\":\"far\",\"count\":3,\"on\":true,\"name\":\"x\",\"home\":[1,2,3],\"bad\":[1,2],\"gone\":null}").getAsJsonObject();
+        GoalParams p = new GoalParams(j);
+        check(p.d("speed", 0) == 1.5 && p.f("speed", 0) == 1.5f && p.i("count", 0) == 3 && p.b("on", false) && "x".equals(p.s("name", "")),
+            "params: numbers, flags and text read from the entry");
+        check(p.d("range", 9) == 9 && p.i("name", 4) == 4 && p.d("missing", 2) == 2 && !p.has("gone") && p.i("gone", 5) == 5,
+            "params: missing, null or wrongly typed values fall back to the default");
+        check(new BlockPos(1, 2, 3).equals(p.pos("home")) && p.pos("bad") == null && p.pos("speed") == null && p.pos("missing") == null,
+            "params: pos reads [x, y, z], anything else is null");
+        GoalParams none = new GoalParams(null);
+        check(!none.has("speed") && none.i("speed", 7) == 7 && GoalParams.EMPTY.json().size() == 0, "params: a null object reads as empty");
+
+        Mob glow = spawn(level, "minecraft:pig", -10, 10);
+        com.fundamentum.glow.Glows.apply(glow, 0xF19645, 100);
+        var fx = glow.getEffect(net.minecraft.world.effect.MobEffects.GLOWING);
+        check(fx != null && fx.getDuration() == 100 && !fx.isVisible() && fx.getAmplifier() == 0,
+            "glows: apply gives Glowing for the ticks asked, with no particles (" + (fx == null ? "none" : fx.getDuration()) + ")");
+        com.fundamentum.glow.Glows.apply(glow, 0x3366FF, 40);
+        fx = glow.getEffect(net.minecraft.world.effect.MobEffects.GLOWING);
+        check(fx != null && fx.getDuration() >= 40, "glows: a second apply keeps it glowing");
+        check(com.fundamentum.glow.Glows.colour(glow) == -1, "glows: the server keeps no colour (clients do)");
+        discard(glow);
     }
 
     private static void phases(MinecraftServer server) {

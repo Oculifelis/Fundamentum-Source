@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    {
+      "id": "primalartifice:bismuth_ingot",
+      "required": false
+    }
+  ]
+}

@@ -1,0 +1,115 @@
+{
+ "name": "Grimoire",
+ "colors": {
+  "ink": "2a1840",
+  "dim": "6a5a80",
+  "accent": "7a3ac8",
+  "rule": "b8a8c8",
+  "card": "e4daec",
+  "card_edge": "8a6ab0",
+  "page": "d8cfe0",
+  "gold": "b48ae0",
+  "banner": "3a1858",
+  "leather": "2a1838"
+ },
+ "title_text": "f4e8ff",
+ "title_shadow": "1a0a2a",
+ "title_upper": true,
+ "card_text": "2a1840",
+ "stamp_text": "2a1840",
+ "rule_color": "b8a8c8",
+ "bullet": "*",
+ "numerals": "plain",
+ "right": "standard",
+ "header": "field_notes",
+ "frame": "scry",
+ "window": {
+  "x": -164,
+  "y": -68,
+  "w": 72,
+  "h": 72,
+  "oval": true,
+  "ground": 57
+ },
+ "caption": null,
+ "stamp_label_dy": 16,
+ "layers": {
+  "spread": {
+   "x": -192,
+   "y": -118,
+   "w": 384,
+   "h": 250,
+   "tw": 384,
+   "th": 250
+  },
+  "closed": {
+   "x": -4,
+   "y": -118,
+   "w": 196,
+   "h": 236,
+   "tw": 196,
+   "th": 236
+  },
+  "title": {
+   "x": -176,
+   "y": -110,
+   "w": 172,
+   "h": 34,
+   "tw": 172,
+   "th": 34
+  },
+  "portrait": {
+   "x": -174,
+   "y": -78,
+   "w": 92,
+   "h": 92,
+   "tw": 92,
+   "th": 92
+  },
+  "stamp_on": {
+   "x": 11,
+   "y": 26,
+   "w": 36,
+   "h": 36,
+   "tw": 36,
+   "th": 36
+  },
+  "stamp_off": {
+   "x": 17,
+   "y": 32,
+   "w": 25,
+   "h": 25,
+   "tw": 25,
+   "th": 25
+  },
+  "tab": {
+   "x": -150,
+   "y": -127,
+   "w": 22,
+   "h": 17,
+   "tw": 22,
+   "th": 17
+  },
+  "tab_up": {
+   "x": -150,
+   "y": -131,
+   "w": 22,
+   "h": 21,
+   "tw": 22,
+   "th": 21
+  }
+ },
+ "animation": {
+  "open_ticks": 16,
+  "turn_ticks": 12,
+  "close_ticks": 16,
+  "stamp_ticks": 11
+ },
+ "sounds": {
+  "open": "minecraft:item.book.page_turn",
+  "turn": "minecraft:item.book.page_turn",
+  "click": "minecraft:ui.button.click",
+  "stamp": "minecraft:item.honeycomb.wax_on",
+  "close": "minecraft:item.book.put"
+ }
+}

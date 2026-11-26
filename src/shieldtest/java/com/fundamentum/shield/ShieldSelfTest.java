@@ -146,17 +146,17 @@ public final class ShieldSelfTest {
             report("block: a hit from the front does nothing", backHealth == blocker.getMaxHealth(),
                 backHealth + "");
             report("block: a hit from behind gets through", blocker.getHealth() < backHealth, blocker.getHealth() + "");
-            report("block: no parry on a shield with parry off", !front.hasEffect(MobEffects.MOVEMENT_SLOWDOWN), "");
+            report("block: no parry on a shield with parry off", !com.fundamentum.poise.Poise.staggered(front), "");
             report("parry: blocked in full", !hurt(parrier), parrier.getHealth() + "");
-            report("parry: the attacker is staggered", parried.hasEffect(MobEffects.MOVEMENT_SLOWDOWN) && parried.hasEffect(MobEffects.WEAKNESS), "");
-            report("late raise: blocked but no parry", !hurt(late) && !lateAttacker.hasEffect(MobEffects.MOVEMENT_SLOWDOWN), late.getHealth() + "");
-            report("quick re-raise: blocked but no parry (rearm)", !hurt(rearmer) && !rearmAttacker.hasEffect(MobEffects.MOVEMENT_SLOWDOWN),
+            report("parry: the attacker is staggered", com.fundamentum.poise.Poise.staggered(parried), "");
+            report("late raise: blocked but no parry", !hurt(late) && !com.fundamentum.poise.Poise.staggered(lateAttacker), late.getHealth() + "");
+            report("quick re-raise: blocked but no parry (rearm)", !hurt(rearmer) && !com.fundamentum.poise.Poise.staggered(rearmAttacker),
                 rearmer.getHealth() + "");
             report("arrow parry: the blocker is unhurt", !hurt(archer), archer.getHealth() + "");
             report("arrow parry: the arrow is the blocker's now and flew back into its shooter",
                 arrow.getOwner() == archer && hurt(shooter), "owner " + (arrow.getOwner() == null ? "none" : arrow.getOwner().getStringUUID())
                     + ", shooter " + shooter.getHealth());
-            report("bash: the creature in front is hit and staggered", hurt(bashTarget) && bashTarget.hasEffect(MobEffects.MOVEMENT_SLOWDOWN),
+            report("bash: the creature in front is hit and staggered", hurt(bashTarget) && com.fundamentum.poise.Poise.staggered(bashTarget),
                 bashTarget.getHealth() + "");
             report("bash: the creature behind is not", !hurt(bashBehind), bashBehind.getHealth() + "");
             float raised = ember.getMaxHealth() - ember.getHealth();

@@ -1,0 +1,47 @@
+{
+  "name": "End",
+  "tags": [
+    "dark",
+    "minecraft",
+    "fantasy"
+  ],
+  "style": "flat",
+  "backdrop": "#BF000000",
+  "colors": {
+    "fill": "#F51A1424",
+    "frame": "#3A2C4A",
+    "rule": "#3A2C4A",
+    "title": "#F0ECC4",
+    "muted": "#B8A8D0",
+    "text": "#F0ECC4",
+    "strong": "#F0ECC4",
+    "soft": "#DCD4C8",
+    "mod": "#DCD4C8",
+    "nav": "#DCD4C8"
+  },
+  "shadow": true,
+  "accent": {
+    "shift": 0.0,
+    "selection": 60
+  },
+  "well": {
+    "fill": "#3A2C4A",
+    "light": "#3A2C4A",
+    "shadow": "#B8A8D0",
+    "line": "#3A2C4A"
+  },
+  "page": {
+    "text": "#F0ECC4",
+    "muted": "#B8A8D0",
+    "code": "#E6C07B",
+    "rule": [
+      "#3A2C4A",
+      "#3A2C4A"
+    ],
+    "shadow": true
+  },
+  "slot": {
+    "fill": "#3A2C4A",
+    "edge": "#B8A8D0"
+  }
+}

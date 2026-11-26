@@ -1,0 +1,12 @@
+{
+  "tables": [
+    "fundamentum_test:glob/*",
+    "!fundamentum_test:glob/skip"
+  ],
+  "entries": [
+    {
+      "item": "minecraft:heart_of_the_sea",
+      "weight": 1
+    }
+  ]
+}

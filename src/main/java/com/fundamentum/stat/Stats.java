@@ -50,12 +50,21 @@ import org.slf4j.LoggerFactory;
  * {"type": "vanilla_stat", "stat": "minecraft:custom", "value": "minecraft:jump"}
  * {"type": "scoreboard", "objective": "kills"}             the entity's score (can be set)
  * </pre>
- * Mods add their own with {@link #registerSource}. Stored and scoreboard stats can be set; every write is clamped to
+ * Mods add their own with {@link #registerSource}. Entity stats also take modifiers ({@link #addModifier}): armour sets
+ * and status effects whose bonus names a {@code "stat"} instead of an {@code "attribute"} add them, and so can mods and
+ * the {@code /fundamentum stat modifier} command. A stat's value is its source's value (the base) with every modifier on
+ * it: {@code (base + add) * (1 + sum of multiply_base) * product of (1 + multiply_total)}, clamped. Modifiers are not
+ * saved: whoever adds one removes it again by its id. Declarations reload with {@code /reload}.
+ * Stored and scoreboard stats can be set (that sets the base); every write is clamped to
  * the stat's min and max and posts {@link Events.StatChanged}. Computed player stats post it too: attribute stats are
- * checked again when the player's inventory, equipment or effects change, unlock stats when an unlock is granted, and
- * the stats nothing announces (mana, vanilla_stat, scoreboard and mod sources) on the {@code fundamentum:performance}
- * config's {@code stats_volatile_seconds} timer, only when such a stat is declared. A full check of every player runs on
- * {@code stats_recheck_seconds} as a safety net. Players get their values and the declarations synced, for the stats
+ * checked again when the player's inventory, equipment or effects change, unlock stats when an unlock is granted,
+ * vanilla_stat stats when that vanilla statistic changes and scoreboard stats when the player's score changes (at most
+ * once a second per player while it keeps changing), and mod sources registered as announcing when they call
+ * {@link #sourceChanged}. The stats nothing announces (mana and other mod sources) are checked on the
+ * {@code fundamentum:performance} config's {@code stats_volatile_seconds} timer, only when such a stat is declared. A
+ * full check of every player runs on {@code stats_recheck_seconds} as a safety net. Startup stats
+ * ({@link com.fundamentum.attribute.StartupStats}) are real attributes and are declared here too unless a data file
+ * declares the same id. Players get their values and the declarations synced, for the stats
  * screen, the HUD layer and tooltips.
  */
 public final class Stats {
@@ -106,10 +115,24 @@ public final class Stats {
     private static volatile boolean defsChanged;
     private static int ticks;
     private static boolean initialised;
-    /** Sources whose value changes with no event to say so; their stats are polled on the slow volatile timer. */
-    private static final Set<String> ANNOUNCED = Set.of("stored", "attribute", "unlock");
+    /** Sources whose changes are announced; the others are polled on the slow volatile timer. */
+    private static final Set<String> ANNOUNCED = ConcurrentHashMap.newKeySet();
+    /** Sources a full check covers when something marks the player dirty. */
+    private static final Set<String> CACHED = Set.of("stored", "attribute", "unlock");
     private static volatile boolean anyVolatile;
+    private static volatile boolean anyScore;
+    private static volatile Set<net.minecraft.stats.Stat<?>> watchedStats = Set.of();
     private static final Set<UUID> DIRTY = ConcurrentHashMap.newKeySet();
+    /** Players whose announced sources changed, checked at most once a second each. */
+    private static final Set<UUID> PENDING = ConcurrentHashMap.newKeySet();
+    private static final Map<UUID, Integer> LAST_PENDING = new ConcurrentHashMap<>();
+
+    /** One modifier on an entity's stat. */
+    public record Modifier(double amount, com.fundamentum.attribute.AttributeBonus.Op operation) { }
+
+    /** Modifiers by entity, then stat, then modifier id (not saved). */
+    private static final Map<LivingEntity, Map<FId, Map<FId, Modifier>>> MODIFIERS =
+        Collections.synchronizedMap(new java.util.WeakHashMap<>());
     private static ConfigValue<Integer> safetyNet;
     private static ConfigValue<Integer> volatileTimer;
 
@@ -117,6 +140,7 @@ public final class Stats {
     public static void init() {
         if (initialised) return;
         initialised = true;
+        ANNOUNCED.addAll(Set.of("stored", "attribute", "unlock", "vanilla_stat", "scoreboard"));
         registerSource("stored", new Source() {
             @Override
             public double read(StatDef def, LivingEntity entity, ItemStack stack) {
@@ -196,6 +220,9 @@ public final class Stats {
             ticks = 0;
             LAST.clear();
             DIRTY.clear();
+            PENDING.clear();
+            LAST_PENDING.clear();
+            MODIFIERS.clear();
         });
         FLife.serverTick(Stats::tick);
         safetyNet = Timers.seconds("stats_recheck_seconds", 30);
@@ -233,10 +260,45 @@ public final class Stats {
         StatCommand.init();
     }
 
-    /** Adds a source type (or replaces one) for the {@code source.type} field. */
+    /**
+     * Adds a source type (or replaces one) for the {@code source.type} field. A new type's stats are polled; replacing a
+     * type keeps whether it announces.
+     */
     public static void registerSource(String type, Source source) {
         SOURCES.put(type, source);
     }
+
+    /**
+     * Adds a source type (or replaces one). An announcing source calls {@link #sourceChanged} whenever a value may have
+     * changed and is never polled; any other is read on the {@code stats_volatile_seconds} timer.
+     */
+    public static void registerSource(String type, Source source, boolean announces) {
+        SOURCES.put(type, source);
+        if (announces) ANNOUNCED.add(type);
+        else ANNOUNCED.remove(type);
+    }
+
+    /** An announcing source says the entity's value may have changed; checked within a second. */
+    public static void sourceChanged(LivingEntity entity) {
+        if (entity instanceof ServerPlayer p) PENDING.add(p.getUUID());
+    }
+
+    /** Called when a player's vanilla statistic changes. */
+    public static void vanillaStatChanged(ServerPlayer player, net.minecraft.stats.Stat<?> stat) {
+        if (watchedStats.contains(stat)) PENDING.add(player.getUUID());
+    }
+
+    /** Called when a score changes for a holder name. */
+    public static void scoreChanged(String holder) {
+        if (!anyScore || server == null) return;
+        ServerPlayer p = server.getPlayerList().getPlayerByName(holder);
+        ServerPlayer extra = testPlayer;
+        if (p == null && extra != null && extra.getScoreboardName().equals(holder)) p = extra;
+        if (p != null) PENDING.add(p.getUUID());
+    }
+
+    /** A player outside the player list whose score changes count too (for tests). */
+    static volatile ServerPlayer testPlayer;
 
     // ---- definitions
 
@@ -249,8 +311,26 @@ public final class Stats {
                 LOG.error("Stat {} could not be read: {}", id, e.toString());
             }
         });
+        for (com.fundamentum.attribute.StartupStats.Entry e : com.fundamentum.attribute.StartupStats.entries().values()) {
+            if (out.containsKey(e.id())) continue;
+            try {
+                out.put(e.id(), StatDef.parse(e.id(), com.fundamentum.attribute.StartupStats.declaration(e)));
+            } catch (RuntimeException ex) {
+                LOG.error("Startup stat {} could not be declared: {}", e.id(), ex.toString());
+            }
+        }
         defs = Collections.unmodifiableMap(out);
         anyVolatile = out.values().stream().anyMatch(d -> d.scope() != StatDef.Scope.ITEM && !ANNOUNCED.contains(d.sourceType()));
+        anyScore = out.values().stream().anyMatch(d -> d.scope() != StatDef.Scope.ITEM && "scoreboard".equals(d.sourceType()));
+        Set<net.minecraft.stats.Stat<?>> watch = new java.util.HashSet<>();
+        for (StatDef d : out.values()) {
+            if (d.scope() == StatDef.Scope.ITEM || !"vanilla_stat".equals(d.sourceType())) continue;
+            FId type = Conditions.id(d.source(), "stat");
+            FId value = Conditions.id(d.source(), "value");
+            net.minecraft.stats.Stat<?> st = type == null || value == null ? null : FVanilla.stat(type, value);
+            if (st != null) watch.add(st);
+        }
+        watchedStats = Set.copyOf(watch);
         defsChanged = true;
         for (UUID id : LAST.keySet()) DIRTY.add(id);
         LOG.info("Loaded {} stat definitions", out.size());
@@ -293,11 +373,99 @@ public final class Stats {
         return s != null ? s : SOURCES.get("stored");
     }
 
-    /** The entity's value of the stat (for an item stat, of the stack in its main hand). */
+    /** The entity's value of the stat with its modifiers (for an item stat, of the stack in its main hand). */
     public static double get(LivingEntity entity, FId id) {
         StatDef d = def(id);
         if (d.scope() == StatDef.Scope.ITEM) return get(entity.getMainHandItem(), id);
+        return read(d, entity);
+    }
+
+    /** The entity's value of the stat before modifiers: what its source holds. */
+    public static double base(LivingEntity entity, FId id) {
+        StatDef d = def(id);
+        if (d.scope() == StatDef.Scope.ITEM) return get(entity.getMainHandItem(), id);
         return source(d).read(d, entity, ItemStack.EMPTY);
+    }
+
+    private static double read(StatDef d, LivingEntity entity) {
+        double v = source(d).read(d, entity, ItemStack.EMPTY);
+        return entity == null ? v : modified(d, entity, v);
+    }
+
+    private static double modified(StatDef d, LivingEntity entity, double base) {
+        Map<FId, Modifier> mods;
+        synchronized (MODIFIERS) {
+            Map<FId, Map<FId, Modifier>> all = MODIFIERS.get(entity);
+            mods = all == null ? null : all.get(d.id());
+            if (mods == null || mods.isEmpty()) return base;
+            mods = new HashMap<>(mods);
+        }
+        double add = 0, multBase = 0, multTotal = 1;
+        for (Modifier m : mods.values()) {
+            switch (m.operation()) {
+                case ADD_VALUE -> add += m.amount();
+                case ADD_MULTIPLIED_BASE -> multBase += m.amount();
+                case ADD_MULTIPLIED_TOTAL -> multTotal *= 1 + m.amount();
+            }
+        }
+        return d.clamp((base + add) * (1 + multBase) * multTotal);
+    }
+
+    /**
+     * Adds (or replaces) a modifier on the entity's stat under {@code modifier}, and posts {@link Events.StatChanged} when
+     * the value changed. Item stats take no modifiers (false).
+     */
+    public static boolean addModifier(LivingEntity entity, FId id, FId modifier, double amount, com.fundamentum.attribute.AttributeBonus.Op operation) {
+        StatDef d = def(id);
+        if (entity == null || d.scope() == StatDef.Scope.ITEM) return false;
+        double from = read(d, entity);
+        synchronized (MODIFIERS) {
+            MODIFIERS.computeIfAbsent(entity, e -> new HashMap<>()).computeIfAbsent(id, k -> new HashMap<>())
+                .put(modifier, new Modifier(amount, operation));
+        }
+        changed(entity, id, from, read(d, entity));
+        return true;
+    }
+
+    /** Takes the modifier with this id off the entity's stat; false when it had none. */
+    public static boolean removeModifier(LivingEntity entity, FId id, FId modifier) {
+        StatDef d = def(id);
+        if (entity == null) return false;
+        double from = read(d, entity);
+        Modifier gone;
+        synchronized (MODIFIERS) {
+            Map<FId, Map<FId, Modifier>> all = MODIFIERS.get(entity);
+            Map<FId, Modifier> mods = all == null ? null : all.get(id);
+            gone = mods == null ? null : mods.remove(modifier);
+            if (mods != null && mods.isEmpty()) all.remove(id);
+            if (all != null && all.isEmpty()) MODIFIERS.remove(entity);
+        }
+        if (gone == null) return false;
+        changed(entity, id, from, read(d, entity));
+        return true;
+    }
+
+    /** Takes the modifier with this id off every stat of the entity. */
+    public static void removeModifiers(LivingEntity entity, FId modifier) {
+        List<FId> stats;
+        synchronized (MODIFIERS) {
+            Map<FId, Map<FId, Modifier>> all = MODIFIERS.get(entity);
+            if (all == null) return;
+            stats = new ArrayList<>();
+            all.forEach((stat, mods) -> {
+                if (mods.containsKey(modifier)) stats.add(stat);
+            });
+        }
+        for (FId stat : stats) removeModifier(entity, stat, modifier);
+    }
+
+    /** The modifiers on the entity's stat, by id (a copy). */
+    public static Map<FId, Modifier> modifiers(LivingEntity entity, FId id) {
+        synchronized (MODIFIERS) {
+            Map<FId, Map<FId, Modifier>> all = MODIFIERS.get(entity);
+            Map<FId, Modifier> mods = all == null ? null : all.get(id);
+            return mods == null ? Map.of() : Map.copyOf(mods);
+        }
     }
 
     /** The stack's value of the stat (the stat's default when the stack has none). */
@@ -314,14 +482,15 @@ public final class Stats {
         StatDef d = def(id);
         if (d.scope() == StatDef.Scope.ITEM) return set(entity.getMainHandItem(), id, value);
         Source src = source(d);
-        double from = src.read(d, entity, ItemStack.EMPTY);
+        double from = read(d, entity);
         if (!src.write(d, entity, ItemStack.EMPTY, d.clamp(value))) return false;
-        changed(entity, id, from, src.read(d, entity, ItemStack.EMPTY));
+        changed(entity, id, from, read(d, entity));
         return true;
     }
 
+    /** Adds to the entity's base value of the stat. */
     public static boolean add(LivingEntity entity, FId id, double amount) {
-        return set(entity, id, get(entity, id) + amount);
+        return set(entity, id, base(entity, id) + amount);
     }
 
     /** Sets the stack's value, clamped. Item writes post no event (a stack has no holder to name). */
@@ -419,17 +588,40 @@ public final class Stats {
                 if (p != null) scan(p);
             }
         }
+        if (!PENDING.isEmpty()) {
+            for (UUID id : List.copyOf(PENDING)) {
+                Integer at = LAST_PENDING.get(id);
+                if (at != null && ticks - at < 20 && ticks >= at) continue;
+                PENDING.remove(id);
+                LAST_PENDING.put(id, ticks);
+                ServerPlayer p = s.getPlayerList().getPlayer(id);
+                if (p != null) scanVolatile(p, false);
+            }
+        }
         int full = Timers.ticks(safetyNet, 30);
         int vol = anyVolatile ? Timers.ticks(volatileTimer, 2) : 0;
         if (full <= 0 && vol <= 0) return;
         for (ServerPlayer p : List.copyOf(s.getPlayerList().getPlayers())) {
             if (Timers.due(full, s, p.getUUID())) scan(p);
-            else if (Timers.due(vol, s, p.getUUID())) scanVolatile(p);
+            else if (Timers.due(vol, s, p.getUUID())) scanVolatile(p, true);
         }
     }
 
-    /** Checks only the player's stats whose source announces nothing (mana, vanilla_stat, scoreboard, mod sources). */
-    private static void scanVolatile(ServerPlayer player) {
+    /** Whether the player has a change from an announced source waiting (for tests). */
+    public static boolean pending(ServerPlayer player) {
+        return PENDING.contains(player.getUUID());
+    }
+
+    /** Checks the player's waiting announced change now, skipping the once-a-second limit (for tests). */
+    static void flushPending(ServerPlayer player) {
+        if (PENDING.remove(player.getUUID())) scanVolatile(player, false);
+    }
+
+    /**
+     * Checks the player's stats a full check would not catch from a dirty mark: the polled sources only, or every
+     * source but stored, attribute and unlock.
+     */
+    private static void scanVolatile(ServerPlayer player, boolean polledOnly) {
         Map<String, Double> last = LAST.get(player.getUUID());
         if (last == null) {
             scan(player);
@@ -437,10 +629,11 @@ public final class Stats {
         }
         boolean any = false;
         for (StatDef d : defs.values()) {
-            if (d.scope() == StatDef.Scope.ITEM || ANNOUNCED.contains(d.sourceType())) continue;
+            if (d.scope() == StatDef.Scope.ITEM || CACHED.contains(d.sourceType())) continue;
+            if (polledOnly && ANNOUNCED.contains(d.sourceType())) continue;
             double v;
             try {
-                v = source(d).read(d, player, ItemStack.EMPTY);
+                v = read(d, player);
             } catch (RuntimeException e) {
                 continue;
             }
@@ -487,7 +680,7 @@ public final class Stats {
         for (StatDef d : defs.values()) {
             if (d.scope() == StatDef.Scope.ITEM) continue;
             try {
-                out.put(d.id().toString(), source(d).read(d, entity, ItemStack.EMPTY));
+                out.put(d.id().toString(), read(d, entity));
             } catch (RuntimeException e) {
                 LOG.debug("Stat {} could not be read: {}", d.id(), e.toString());
             }

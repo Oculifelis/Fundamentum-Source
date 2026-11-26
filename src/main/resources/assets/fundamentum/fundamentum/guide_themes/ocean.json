@@ -1,0 +1,46 @@
+{
+  "name": "Ocean",
+  "tags": [
+    "dark",
+    "fantasy"
+  ],
+  "style": "flat",
+  "backdrop": "#BF000000",
+  "colors": {
+    "fill": "#F50B1E2E",
+    "frame": "#1C3A50",
+    "rule": "#1C3A50",
+    "title": "#7FD4F0",
+    "muted": "#6A92A8",
+    "text": "#D6ECF6",
+    "strong": "#D6ECF6",
+    "soft": "#B0CCDA",
+    "mod": "#B0CCDA",
+    "nav": "#B0CCDA"
+  },
+  "shadow": true,
+  "accent": {
+    "shift": 0.0,
+    "selection": 60
+  },
+  "well": {
+    "fill": "#1C3A50",
+    "light": "#1C3A50",
+    "shadow": "#6A92A8",
+    "line": "#1C3A50"
+  },
+  "page": {
+    "text": "#D6ECF6",
+    "muted": "#6A92A8",
+    "code": "#F0D27F",
+    "rule": [
+      "#1C3A50",
+      "#1C3A50"
+    ],
+    "shadow": true
+  },
+  "slot": {
+    "fill": "#1C3A50",
+    "edge": "#6A92A8"
+  }
+}

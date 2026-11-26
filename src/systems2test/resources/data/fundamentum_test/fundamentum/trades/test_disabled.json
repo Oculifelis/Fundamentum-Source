@@ -1,0 +1,7 @@
+{
+  "disabled": true,
+  "profession": "minecraft:weaponsmith",
+  "level": 1,
+  "wants": {"item": "minecraft:diamond"},
+  "gives": {"item": "minecraft:golden_sword"}
+}

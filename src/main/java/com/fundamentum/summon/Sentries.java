@@ -256,10 +256,13 @@ public final class Sentries {
 
     /**
      * Places the sentry {@code def} for {@code owner} against the {@code face} of block {@code clicked}. Returns the
-     * sentry, or why it failed: "placement" (wrong face), "blocked" (no room), "no_slots" (costs more than the limit), "cancelled" (a summon_created listener)
+     * sentry, or why it failed: "placement" (wrong face), "blocked" (no room), "no_slots" (costs more than the limit), "summons_off" (the player switched summons off), "cancelled" (a summon_created listener)
      * or "entity" (unknown or not a creature).
      */
     public static Placed place(ServerPlayer owner, ResourceLocation item, SentryDefinition def, BlockPos clicked, Direction face) {
+        if (!SummonToggle.enabled(owner)) {
+            return Placed.fail("summons_off");
+        }
         if (!def.placement().allows(face)) {
             return Placed.fail("placement");
         }

@@ -1,0 +1,9 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [{ "item": "minecraft:book" }, { "item": "minecraft:bone" }],
+  "result": {
+    "id": "fundamentum:guide_book",
+    "components": { "fundamentum:guide_book": "fundamentum:bestiary" }
+  }
+}

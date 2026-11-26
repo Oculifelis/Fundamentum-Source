@@ -68,7 +68,6 @@ import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
-import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import org.jetbrains.annotations.Nullable;
 
@@ -448,7 +447,7 @@ public final class Moons {
             return;
         }
         TOLD.put(p.getUUID(), id);
-        PacketDistributor.sendToPlayer(p, MoonPayload.of(m));
+        com.fundamentum.port.FNet.send(p, MoonPayload.of(m));
     }
 
     /** One of a moon's messages to a player (none when its key is ""). */

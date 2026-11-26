@@ -1,0 +1,115 @@
+{
+ "name": "Parchment tome",
+ "colors": {
+  "ink": "3a2414",
+  "dim": "7a5a3a",
+  "accent": "8e2a2a",
+  "rule": "d4bf90",
+  "card": "efe0b8",
+  "card_edge": "b89858",
+  "page": "e8d5a8",
+  "gold": "c8a048",
+  "banner": "9a2a2a",
+  "leather": "5a3420"
+ },
+ "title_text": "f8e8c8",
+ "title_shadow": "3d1010",
+ "title_upper": true,
+ "card_text": "3a2414",
+ "stamp_text": "3a2414",
+ "rule_color": "d4bf90",
+ "bullet": "~",
+ "numerals": "roman",
+ "right": "standard",
+ "header": "field_notes",
+ "frame": "gilt_oval",
+ "window": {
+  "x": -165,
+  "y": -67,
+  "w": 74,
+  "h": 70,
+  "oval": true,
+  "ground": 56
+ },
+ "caption": null,
+ "stamp_label_dy": 16,
+ "layers": {
+  "spread": {
+   "x": -188,
+   "y": -118,
+   "w": 376,
+   "h": 250,
+   "tw": 376,
+   "th": 250
+  },
+  "closed": {
+   "x": 0,
+   "y": -118,
+   "w": 188,
+   "h": 236,
+   "tw": 188,
+   "th": 236
+  },
+  "title": {
+   "x": -172,
+   "y": -102,
+   "w": 164,
+   "h": 21,
+   "tw": 164,
+   "th": 21
+  },
+  "portrait": {
+   "x": -168,
+   "y": -71,
+   "w": 80,
+   "h": 77,
+   "tw": 80,
+   "th": 77
+  },
+  "stamp_on": {
+   "x": 16,
+   "y": 31,
+   "w": 27,
+   "h": 26,
+   "tw": 27,
+   "th": 26
+  },
+  "stamp_off": {
+   "x": 17,
+   "y": 32,
+   "w": 25,
+   "h": 25,
+   "tw": 25,
+   "th": 25
+  },
+  "tab": {
+   "x": -150,
+   "y": -127,
+   "w": 22,
+   "h": 15,
+   "tw": 22,
+   "th": 15
+  },
+  "tab_up": {
+   "x": -150,
+   "y": -131,
+   "w": 22,
+   "h": 19,
+   "tw": 22,
+   "th": 19
+  }
+ },
+ "animation": {
+  "open_ticks": 16,
+  "turn_ticks": 12,
+  "close_ticks": 16,
+  "stamp_ticks": 11
+ },
+ "sounds": {
+  "open": "minecraft:item.book.page_turn",
+  "turn": "minecraft:item.book.page_turn",
+  "click": "minecraft:ui.button.click",
+  "stamp": "minecraft:item.honeycomb.wax_on",
+  "close": "minecraft:item.book.put"
+ }
+}

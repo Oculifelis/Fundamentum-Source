@@ -9,7 +9,13 @@ import java.util.List;
 import java.util.Map;
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
+import com.fundamentum.recipeview.ViewHover;
+import java.util.Optional;
 import mezz.jei.api.constants.VanillaTypes;
+import mezz.jei.api.gui.handlers.IGlobalGuiHandler;
+import mezz.jei.api.registration.IGuiHandlerRegistration;
+import mezz.jei.api.runtime.IClickableIngredient;
+import net.minecraft.client.renderer.Rect2i;
 import mezz.jei.api.ingredients.subtypes.ISubtypeInterpreter;
 import mezz.jei.api.ingredients.subtypes.UidContext;
 import mezz.jei.api.registration.IRecipeCatalystRegistration;
@@ -87,6 +93,20 @@ public final class RecipeViewJei implements IModPlugin {
         for (JeiViewCategory j : CATEGORIES.values()) {
             for (ItemStack s : j.view.catalysts()) r.addRecipeCatalyst(s, j.type);
         }
+    }
+
+    @Override
+    public void registerGuiHandlers(IGuiHandlerRegistration r) {
+        r.addGlobalGuiHandler(new IGlobalGuiHandler() {
+            @Override
+            public Optional<IClickableIngredient<?>> getClickableIngredientUnderMouse(double mx, double my) {
+                ViewHover.Hit h = runtime == null ? null : ViewHover.at(Minecraft.getInstance().screen, mx, my);
+                if (h == null) return Optional.empty();
+                return runtime.getIngredientManager()
+                    .createClickableIngredient(VanillaTypes.ITEM_STACK, h.stack(), new Rect2i(h.x(), h.y(), h.w(), h.h()), false)
+                    .map(c -> (IClickableIngredient<?>) c);
+            }
+        });
     }
 
     @Override

@@ -1,0 +1,4 @@
+{
+  "name": "Script Echo",
+  "ranks": [ { "id": "none", "min": -1000 } ]
+}
