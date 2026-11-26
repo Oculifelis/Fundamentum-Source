@@ -1,0 +1,36 @@
+{
+  "description": {
+    "translate": "enchantment.fundamentum.momentum"
+  },
+  "supported_items": "#fundamentum:enchantable/flail",
+  "weight": 4,
+  "max_level": 3,
+  "min_cost": {
+    "base": 8,
+    "per_level_above_first": 10
+  },
+  "max_cost": {
+    "base": 58,
+    "per_level_above_first": 10
+  },
+  "anvil_cost": 2,
+  "slots": [
+    "hand"
+  ],
+  "effects": {
+    "fundamentum:weapon_effects": {
+      "hook": "on_flail_hit",
+      "effects": [
+        {
+          "type": "modify",
+          "field": "damage",
+          "op": "per_charge",
+          "value": {
+            "base": 0.2,
+            "per_level_above_first": 0.15
+          }
+        }
+      ]
+    }
+  }
+}

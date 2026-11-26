@@ -1,0 +1,50 @@
+{
+  "name": "Deepslate",
+  "tags": [
+    "dark",
+    "minecraft"
+  ],
+  "style": "bevel",
+  "backdrop": "#A1000000",
+  "colors": {
+    "fill": "#FF3A3A40",
+    "frame": "#000000",
+    "rule": "#121215",
+    "title": "#E8E8EE",
+    "muted": "#8C8C96",
+    "text": "#ECECF0",
+    "strong": "#ECECF0",
+    "soft": "#ECECF0",
+    "mod": "#ECECF0",
+    "nav": "#E8E8EE"
+  },
+  "shadow": true,
+  "accent": {
+    "shift": 0.0,
+    "selection": 60
+  },
+  "well": {
+    "fill": "#26262B",
+    "light": "#4A4A52",
+    "shadow": "#121215",
+    "line": "#000000"
+  },
+  "page": {
+    "text": "#ECECF0",
+    "muted": "#8C8C96",
+    "code": "#FFE080",
+    "rule": [
+      "#121215",
+      "#4A4A52"
+    ],
+    "shadow": true
+  },
+  "slot": {
+    "fill": "#1C1C20",
+    "edge": "#121215"
+  },
+  "bevel": {
+    "light": "#5C5C64",
+    "shadow": "#1E1E22"
+  }
+}

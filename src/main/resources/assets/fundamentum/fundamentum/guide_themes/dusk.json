@@ -1,0 +1,50 @@
+{
+  "name": "Dusk",
+  "tags": [
+    "dark",
+    "fantasy"
+  ],
+  "style": "flat",
+  "backdrop": "#BF000000",
+  "colors": {
+    "fill": "#FF201830",
+    "frame": "#3A2C48",
+    "rule": "#3A2C48",
+    "title": "#F0B8C8",
+    "muted": "#A890B0",
+    "text": "#F4E8F0",
+    "strong": "#F4E8F0",
+    "soft": "#D9C9D9",
+    "mod": "#D9C9D9",
+    "nav": "#D9C9D9"
+  },
+  "shadow": true,
+  "accent": {
+    "shift": 0.0,
+    "selection": 60
+  },
+  "well": {
+    "fill": "#3A2C48",
+    "light": "#3A2C48",
+    "shadow": "#A890B0",
+    "line": "#3A2C48"
+  },
+  "page": {
+    "text": "#F4E8F0",
+    "muted": "#A890B0",
+    "code": "#E6C07B",
+    "rule": [
+      "#3A2C48",
+      "#3A2C48"
+    ],
+    "shadow": true
+  },
+  "slot": {
+    "fill": "#3A2C48",
+    "edge": "#A890B0"
+  },
+  "gradient": [
+    "#3A2448",
+    "#120E1E"
+  ]
+}

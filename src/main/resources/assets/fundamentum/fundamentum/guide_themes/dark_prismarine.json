@@ -1,0 +1,55 @@
+{
+  "name": "Dark Prismarine",
+  "tags": [
+    "dark",
+    "textured",
+    "minecraft"
+  ],
+  "style": "textured",
+  "backdrop": "#99000000",
+  "colors": {
+    "fill": "#FF0A2220",
+    "frame": "#000000",
+    "rule": "#1E4A42",
+    "title": "#8CEAD0",
+    "muted": "#7CB8A8",
+    "text": "#DCF4EC",
+    "strong": "#DCF4EC",
+    "soft": "#BADFD4",
+    "mod": "#BADFD4",
+    "nav": "#BADFD4"
+  },
+  "shadow": true,
+  "accent": {
+    "shift": 0.0,
+    "selection": 70
+  },
+  "well": {
+    "fill": "#1E4A42",
+    "light": "#1E4A42",
+    "shadow": "#7CB8A8",
+    "line": "#000000"
+  },
+  "page": {
+    "text": "#DCF4EC",
+    "muted": "#7CB8A8",
+    "code": "#E6C07B",
+    "rule": [
+      "#1E4A42",
+      "#1E4A42"
+    ],
+    "shadow": true
+  },
+  "slot": {
+    "fill": "#1E4A42",
+    "edge": "#7CB8A8"
+  },
+  "texture": {
+    "background": "minecraft:textures/block/dark_prismarine.png",
+    "border": "minecraft:textures/block/prismarine_bricks.png",
+    "tint": "#50000000",
+    "border_tint": "#3C000000",
+    "border_width": 5,
+    "well": "#B904100E"
+  }
+}

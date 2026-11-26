@@ -8,15 +8,22 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 
-/** Fundamentum's hotkeys, in its own key category: the mount (R), the grappling hook (H), the stats screen and the HUD
- * editor (both unbound). */
+/** Fundamentum's hotkeys, in its own key category: the mount (V), the grappling hook (H), dodge (Left Alt), summons on
+ * and off (K), the stats screen and the HUD editor (both unbound). */
 @EventBusSubscriber(modid = "fundamentum", value = Dist.CLIENT)
 public final class Keys {
     public static final KeyMapping.Category CATEGORY = new KeyMapping.Category(Identifier.fromNamespaceAndPath("fundamentum", "fundamentum"));
     public static final KeyMapping MOUNT = new KeyMapping("key.fundamentum.mount", InputConstants.KEY_V, CATEGORY);
     public static final KeyMapping HOOK = new KeyMapping("key.fundamentum.hook", InputConstants.KEY_H, CATEGORY);
+    /** Dodges toward the movement keys (see com.fundamentum.dodge). Left Alt by default. */
+    public static final KeyMapping DODGE = new KeyMapping("key.fundamentum.dodge", InputConstants.KEY_LALT, CATEGORY);
+    /** Switches the player's minions and sentries off and on (see com.fundamentum.summon.SummonToggle). K by default. */
+    public static final KeyMapping SUMMONS = new KeyMapping("key.fundamentum.summons", InputConstants.KEY_K, CATEGORY);
     /** Opens the stats screen; unbound until the player picks a key. */
     public static final KeyMapping STATS = new KeyMapping("key.fundamentum.stats", InputConstants.UNKNOWN.getValue(), CATEGORY);
+
+    /** Opens the quest journal; unbound until the player picks a key ({@code /quests} works too). */
+    public static final KeyMapping QUESTS = new KeyMapping("key.fundamentum.quests", InputConstants.UNKNOWN.getValue(), CATEGORY);
 
     /** Opens the HUD editor; unbound until the player picks a key. */
     public static final KeyMapping HUD_EDITOR = new KeyMapping("key.fundamentum.hud_editor", InputConstants.UNKNOWN.getValue(), CATEGORY);
@@ -26,7 +33,10 @@ public final class Keys {
         event.registerCategory(CATEGORY);
         event.register(MOUNT);
         event.register(HOOK);
+        event.register(DODGE);
+        event.register(SUMMONS);
         event.register(STATS);
+        event.register(QUESTS);
         event.register(HUD_EDITOR);
     }
 

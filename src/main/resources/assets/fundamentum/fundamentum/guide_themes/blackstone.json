@@ -1,0 +1,50 @@
+{
+  "name": "Blackstone",
+  "tags": [
+    "dark",
+    "minecraft"
+  ],
+  "style": "bevel",
+  "backdrop": "#A1000000",
+  "colors": {
+    "fill": "#FF2C2830",
+    "frame": "#000000",
+    "rule": "#0C0A0E",
+    "title": "#F0E6D2",
+    "muted": "#9A8E80",
+    "text": "#ECE4D4",
+    "strong": "#ECE4D4",
+    "soft": "#ECE4D4",
+    "mod": "#ECE4D4",
+    "nav": "#F0E6D2"
+  },
+  "shadow": true,
+  "accent": {
+    "shift": 0.0,
+    "selection": 60
+  },
+  "well": {
+    "fill": "#1C1A20",
+    "light": "#3A3640",
+    "shadow": "#0C0A0E",
+    "line": "#000000"
+  },
+  "page": {
+    "text": "#ECE4D4",
+    "muted": "#9A8E80",
+    "code": "#FFE080",
+    "rule": [
+      "#0C0A0E",
+      "#3A3640"
+    ],
+    "shadow": true
+  },
+  "slot": {
+    "fill": "#1C1A20",
+    "edge": "#0C0A0E"
+  },
+  "bevel": {
+    "light": "#4A4450",
+    "shadow": "#141218"
+  }
+}

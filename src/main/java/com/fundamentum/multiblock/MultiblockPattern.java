@@ -44,7 +44,11 @@ import net.minecraft.world.level.block.state.properties.Property;
  * and {@code .} is air unless the key names them. The unturned pattern faces north (its first row is the front); with
  * {@code rotate} it also matches turned to face east, south and west, with {@code mirror} also flipped east to west.
  * Block states in the key turn with the pattern, so a furnace facing north in the file faces east in an east-facing
- * build. The same file on every version.
+ * build. A key entry written as an object may carry fields of its own that Fundamentum doesn't read, such as
+ * {@code { "block": "minecraft:iron_block", "socket": true, "role": "arc_electrode" }}; an object may also list its
+ * blocks under {@code "options"}. Those fields are kept and other mods read them with {@link #extras(char)}, and find
+ * where the character sits in a build with {@link #positions(char, BlockPos, Direction, boolean)}. The same file on
+ * every version.
  */
 public final class MultiblockPattern {
     /** One accepted block or tag, with optional state properties by name. */
@@ -107,16 +111,18 @@ public final class MultiblockPattern {
 
     private final Part[][][] grid; // [y][z][x]
     private final Map<Character, Part> key;
+    private final Map<Character, JsonObject> extras;
     private final int width, height, depth;
     private final int cx, cy, cz;
     private final char controller;
     private final boolean rotate, mirror;
     private final String name;
 
-    private MultiblockPattern(Part[][][] grid, Map<Character, Part> key, char controller, int cx, int cy, int cz,
-                              boolean rotate, boolean mirror, String name) {
+    private MultiblockPattern(Part[][][] grid, Map<Character, Part> key, Map<Character, JsonObject> extras, char controller,
+                              int cx, int cy, int cz, boolean rotate, boolean mirror, String name) {
         this.grid = grid;
         this.key = key;
+        this.extras = extras;
         this.height = grid.length;
         this.depth = grid[0].length;
         this.width = grid[0][0].length;
@@ -139,6 +145,50 @@ public final class MultiblockPattern {
     public Part controllerPart() { return this.key.get(this.controller); }
     /** Every key character except air and any, in file order. */
     public Map<Character, Part> parts() { return Collections.unmodifiableMap(this.key); }
+
+    /** The key character the controller uses. */
+    public char controller() { return this.controller; }
+
+    /**
+     * The fields a key entry carries that Fundamentum doesn't read (anything but block, tag, state and options), as a
+     * copy; empty when there are none or the entry is not an object.
+     */
+    public JsonObject extras(char symbol) {
+        JsonObject o = this.extras.get(symbol);
+        return o == null ? new JsonObject() : o.deepCopy();
+    }
+
+    /** Every key character whose entry carries extra fields, with copies of those fields, in file order. */
+    public Map<Character, JsonObject> allExtras() {
+        Map<Character, JsonObject> out = new LinkedHashMap<>();
+        this.extras.forEach((c, o) -> out.put(c, o.deepCopy()));
+        return out;
+    }
+
+    /** Grid cells (x, y, z) of every place {@code symbol} appears, layer by layer; empty for a character not in the layers. */
+    public List<int[]> cells(char symbol) {
+        List<int[]> out = new ArrayList<>();
+        for (int y = 0; y < this.height; y++) for (int z = 0; z < this.depth; z++) for (int x = 0; x < this.width; x++) {
+            if (this.grid[y][z][x].symbol == symbol) out.add(new int[] {x, y, z});
+        }
+        return out;
+    }
+
+    /** The world positions of every place {@code symbol} appears in a build with its controller at {@code controller}. */
+    public List<BlockPos> positions(char symbol, BlockPos controller, Direction facing, boolean mirrored) {
+        List<BlockPos> out = new ArrayList<>();
+        for (int[] c : cells(symbol)) out.add(world(controller, facing, mirrored, c[0], c[1], c[2]));
+        return out;
+    }
+
+    /** World positions of every key character that has extra fields (or every one, if {@code all}), for one build. */
+    public Map<Character, List<BlockPos>> positionsByKey(BlockPos controller, Direction facing, boolean mirrored, boolean all) {
+        Map<Character, List<BlockPos>> out = new LinkedHashMap<>();
+        for (char c : this.key.keySet()) {
+            if (all || this.extras.containsKey(c)) out.put(c, positions(c, controller, facing, mirrored));
+        }
+        return out;
+    }
 
     /** How many times each key character appears in the layers. */
     public Map<Character, Integer> counts() {
@@ -224,11 +274,19 @@ public final class MultiblockPattern {
         char controller = controllerText.charAt(0);
 
         Map<Character, Part> key = new LinkedHashMap<>();
+        Map<Character, JsonObject> extras = new LinkedHashMap<>();
         JsonObject keyJson = json.has("key") ? json.getAsJsonObject("key") : new JsonObject();
         for (Map.Entry<String, JsonElement> e : keyJson.entrySet()) {
             if (e.getKey().length() != 1) throw new IllegalArgumentException("key '" + e.getKey() + "' must be one character");
             char c = e.getKey().charAt(0);
             key.put(c, part(c, e.getValue()));
+            if (e.getValue().isJsonObject()) {
+                JsonObject extra = new JsonObject();
+                for (Map.Entry<String, JsonElement> f : e.getValue().getAsJsonObject().entrySet()) {
+                    if (!KNOWN.contains(f.getKey())) extra.add(f.getKey(), f.getValue().deepCopy());
+                }
+                if (extra.size() > 0) extras.put(c, extra);
+            }
         }
         if (!key.containsKey(controller)) throw new IllegalArgumentException("the controller '" + controller + "' is not in the key");
 
@@ -267,11 +325,24 @@ public final class MultiblockPattern {
         boolean rotate = !json.has("rotate") || json.get("rotate").getAsBoolean();
         boolean mirror = json.has("mirror") && json.get("mirror").getAsBoolean();
         String name = json.has("name") ? json.get("name").getAsString() : null;
-        return new MultiblockPattern(grid, key, controller, cx, cy, cz, rotate, mirror, name);
+        return new MultiblockPattern(grid, key, Collections.unmodifiableMap(extras),
+            controller, cx, cy, cz, rotate, mirror, name);
     }
+
+    private static final java.util.Set<String> KNOWN = java.util.Set.of("block", "tag", "state", "options");
 
     private static Part part(char c, JsonElement json) {
         List<Option> options = new ArrayList<>();
+        if (json.isJsonObject() && json.getAsJsonObject().has("options")) {
+            JsonElement opts = json.getAsJsonObject().get("options");
+            return part(c, opts);
+        }
+        if (json.isJsonObject() && !json.getAsJsonObject().has("tag") && json.getAsJsonObject().has("block")
+            && json.getAsJsonObject().get("block").isJsonPrimitive()) {
+            String b = json.getAsJsonObject().get("block").getAsString();
+            if (b.equals("air") || b.equals("minecraft:air")) return new Part(c, true, false, List.of());
+            if (b.equals("*")) return new Part(c, false, true, List.of());
+        }
         if (json.isJsonArray()) {
             for (JsonElement el : json.getAsJsonArray()) option(el, options);
         } else if (json.isJsonPrimitive() && (json.getAsString().equals("air") || json.getAsString().equals("minecraft:air"))) {

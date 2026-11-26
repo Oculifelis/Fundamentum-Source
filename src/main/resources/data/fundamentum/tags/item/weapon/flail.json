@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    {
+      "id": "#fundamentum:flails",
+      "required": false
+    }
+  ]
+}

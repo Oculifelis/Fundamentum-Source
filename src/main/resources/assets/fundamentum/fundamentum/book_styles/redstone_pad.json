@@ -1,0 +1,115 @@
+{
+ "name": "Redstone datapad",
+ "colors": {
+  "ink": "8af09a",
+  "dim": "3e8a4c",
+  "accent": "ff3a2a",
+  "rule": "2a5a34",
+  "card": "14261a",
+  "card_edge": "3e8a4c",
+  "page": "0e1a12",
+  "gold": "e8a070",
+  "banner": "3e8a4c",
+  "leather": "b8683a"
+ },
+ "title_text": "0e1a12",
+ "title_shadow": null,
+ "title_upper": true,
+ "card_text": "8af09a",
+ "stamp_text": "8af09a",
+ "rule_color": "2a5a34",
+ "bullet": ">",
+ "numerals": "plain",
+ "right": "standard",
+ "header": "field_notes",
+ "frame": "monitor",
+ "window": {
+  "x": -165,
+  "y": -67,
+  "w": 74,
+  "h": 70,
+  "oval": false,
+  "ground": 56
+ },
+ "caption": null,
+ "stamp_label_dy": 16,
+ "layers": {
+  "spread": {
+   "x": -188,
+   "y": -118,
+   "w": 376,
+   "h": 236,
+   "tw": 376,
+   "th": 236
+  },
+  "closed": {
+   "x": 0,
+   "y": -118,
+   "w": 188,
+   "h": 236,
+   "tw": 188,
+   "th": 236
+  },
+  "title": {
+   "x": -170,
+   "y": -102,
+   "w": 160,
+   "h": 14,
+   "tw": 160,
+   "th": 14
+  },
+  "portrait": {
+   "x": -168,
+   "y": -70,
+   "w": 80,
+   "h": 76,
+   "tw": 80,
+   "th": 76
+  },
+  "stamp_on": {
+   "x": 12,
+   "y": 27,
+   "w": 35,
+   "h": 35,
+   "tw": 35,
+   "th": 35
+  },
+  "stamp_off": {
+   "x": 19,
+   "y": 34,
+   "w": 20,
+   "h": 20,
+   "tw": 20,
+   "th": 20
+  },
+  "tab": {
+   "x": -150,
+   "y": -127,
+   "w": 22,
+   "h": 15,
+   "tw": 22,
+   "th": 15
+  },
+  "tab_up": {
+   "x": -150,
+   "y": -131,
+   "w": 22,
+   "h": 19,
+   "tw": 22,
+   "th": 19
+  }
+ },
+ "animation": {
+  "open_ticks": 16,
+  "turn_ticks": 12,
+  "close_ticks": 16,
+  "stamp_ticks": 11
+ },
+ "sounds": {
+  "open": "minecraft:item.book.page_turn",
+  "turn": "minecraft:item.book.page_turn",
+  "click": "minecraft:ui.button.click",
+  "stamp": "minecraft:item.honeycomb.wax_on",
+  "close": "minecraft:item.book.put"
+ }
+}

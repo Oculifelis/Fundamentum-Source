@@ -1,6 +1,7 @@
 {
   "stat": "survivaltest:kept",
   "max": 100,
+  "requires": ["minecraft"],
   "start": 5,
   "reset_on_death": false,
   "rules": [

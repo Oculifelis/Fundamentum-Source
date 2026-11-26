@@ -1,0 +1,55 @@
+{
+  "name": "Mud Bricks",
+  "tags": [
+    "dark",
+    "textured",
+    "minecraft"
+  ],
+  "style": "textured",
+  "backdrop": "#99000000",
+  "colors": {
+    "fill": "#FF2A1E16",
+    "frame": "#000000",
+    "rule": "#4A382A",
+    "title": "#F0E2D0",
+    "muted": "#B49A7E",
+    "text": "#F0E2D0",
+    "strong": "#F0E2D0",
+    "soft": "#DBC8B3",
+    "mod": "#DBC8B3",
+    "nav": "#DBC8B3"
+  },
+  "shadow": true,
+  "accent": {
+    "shift": 0.0,
+    "selection": 70
+  },
+  "well": {
+    "fill": "#4A382A",
+    "light": "#4A382A",
+    "shadow": "#B49A7E",
+    "line": "#000000"
+  },
+  "page": {
+    "text": "#F0E2D0",
+    "muted": "#B49A7E",
+    "code": "#E6C07B",
+    "rule": [
+      "#4A382A",
+      "#4A382A"
+    ],
+    "shadow": true
+  },
+  "slot": {
+    "fill": "#4A382A",
+    "edge": "#B49A7E"
+  },
+  "texture": {
+    "background": "minecraft:textures/block/mud_bricks.png",
+    "border": "minecraft:textures/block/packed_mud.png",
+    "tint": "#46000000",
+    "border_tint": "#3C000000",
+    "border_width": 5,
+    "well": "#B91A120C"
+  }
+}

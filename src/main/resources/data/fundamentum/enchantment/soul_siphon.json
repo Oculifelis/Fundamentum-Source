@@ -1,0 +1,41 @@
+{
+  "description": {
+    "translate": "enchantment.fundamentum.soul_siphon"
+  },
+  "supported_items": "#fundamentum:enchantable/scythe",
+  "weight": 2,
+  "max_level": 2,
+  "min_cost": {
+    "base": 8,
+    "per_level_above_first": 10
+  },
+  "max_cost": {
+    "base": 58,
+    "per_level_above_first": 10
+  },
+  "anvil_cost": 4,
+  "slots": [
+    "hand"
+  ],
+  "effects": {
+    "fundamentum:weapon_effects": {
+      "hook": "on_kill",
+      "effects": [
+        {
+          "type": "heal",
+          "to": "user",
+          "value": {
+            "base": 2,
+            "per_level_above_first": 2
+          }
+        },
+        {
+          "type": "particles",
+          "id": "minecraft:soul",
+          "to": "target",
+          "value": 8
+        }
+      ]
+    }
+  }
+}

@@ -1,5 +1,8 @@
 package com.fundamentum.gauntlet;
 
+import com.fundamentum.enchant.FEnchantments;
+import com.fundamentum.enchant.WeaponHook;
+
 import com.fundamentum.config.Timers;
 import com.fundamentum.port.FLife;
 import com.fundamentum.compat.BetterCombat;
@@ -221,6 +224,10 @@ public final class Gauntlets {
         }
         if (p != null && p.finisher) {
             amount = (float) (amount * def.finisher().damageMultiplier());
+        }
+        if (p != null && player.level() instanceof net.minecraft.server.level.ServerLevel level) {
+            amount = FEnchantments.fire(new WeaponHook("on_combo", level, player, stack, e.getEntity()).damage(amount)
+                .count(p.combo.step())).damage;
         }
         e.setAmount(amount);
     }

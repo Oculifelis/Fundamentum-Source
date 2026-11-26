@@ -36,6 +36,8 @@ public final class FLife {
     static final List<Consumer<MinecraftServer>> RELOADED = new ArrayList<>();
     static final List<ChunkWatch> CHUNK_WATCH = new ArrayList<>();
     static final List<Consumer<ServerPlayer>> HANDS = new ArrayList<>();
+    static final List<Consumer<ServerPlayer>> STATE = new ArrayList<>();
+    static final List<Consumer<ServerPlayer>> SECTION = new ArrayList<>();
     /** Players whose held items changed this tick, handed to {@link #HANDS} once at the end of the tick. */
     private static final java.util.Set<ServerPlayer> HANDS_PENDING = new java.util.LinkedHashSet<>();
 
@@ -192,5 +194,26 @@ public final class FLife {
 
     public static void fireDataReloaded(MinecraftServer server) {
         for (int i = 0; i < RELOADED.size(); i++) RELOADED.get(i).accept(server);
+    }
+
+    /**
+     * Runs when a player starts or stops sprinting, sneaking, swimming or sleeping, or their health changes (hurt or
+     * healed). It runs just before the change lands, so read the new state on the next tick.
+     */
+    public static void playerStateChanged(Consumer<ServerPlayer> action) {
+        STATE.add(action);
+    }
+
+    public static void firePlayerStateChanged(ServerPlayer player) {
+        for (int i = 0; i < STATE.size(); i++) STATE.get(i).accept(player);
+    }
+
+    /** Runs when a player moves into another 16 block section of the world (a new chunk or a new height band). */
+    public static void sectionEntered(Consumer<ServerPlayer> action) {
+        SECTION.add(action);
+    }
+
+    public static void fireSectionEntered(ServerPlayer player) {
+        for (int i = 0; i < SECTION.size(); i++) SECTION.get(i).accept(player);
     }
 }

@@ -1,0 +1,21 @@
+{
+  "distance": 3,
+  "ticks": 3,
+  "iframe_start": 0,
+  "iframe_end": 3,
+  "chain_delay": 8,
+  "recharge_ticks": 40,
+  "ground": false,
+  "air": true,
+  "air_dodges": 1,
+  "directions": "four",
+  "allow_up": true,
+  "gravity": false,
+  "cost": 0.2,
+  "neutral": "forward",
+  "sound": "minecraft:entity.player.attack.nodamage",
+  "volume": 0.7,
+  "pitch": 1.8,
+  "particle": "minecraft:cloud",
+  "particle_count": 8
+}

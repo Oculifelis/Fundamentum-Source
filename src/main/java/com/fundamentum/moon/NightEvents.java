@@ -44,7 +44,6 @@ import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
-import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import org.jspecify.annotations.Nullable;
 
@@ -365,7 +364,7 @@ public final class NightEvents {
             return;
         }
         TOLD.put(p.getUUID(), id);
-        PacketDistributor.sendToPlayer(p, EventPayload.of(e));
+        com.fundamentum.port.FNet.send(p, EventPayload.of(e));
     }
 
     private static void say(ServerPlayer p, NightEvent e, Moon.Message msg) {

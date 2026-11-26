@@ -98,8 +98,9 @@ public final class ThrownFlight {
             if (travelled >= back.range()) {
                 turnHome();
             } else {
-                travelled += stats.throwSpeed();
-                return velocity.normalize(new WhipVec(0, 0, 1)).scale(stats.throwSpeed());
+                double out = outSpeed();
+                travelled += out;
+                return velocity.normalize(new WhipVec(0, 0, 1)).scale(out);
             }
         }
         homeTicks++;
@@ -108,6 +109,12 @@ public final class ThrownFlight {
         double d = to.length();
         // never overshoot the catch: the last step lands in the hand
         return to.normalize(WhipVec.ZERO).scale(Math.min(speed, d));
+    }
+
+    /** Outbound speed: the throw speed, times {@code bounce_speedup} for each bounce taken. */
+    public double outSpeed() {
+        ThrownStats.Returns back = stats.returns();
+        return back == null ? stats.throwSpeed() : stats.throwSpeed() * Math.pow(back.bounceSpeedup(), bouncesUsed);
     }
 
     /** Close enough to be caught (only on the way home). */

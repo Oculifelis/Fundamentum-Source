@@ -1,0 +1,55 @@
+{
+  "name": "Deepslate Tiles",
+  "tags": [
+    "dark",
+    "textured",
+    "minecraft"
+  ],
+  "style": "textured",
+  "backdrop": "#99000000",
+  "colors": {
+    "fill": "#FF1A1A20",
+    "frame": "#000000",
+    "rule": "#3A3A44",
+    "title": "#E6E6EA",
+    "muted": "#9A9AA6",
+    "text": "#E6E6EA",
+    "strong": "#E6E6EA",
+    "soft": "#CBCBD2",
+    "mod": "#CBCBD2",
+    "nav": "#CBCBD2"
+  },
+  "shadow": true,
+  "accent": {
+    "shift": 0.0,
+    "selection": 70
+  },
+  "well": {
+    "fill": "#3A3A44",
+    "light": "#3A3A44",
+    "shadow": "#9A9AA6",
+    "line": "#000000"
+  },
+  "page": {
+    "text": "#E6E6EA",
+    "muted": "#9A9AA6",
+    "code": "#E6C07B",
+    "rule": [
+      "#3A3A44",
+      "#3A3A44"
+    ],
+    "shadow": true
+  },
+  "slot": {
+    "fill": "#3A3A44",
+    "edge": "#9A9AA6"
+  },
+  "texture": {
+    "background": "minecraft:textures/block/deepslate_tiles.png",
+    "border": "minecraft:textures/block/polished_blackstone_bricks.png",
+    "tint": "#46000000",
+    "border_tint": "#3C000000",
+    "border_width": 5,
+    "well": "#AF0C0C10"
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "name": "Moon",
+  "kind": "deity",
+  "ranks": [
+    {
+      "id": "neutral",
+      "min": -1000
+    },
+    {
+      "id": "devout",
+      "min": 20
+    }
+  ],
+  "wrath": {
+    "enabled": true,
+    "below": -50,
+    "chance": 1.0,
+    "cooldown": 6000,
+    "rewards": {
+      "effects": [
+        {
+          "id": "minecraft:weakness",
+          "duration": 200
+        }
+      ]
+    }
+  }
+}

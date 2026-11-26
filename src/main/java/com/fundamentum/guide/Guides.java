@@ -22,8 +22,8 @@ import org.slf4j.LoggerFactory;
 
 /**
  * The in-game guide: one book for every mod. Each mod puts pages in {@code assets/<ns>/fundamentum/guide/} and may add
- * a {@code chapters.json} there that names the mod's guide, its chapters (title, icon, order, unlock) and the items that
- * open it. Pages and chapters can hide behind an unlock (com.fundamentum.unlock). The client reads them on resource
+ * a {@code chapters.json} there that names the mod's guide, its chapters (title, icon, order, unlock), the items that
+ * open it and the screen theme it uses ({@link GuideTheme}). Pages and chapters can hide behind an unlock (com.fundamentum.unlock). The client reads them on resource
  * reload; this class holds the result and answers searches. Reference pages only, no quests. The same file on every
  * version.
  */
@@ -36,12 +36,51 @@ public final class Guides {
     /** A chapter: pages with the same {@code chapter:} id, shown in {@code order} then title order. */
     public record Chapter(FId id, String title, FId icon, int order, FId unlock) { }
 
-    /** One mod's guide: its title, icon, the items that open it, and its chapters. */
-    public record Book(String namespace, String title, FId icon, List<FId> openers, List<Chapter> chapters) { }
+    /**
+     * One mod's guide: its title, icon, the items that open it, its chapters, the look it picks ({@code theme}) and its
+     * accent colour (the chip in the list, the selected row and the page title).
+     */
+    public record Book(String namespace, String title, FId icon, List<FId> openers, List<Chapter> chapters, FId theme, int accent) {
+        public Book(String namespace, String title, FId icon, List<FId> openers, List<Chapter> chapters) {
+            this(namespace, title, icon, openers, chapters, GuideTheme.DEFAULT_ID, accentFor(namespace));
+        }
 
-    /** Everything loaded: pages by id, books by namespace, and what could not be read. */
-    public record Library(Map<FId, GuidePage> pages, Map<String, Book> books, List<String> problems) {
+        public Book(String namespace, String title, FId icon, List<FId> openers, List<Chapter> chapters, FId theme) {
+            this(namespace, title, icon, openers, chapters, theme, accentFor(namespace));
+        }
+    }
+
+    /** A steady accent for a book that names none: a bright hue picked from its namespace. */
+    public static int accentFor(String namespace) {
+        float hue = (namespace.hashCode() & 0x7FFFFFFF) % 360 / 360F;
+        return java.awt.Color.HSBtoRGB(hue, 0.6F, 0.95F) | 0xFF000000;
+    }
+
+    /** Everything loaded: pages by id, books by namespace, the screen themes by id, and what could not be read. */
+    public record Library(Map<FId, GuidePage> pages, Map<String, Book> books, List<String> problems, Map<FId, GuideTheme> themes) {
         public static final Library EMPTY = new Library(Map.of(), Map.of(), List.of());
+
+        public Library(Map<FId, GuidePage> pages, Map<String, Book> books, List<String> problems) {
+            this(pages, books, problems, Map.of());
+        }
+
+        /** The look of a book's screen (the default theme for none). */
+        public GuideTheme theme(String namespace) {
+            Book b = namespace == null ? null : this.books.get(namespace);
+            return GuideTheme.of(this.themes, b == null ? GuideTheme.DEFAULT_ID : b.theme());
+        }
+
+        /**
+         * The look a book shows in: its own theme when it names one and the player lets books use their own, else the
+         * player's pick (or the default).
+         */
+        public GuideTheme themeFor(String namespace, FId playerTheme, boolean ownThemes) {
+            Book b = namespace == null ? null : this.books.get(namespace);
+            if (ownThemes && b != null && !b.theme().equals(GuideTheme.DEFAULT_ID) && this.themes.containsKey(b.theme())) {
+                return this.themes.get(b.theme());
+            }
+            return GuideTheme.of(this.themes, playerTheme);
+        }
 
         public Chapter chapter(FId id) {
             Book b = this.books.get(id.namespace());
@@ -88,7 +127,23 @@ public final class Guides {
      * A chapter that pages name but no file declares is made with the chapter's path as its title.
      */
     public static Library build(Map<FId, String> pageSources, Map<String, String> chapterFiles) {
+        return build(pageSources, chapterFiles, Map.of());
+    }
+
+    /** As above, plus theme files (theme id to JSON text); a book names its theme with {@code "theme"} in chapters.json. */
+    public static Library build(Map<FId, String> pageSources, Map<String, String> chapterFiles, Map<FId, String> themeFiles) {
         List<String> problems = new ArrayList<>();
+        Map<FId, GuideTheme> themes = new TreeMap<>();
+        for (Map.Entry<FId, String> e : new TreeMap<>(themeFiles).entrySet()) {
+            List<String> bad = new ArrayList<>();
+            try {
+                themes.put(e.getKey(), GuideTheme.parse(JsonParser.parseString(e.getValue()).getAsJsonObject(), bad));
+            } catch (Exception ex) {
+                bad.add("skipped: " + ex.getMessage());
+            }
+            for (String p : bad) problems.add("theme " + e.getKey() + ": " + p);
+        }
+        Map<String, FId> picks = new TreeMap<>();
         Map<FId, GuidePage> pages = new TreeMap<>();
         for (Map.Entry<FId, String> e : new TreeMap<>(pageSources).entrySet()) {
             GuidePage page = GuideParser.parse(e.getKey(), e.getValue());
@@ -99,11 +154,19 @@ public final class Guides {
         Map<String, Map<FId, Chapter>> chapters = new TreeMap<>();
         Map<String, String[]> heads = new TreeMap<>();
         Map<String, List<FId>> openers = new TreeMap<>();
+        Map<String, Integer> accents = new TreeMap<>();
         for (Map.Entry<String, String> e : new TreeMap<>(chapterFiles).entrySet()) {
             String ns = e.getKey();
             try {
                 JsonObject json = JsonParser.parseString(e.getValue()).getAsJsonObject();
                 heads.put(ns, new String[] {str(json, "title", ns), str(json, "icon", null)});
+                String theme = str(json, "theme", null);
+                if (theme != null) {
+                    FId t = GuideParser.id(theme, "fundamentum", "theme", problems);
+                    if (t != null && !themes.containsKey(t)) problems.add(ns + ":chapters.json names theme " + t + ", which no pack has; using the default");
+                    else if (t != null) picks.put(ns, t);
+                }
+                if (json.has("accent")) accents.put(ns, GuideTheme.colour(json.get("accent"), ns + ":chapters.json accent", problems));
                 List<FId> open = new ArrayList<>();
                 if (json.has("openers")) {
                     for (JsonElement x : json.getAsJsonArray("openers")) {
@@ -145,9 +208,11 @@ public final class Guides {
             List<Chapter> list = new ArrayList<>(e.getValue().values());
             list.sort(Comparator.comparingInt(Chapter::order).thenComparing(Chapter::title));
             books.put(ns, new Book(ns, head[0], head[1] == null ? null : GuideParser.id(head[1], "minecraft", "icon", problems),
-                List.copyOf(openers.getOrDefault(ns, List.of())), List.copyOf(list)));
+                List.copyOf(openers.getOrDefault(ns, List.of())), List.copyOf(list), picks.getOrDefault(ns, GuideTheme.DEFAULT_ID),
+                accents.getOrDefault(ns, accentFor(ns))));
         }
-        return new Library(java.util.Collections.unmodifiableMap(pages), java.util.Collections.unmodifiableMap(books), List.copyOf(problems));
+        return new Library(java.util.Collections.unmodifiableMap(pages), java.util.Collections.unmodifiableMap(books), List.copyOf(problems),
+            java.util.Collections.unmodifiableMap(themes));
     }
 
     private static String str(JsonObject json, String key, String def) {

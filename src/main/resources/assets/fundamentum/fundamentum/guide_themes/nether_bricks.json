@@ -1,0 +1,55 @@
+{
+  "name": "Nether Bricks",
+  "tags": [
+    "dark",
+    "textured",
+    "minecraft"
+  ],
+  "style": "textured",
+  "backdrop": "#99000000",
+  "colors": {
+    "fill": "#FF2A0E0E",
+    "frame": "#000000",
+    "rule": "#5A1E1A",
+    "title": "#F4D6C8",
+    "muted": "#C08A7A",
+    "text": "#F4D6C8",
+    "strong": "#F4D6C8",
+    "soft": "#E1BBAC",
+    "mod": "#E1BBAC",
+    "nav": "#E1BBAC"
+  },
+  "shadow": true,
+  "accent": {
+    "shift": 0.0,
+    "selection": 70
+  },
+  "well": {
+    "fill": "#5A1E1A",
+    "light": "#5A1E1A",
+    "shadow": "#C08A7A",
+    "line": "#000000"
+  },
+  "page": {
+    "text": "#F4D6C8",
+    "muted": "#C08A7A",
+    "code": "#E6C07B",
+    "rule": [
+      "#5A1E1A",
+      "#5A1E1A"
+    ],
+    "shadow": true
+  },
+  "slot": {
+    "fill": "#5A1E1A",
+    "edge": "#C08A7A"
+  },
+  "texture": {
+    "background": "minecraft:textures/block/nether_bricks.png",
+    "border": "minecraft:textures/block/polished_blackstone_bricks.png",
+    "tint": "#3C000000",
+    "border_tint": "#3C000000",
+    "border_width": 5,
+    "well": "#B9140608"
+  }
+}

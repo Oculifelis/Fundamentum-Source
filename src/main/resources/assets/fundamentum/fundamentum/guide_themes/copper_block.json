@@ -1,0 +1,55 @@
+{
+  "name": "Weathered Copper",
+  "tags": [
+    "dark",
+    "textured",
+    "minecraft"
+  ],
+  "style": "textured",
+  "backdrop": "#99000000",
+  "colors": {
+    "fill": "#FF10241C",
+    "frame": "#000000",
+    "rule": "#2A5446",
+    "title": "#F0A878",
+    "muted": "#88B8A4",
+    "text": "#E0F4EA",
+    "strong": "#E0F4EA",
+    "soft": "#C1DFD1",
+    "mod": "#C1DFD1",
+    "nav": "#C1DFD1"
+  },
+  "shadow": true,
+  "accent": {
+    "shift": 0.0,
+    "selection": 70
+  },
+  "well": {
+    "fill": "#2A5446",
+    "light": "#2A5446",
+    "shadow": "#88B8A4",
+    "line": "#000000"
+  },
+  "page": {
+    "text": "#E0F4EA",
+    "muted": "#88B8A4",
+    "code": "#E6C07B",
+    "rule": [
+      "#2A5446",
+      "#2A5446"
+    ],
+    "shadow": true
+  },
+  "slot": {
+    "fill": "#2A5446",
+    "edge": "#88B8A4"
+  },
+  "texture": {
+    "background": "minecraft:textures/block/weathered_cut_copper.png",
+    "border": "minecraft:textures/block/cut_copper.png",
+    "tint": "#5A000000",
+    "border_tint": "#3C000000",
+    "border_width": 5,
+    "well": "#B9081410"
+  }
+}

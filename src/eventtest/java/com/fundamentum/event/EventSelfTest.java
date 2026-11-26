@@ -218,7 +218,7 @@ public final class EventSelfTest {
             {"moon_set", "false"}, {"night_event_started", "false"}, {"night_event_ended", "false"},
             {"meter_threshold", "false"}, {"element_reacted", "false"}, {"boss_spawned", "false"},
             {"boss_phase_changed", "false"}, {"boss_killed", "false"}, {"set_bonus_on", "false"}, {"set_bonus_off", "false"},
-            {"ammo_drawn", "true"}, {"thrown_weapon_hit", "true"}, {"wings_take_off", "true"}, {"mana_spent", "true"},
+            {"ammo_drawn", "true"}, {"thrown_weapon_hit", "true"}, {"wings_take_off", "true"}, {"dodge_started", "true"}, {"attack_dodged", "false"}, {"mana_spent", "true"},
             {"summon_created", "true"}};
         List<String> wrong = new ArrayList<>();
         for (String[] e : own) {
@@ -228,7 +228,7 @@ public final class EventSelfTest {
         // the records in Events, plus fundamentum:config_changed, which Events registers for the config system
         long count = FEvents.types().stream().filter(t -> t.type().getEnclosingClass() == Events.class).count()
             + (FEvents.type(FId.of("fundamentum", "config_changed")) != null ? 1 : 0);
-        check(wrong.isEmpty() && count == 47, "Events holds its 47 event types " + (wrong.isEmpty() ? "(" + count + ")" : wrong));
+        check(wrong.isEmpty() && count == 59, "Events holds its 59 event types " + (wrong.isEmpty() ? "(" + count + ")" : wrong));
     }
 
     private static JsonObject obj(String json) {

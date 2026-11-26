@@ -1,0 +1,50 @@
+{
+  "name": "Container",
+  "tags": [
+    "light",
+    "minecraft"
+  ],
+  "style": "bevel",
+  "backdrop": "#A1000000",
+  "colors": {
+    "fill": "#FFC6C6C6",
+    "frame": "#000000",
+    "rule": "#373737",
+    "title": "#404040",
+    "muted": "#404040",
+    "text": "#FFFFFF",
+    "strong": "#FFFFFF",
+    "soft": "#FFFFFF",
+    "mod": "#FFFFFF",
+    "nav": "#404040"
+  },
+  "shadow": true,
+  "accent": {
+    "shift": -0.5,
+    "selection": 60
+  },
+  "well": {
+    "fill": "#8B8B8B",
+    "light": "#FFFFFF",
+    "shadow": "#373737",
+    "line": "#000000"
+  },
+  "page": {
+    "text": "#FFFFFF",
+    "muted": "#404040",
+    "code": "#FFE080",
+    "rule": [
+      "#373737",
+      "#FFFFFF"
+    ],
+    "shadow": true
+  },
+  "slot": {
+    "fill": "#8B8B8B",
+    "edge": "#373737"
+  },
+  "bevel": {
+    "light": "#FFFFFF",
+    "shadow": "#555555"
+  }
+}

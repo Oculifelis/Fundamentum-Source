@@ -22,6 +22,7 @@ public final class ElementInteractions {
     public static void init(IEventBus modBus) {
         ElementAuras.init(modBus);
         ElementAffinities.init(modBus);
+        com.fundamentum.compat.discount.AspectDiscounts.init(modBus);
         ElementReactions.init();
         ElementCommand.init();
         ElementSelfTest.init();

@@ -26,6 +26,6 @@ public final class FundamentumJadePlugin implements IWailaPlugin {
     @Override
     public void registerClient(IWailaClientRegistration r) {
         r.registerBlockComponent(JukeboxJadeClient.INSTANCE, JukeboxBlock.class);
-        r.registerBlockComponent(DiscShelfJade.INSTANCE, Block.class);
+        r.registerBlockComponent(DiscShelfJadeClient.INSTANCE, Block.class);
     }
 }

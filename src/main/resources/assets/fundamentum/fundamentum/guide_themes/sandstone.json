@@ -1,0 +1,55 @@
+{
+  "name": "Sandstone",
+  "tags": [
+    "light",
+    "textured",
+    "minecraft"
+  ],
+  "style": "textured",
+  "backdrop": "#99000000",
+  "colors": {
+    "fill": "#FFF4ECD2",
+    "frame": "#000000",
+    "rule": "#D8C89C",
+    "title": "#2E2410",
+    "muted": "#6E5E38",
+    "text": "#2E2410",
+    "strong": "#2E2410",
+    "soft": "#44381E",
+    "mod": "#44381E",
+    "nav": "#2E2410"
+  },
+  "shadow": false,
+  "accent": {
+    "shift": -0.5,
+    "selection": 70
+  },
+  "well": {
+    "fill": "#D8C89C",
+    "light": "#D8C89C",
+    "shadow": "#6E5E38",
+    "line": "#7A6438"
+  },
+  "page": {
+    "text": "#2E2410",
+    "muted": "#6E5E38",
+    "code": "#8A5A00",
+    "rule": [
+      "#D8C89C",
+      "#D8C89C"
+    ],
+    "shadow": false
+  },
+  "slot": {
+    "fill": "#D8C89C",
+    "edge": "#6E5E38"
+  },
+  "texture": {
+    "background": "minecraft:textures/block/sandstone_top.png",
+    "border": "minecraft:textures/block/cut_sandstone.png",
+    "tint": "#0FFFFFFF",
+    "border_tint": "#3C000000",
+    "border_width": 5,
+    "well": "#E1F4ECD2"
+  }
+}

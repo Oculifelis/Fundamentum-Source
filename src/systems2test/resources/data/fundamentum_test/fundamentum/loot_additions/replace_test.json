@@ -1,0 +1,12 @@
+{
+  "tables": [
+    "fundamentum_test:replace_target"
+  ],
+  "replace": true,
+  "entries": [
+    {
+      "item": "minecraft:dragon_egg",
+      "weight": 1
+    }
+  ]
+}

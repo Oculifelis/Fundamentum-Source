@@ -1,0 +1,17 @@
+{
+  "deity": "religiontest:sun",
+  "shrine": "religiontest:sun_altar",
+  "items": [
+    {
+      "item": "minecraft:diamond",
+      "count": 1
+    }
+  ],
+  "devotion": 10,
+  "cooldown": 24000,
+  "rewards": {
+    "unlocks": [
+      "religiontest:blessed"
+    ]
+  }
+}

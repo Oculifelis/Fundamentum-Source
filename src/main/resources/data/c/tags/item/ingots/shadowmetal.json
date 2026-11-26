@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    {
+      "id": "taintedmagic:shadowmetal_ingot",
+      "required": false
+    }
+  ]
+}

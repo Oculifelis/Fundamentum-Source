@@ -3,7 +3,7 @@
   "minVersion": "0.8",
   "package": "com.fundamentum.mixin",
   "compatibilityLevel": "JAVA_21",
-  "mixins": ["LivingEntityMixin", "MobMixin", "SoulBurnMixin", "SpearReachMixin", "BiomeSourceMixin", "MultiNoiseBiomeSourceMixin", "NoiseGeneratorSettingsMixin", "UnifyRegistryLoadMixin", "UnifyRecipeJsonMixin", "UnifyHopperMixin", "UnifyItemHandlerMixin", "FoodFinishMixin", "GameEventsMixin", "InventoryEventsMixin"],
-  "client": ["SoulFireRenderStateMixin", "SoulFireExtractMixin", "SoulFlameMixin", "SoulScreenFireMixin", "SkyColorMixin", "WindowMixin", "EntityGlowMixin", "QuadEmissionMixin", "RenderSetupSamplersMixin", "JukeboxEventsMixin", "BiomeTintMixin", "GhostBlockMixin"],
+  "mixins": ["ChunkMapAccessor", "TrackedEntityAccessor", "LivingEntityMixin", "MobMixin", "SoulBurnMixin", "SpearReachMixin", "BiomeSourceMixin", "MultiNoiseBiomeSourceMixin", "NoiseGeneratorSettingsMixin", "UnifyRegistryLoadMixin", "UnifyRecipeJsonMixin", "UnifyHopperMixin", "UnifyItemHandlerMixin", "FoodFinishMixin", "GameEventsMixin", "InventoryEventsMixin", "PlayerStateMixin", "PlayerHealthMixin", "StatCounterMixin", "ScoreEventsMixin", "VillagerPriceMixin"],
+  "client": ["SoulFireRenderStateMixin", "SoulFireExtractMixin", "SoulFlameMixin", "SoulScreenFireMixin", "SkyColorMixin", "WindowMixin", "EntityGlowMixin", "QuadEmissionMixin", "RenderSetupSamplersMixin", "JukeboxEventsMixin", "BiomeTintMixin", "GhostBlockMixin", "PoseBodyMixin", "PoseItemMixin"],
   "injectors": {"defaultRequire": 1}
 }

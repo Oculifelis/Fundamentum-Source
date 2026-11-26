@@ -100,7 +100,7 @@ final class TypesSelfTest {
                 report("a new sentry at the limit replaces the oldest", s4.ok() && PLACED.get(2).isRemoved()
                     && Sentries.sentries(p).equals(List.of(s4.sentry())), "failure " + s4.failure());
                 if (s4.ok()) {
-                    PLACED.add(s4.sentry());
+                    keep(s4.sentry());
                 }
             }
             case 90 -> report("a sentry goes away when its lifetime ends", PLACED.size() > 3 && PLACED.get(3).isRemoved()
@@ -111,7 +111,7 @@ final class TypesSelfTest {
                 Sentries.Placed s5 = Sentries.place(leaver, SNOWBALL, Sentries.SentryDefinition.builder(SNOW_GOLEM).build(),
                     AT.offset(-6, -1, 4), Direction.UP);
                 if (s5.ok()) {
-                    PLACED.add(s5.sentry());
+                    keep(s5.sentry());
                 }
                 leaver.discard();
             }
@@ -180,6 +180,15 @@ final class TypesSelfTest {
     }
 
     // ------------------------------------------------------------------------------------------------ sentries
+    // Test sentries are snow golems; on a random-seed world they can stand in a biome that melts them before the
+    // slot checks run. Invulnerable keeps the checks about slots and lifetimes, whatever the seed. Removal is discard().
+    private static void keep(@Nullable Mob sentry) {
+        PLACED.add(sentry);
+        if (sentry != null) {
+            sentry.setPermanentlyInvulnerable(true);
+        }
+    }
+
     private static void sentriesPlace(ServerLevel level) {
         FakePlayer p = player;
         Sentries.SentryDefinition def = Sentries.def(new ItemStack(Items.SNOWBALL));
@@ -191,7 +200,7 @@ final class TypesSelfTest {
         p.getAttribute(Sentries.SENTRY_SLOTS).setBaseValue(2);
         for (int x : new int[] {-6, -3, 0}) {
             Sentries.Placed placed = Sentries.place(p, SNOWBALL, def, AT.offset(x, -1, 4), Direction.UP);
-            PLACED.add(placed.sentry());
+            keep(placed.sentry());
             if (!placed.ok()) {
                 report("a sentry is placed on the ground", false, "failure " + placed.failure());
                 return;
