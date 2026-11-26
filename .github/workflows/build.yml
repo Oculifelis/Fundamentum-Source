@@ -73,6 +73,12 @@ jobs:
             cd "$RUNNER_TEMP/fundamentum/$loader-$mc"
           fi
           tr -d '\015' < gradlew > gradlew.unix && mv gradlew.unix gradlew && chmod +x gradlew
+          # Thaumaturge has no public Maven. Its optional bridge loads only when Thaumaturge is installed,
+          # so the dependency build leaves it out.
+          if [ -d src/main/java/com/fundamentum/compat/thaum ]; then
+            rm -rf src/main/java/com/fundamentum/compat/thaum
+            sed -i '/com\.fundamentum\.compat\.thaum\./d' src/main/java/com/fundamentum/Fundamentum.java
+          fi
           ./gradlew publish -x test --no-daemon --max-workers=2 "-Dorg.gradle.jvmargs=-Xmx4g" "-Pfundamentum_publish_repo=$RUNNER_TEMP/fundamentum-repo" $JDKS
           have="$(sed -n 's/^mod_version=//p' gradle.properties | tr -d '\015')+$mc"
           cat > "$RUNNER_TEMP/fundamentum.gradle" <<EOF
