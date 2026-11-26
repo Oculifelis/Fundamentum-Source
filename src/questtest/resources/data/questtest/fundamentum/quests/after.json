@@ -1,0 +1,19 @@
+{
+  "requires": [
+    {
+      "type": "quest_done",
+      "quest": "questtest:hunt"
+    }
+  ],
+  "objectives": [
+    {
+      "type": "visit",
+      "dimension": "minecraft:overworld"
+    },
+    {
+      "type": "craft",
+      "item": "minecraft:stick",
+      "count": 4
+    }
+  ]
+}

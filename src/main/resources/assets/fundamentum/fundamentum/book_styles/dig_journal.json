@@ -1,0 +1,115 @@
+{
+ "name": "Dig journal",
+ "colors": {
+  "ink": "3a2414",
+  "dim": "8a6a44",
+  "accent": "a8502a",
+  "rule": "c8a870",
+  "card": "f2e4bc",
+  "card_edge": "b07a44",
+  "page": "ead8aa",
+  "gold": "e8c890",
+  "banner": "d8c08a",
+  "leather": "c8945a"
+ },
+ "title_text": "5a2e14",
+ "title_shadow": "f8ecc8",
+ "title_upper": true,
+ "card_text": "3a2414",
+ "stamp_text": "3a2414",
+ "rule_color": "c8a870",
+ "bullet": "-",
+ "numerals": "plain",
+ "right": "standard",
+ "header": "field_notes",
+ "frame": "sherd_frame",
+ "window": {
+  "x": -162,
+  "y": -64,
+  "w": 68,
+  "h": 64,
+  "oval": false,
+  "ground": 52
+ },
+ "caption": null,
+ "stamp_label_dy": 16,
+ "layers": {
+  "spread": {
+   "x": -188,
+   "y": -118,
+   "w": 376,
+   "h": 236,
+   "tw": 376,
+   "th": 236
+  },
+  "closed": {
+   "x": 0,
+   "y": -118,
+   "w": 188,
+   "h": 236,
+   "tw": 188,
+   "th": 236
+  },
+  "title": {
+   "x": -163,
+   "y": -102,
+   "w": 146,
+   "h": 18,
+   "tw": 146,
+   "th": 18
+  },
+  "portrait": {
+   "x": -172,
+   "y": -74,
+   "w": 88,
+   "h": 84,
+   "tw": 88,
+   "th": 84
+  },
+  "stamp_on": {
+   "x": 17,
+   "y": 32,
+   "w": 25,
+   "h": 25,
+   "tw": 25,
+   "th": 25
+  },
+  "stamp_off": {
+   "x": 17,
+   "y": 32,
+   "w": 25,
+   "h": 25,
+   "tw": 25,
+   "th": 25
+  },
+  "tab": {
+   "x": -150,
+   "y": -127,
+   "w": 22,
+   "h": 15,
+   "tw": 22,
+   "th": 15
+  },
+  "tab_up": {
+   "x": -150,
+   "y": -131,
+   "w": 22,
+   "h": 19,
+   "tw": 22,
+   "th": 19
+  }
+ },
+ "animation": {
+  "open_ticks": 16,
+  "turn_ticks": 12,
+  "close_ticks": 16,
+  "stamp_ticks": 11
+ },
+ "sounds": {
+  "open": "minecraft:item.book.page_turn",
+  "turn": "minecraft:item.book.page_turn",
+  "click": "minecraft:ui.button.click",
+  "stamp": "minecraft:item.honeycomb.wax_on",
+  "close": "minecraft:item.book.put"
+ }
+}

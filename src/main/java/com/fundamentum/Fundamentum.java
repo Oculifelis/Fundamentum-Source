@@ -61,6 +61,8 @@ public final class Fundamentum {
         loadTest("com.fundamentum.unlock.UnlockSelfTest");
         com.fundamentum.stat.Stats.init();
         loadTest("com.fundamentum.stat.StatSelfTest");
+        loadTest("com.fundamentum.attribute.ApothicSelfTest");
+        loadTest("com.fundamentum.compat.jade.JadeSelfTest");
         loadTest("com.fundamentum.recipeview.RecipeViewSelfTest");
         loadTest("com.fundamentum.relic.RelicSelfTest");
         loadTest("com.fundamentum.slots.SlotSelfTest");
@@ -68,7 +70,9 @@ public final class Fundamentum {
         loadTest("com.fundamentum.multiblock.MultiblockSelfTest");
         com.fundamentum.port.FTransfer.init(modBus);
         com.fundamentum.transfer.Transfer.init();
+        com.fundamentum.transfer.AspectPower.init();
         loadTest("com.fundamentum.transfer.TransferSelfTest");
+        loadTest("com.fundamentum.compat.discount.DiscountSelfTest");
         com.fundamentum.port.FMobs.init(modBus);
         com.fundamentum.mobgoal.MobGoals.init();
         loadTest("com.fundamentum.mobgoal.MobGoalSelfTest");
@@ -79,6 +83,14 @@ public final class Fundamentum {
         loadTest("com.fundamentum.food.FoodSelfTest");
         com.fundamentum.survival.Survival.init();
         loadTest("com.fundamentum.survival.SurvivalSelfTest");
+        com.fundamentum.dodge.Dodges.init();
+        com.fundamentum.poise.Poise.init();
+        com.fundamentum.shield.Parry.init();
+        com.fundamentum.fx.Shake.init();
+        loadTest("com.fundamentum.combat.CombatSelfTest");
+        loadTest("com.fundamentum.dodge.DodgeSelfTest");
+        com.fundamentum.weight.Weights.init();
+        loadTest("com.fundamentum.weight.WeightSelfTest");
         loadTest("com.fundamentum.port.PerfSelfTest");
         HealthCap.lift();
         DataTables.init(modBus);
@@ -98,6 +110,15 @@ public final class Fundamentum {
         Hooks.init(modBus);
         Summons.init(modBus);
         com.fundamentum.summon.Sentries.init(modBus);
+        com.fundamentum.summon.SummonToggle.init();
+        loadTest("com.fundamentum.summon.SummonToggleSelfTest");
+        com.fundamentum.faction.Factions.init();
+        loadTest("com.fundamentum.faction.FactionSelfTest");
+        com.fundamentum.quest.Quests.init();
+        com.fundamentum.quest.QuestNpcs.init(modBus);
+        loadTest("com.fundamentum.quest.QuestSelfTest");
+        com.fundamentum.religion.Religion.init();
+        loadTest("com.fundamentum.religion.ReligionSelfTest");
         com.fundamentum.spear.Spears.init(modBus);
         com.fundamentum.gauntlet.Gauntlets.init(modBus);
         TypesSelfTest.init();
@@ -105,6 +126,7 @@ public final class Fundamentum {
         Tps.init();
         Triggers.init(modBus);
         Whips.init(modBus);
+        com.fundamentum.enchant.FEnchantments.init(modBus);
         com.fundamentum.thrown.ThrownWeapons.init(modBus);
         com.fundamentum.shield.Shields.init(modBus);
         com.fundamentum.effect.Effects.init(modBus);
@@ -112,6 +134,7 @@ public final class Fundamentum {
         com.fundamentum.ammo.Ammo.init(modBus);
         loadSystemsTest(modBus);
         com.fundamentum.flail.Flails.init(modBus);
+        com.fundamentum.item.ItemStats.init();
         Glows.init(modBus);
         container.registerConfig(ModConfig.Type.CLIENT, WhipsConfig.SPEC);
         Poses.init(modBus);
@@ -136,6 +159,8 @@ public final class Fundamentum {
         com.fundamentum.music.BossMusic.init(modBus);
         com.fundamentum.boss.Bosses.init(modBus);
         com.fundamentum.loot.Loots.init(modBus);
+        com.fundamentum.bossbag.BossBags.init(modBus);
+        com.fundamentum.guide.book.GuideBooks.init(modBus);
         com.fundamentum.material.Materials.init(modBus);
         com.fundamentum.unify.UnifyHooks.init(modBus);
         com.fundamentum.multiblock.Multiblocks.init();

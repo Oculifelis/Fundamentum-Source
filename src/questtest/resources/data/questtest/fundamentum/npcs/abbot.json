@@ -1,0 +1,6 @@
+{
+  "name": "Brother Aldric",
+  "texture": "questtest:textures/entity/abbot.png",
+  "slim": true,
+  "held": "minecraft:book"
+}

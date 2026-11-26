@@ -1,0 +1,7 @@
+{
+  "name": "Raiders",
+  "members": ["minecraft:pillager"],
+  "relations": { "factiontest:lantern": "enemy" },
+  "ranks": [ { "id": "foe", "min": -1000, "attitude": "hostile" } ],
+  "membership": { "joinable": true, "group": "factiontest:orders" }
+}

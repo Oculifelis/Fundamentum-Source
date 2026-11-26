@@ -20,6 +20,7 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.AddServerReloadListenersEvent;
 import net.neoforged.neoforge.event.OnDatapackSyncEvent;
+import net.neoforged.neoforge.event.entity.EntityEvent;
 import net.neoforged.neoforge.event.entity.living.LivingEquipmentChangeEvent;
 import net.neoforged.neoforge.event.entity.living.MobEffectEvent;
 import net.neoforged.neoforge.event.level.ChunkWatchEvent;
@@ -51,6 +52,7 @@ public final class Port {
             FReg.register(event);
         });
         modBus.addListener(RegisterPayloadHandlersEvent.class, FNet::register);
+        modBus.addListener(net.neoforged.neoforge.event.entity.EntityAttributeModificationEvent.class, FReg::attachAttributes);
         NeoForge.EVENT_BUS.addListener(ServerAboutToStartEvent.class, e -> FLife.ABOUT_TO_START.forEach(a -> a.accept(e.getServer())));
         NeoForge.EVENT_BUS.addListener(ServerStartedEvent.class, e -> FLife.STARTED.forEach(a -> a.accept(e.getServer())));
         NeoForge.EVENT_BUS.addListener(ServerStoppingEvent.class, e -> FLife.STOPPING.forEach(a -> a.accept(e.getServer())));
@@ -79,6 +81,9 @@ public final class Port {
         NeoForge.EVENT_BUS.addListener(MobEffectEvent.Expired.class, e -> FLife.fireEffectsChanged(e.getEntity()));
         NeoForge.EVENT_BUS.addListener(LivingEquipmentChangeEvent.class, e -> {
             if (e.getSlot().getType() == EquipmentSlot.Type.HAND && e.getEntity() instanceof ServerPlayer p) FLife.fireHandChanged(p);
+        });
+        NeoForge.EVENT_BUS.addListener(EntityEvent.EnteringSection.class, e -> {
+            if (!FLife.SECTION.isEmpty() && e.getEntity() instanceof ServerPlayer p) FLife.fireSectionEntered(p);
         });
         NeoForge.EVENT_BUS.addListener(ChunkWatchEvent.Sent.class,
             e -> FLife.fireChunkWatched(e.getPlayer(), e.getLevel(), e.getPos().x(), e.getPos().z()));

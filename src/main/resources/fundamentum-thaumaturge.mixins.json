@@ -1,0 +1,9 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.fundamentum.compat.discount.mixin",
+  "plugin": "com.fundamentum.compat.discount.mixin.ThaumaturgeMixinPlugin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": ["WandCostMixin"],
+  "injectors": {"defaultRequire": 1}
+}

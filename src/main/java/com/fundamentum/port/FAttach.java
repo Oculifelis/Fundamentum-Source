@@ -226,6 +226,12 @@ public final class FAttach<T> {
         return this.codec.parse(ops, tag).getOrThrow();
     }
 
+    /** Sends a value through the sync (stream) codec and back, for attachments that sync but don't save. */
+    public T roundTripSync(T value, RegistryAccess access) {
+        if (this.streamCodec == null) throw new IllegalStateException(this.id + " has no sync codec");
+        return this.streamCodec.roundTrip(value, access);
+    }
+
     private T getIn(IAttachmentHolder holder) {
         return holder.getData(type());
     }

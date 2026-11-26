@@ -32,3 +32,4 @@ run-guidetest/
 run-perftest/
 run-hudshot/
 _shots/
+run-*test/

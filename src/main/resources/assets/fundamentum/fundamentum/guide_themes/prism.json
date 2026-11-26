@@ -1,0 +1,55 @@
+{
+  "name": "Prism",
+  "tags": [
+    "dark",
+    "animated",
+    "neon"
+  ],
+  "style": "flat",
+  "backdrop": "#BF000000",
+  "colors": {
+    "fill": "#FF100C24",
+    "frame": "#2A2460",
+    "rule": "#2A2460",
+    "title": "#B8F0FF",
+    "muted": "#8A84B8",
+    "text": "#ECE8FF",
+    "strong": "#ECE8FF",
+    "soft": "#C9C5E6",
+    "mod": "#C9C5E6",
+    "nav": "#C9C5E6"
+  },
+  "shadow": true,
+  "accent": {
+    "shift": 0.4,
+    "selection": 60
+  },
+  "well": {
+    "fill": "#2A2460",
+    "light": "#2A2460",
+    "shadow": "#8A84B8",
+    "line": "#2A2460"
+  },
+  "page": {
+    "text": "#ECE8FF",
+    "muted": "#8A84B8",
+    "code": "#E6C07B",
+    "rule": [
+      "#2A2460",
+      "#2A2460"
+    ],
+    "shadow": true
+  },
+  "slot": {
+    "fill": "#2A2460",
+    "edge": "#8A84B8"
+  },
+  "gradient": [
+    "#1C1440",
+    "#08061A"
+  ],
+  "rainbow": {
+    "saturation": 0.55,
+    "speed": 1.0
+  }
+}

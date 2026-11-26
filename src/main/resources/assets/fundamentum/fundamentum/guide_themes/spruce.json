@@ -1,0 +1,55 @@
+{
+  "name": "Spruce",
+  "tags": [
+    "dark",
+    "textured",
+    "minecraft"
+  ],
+  "style": "textured",
+  "backdrop": "#99000000",
+  "colors": {
+    "fill": "#FF24180E",
+    "frame": "#000000",
+    "rule": "#4A3420",
+    "title": "#F2E4CE",
+    "muted": "#B8986E",
+    "text": "#F2E4CE",
+    "strong": "#F2E4CE",
+    "soft": "#DDC9AC",
+    "mod": "#DDC9AC",
+    "nav": "#DDC9AC"
+  },
+  "shadow": true,
+  "accent": {
+    "shift": 0.0,
+    "selection": 70
+  },
+  "well": {
+    "fill": "#4A3420",
+    "light": "#4A3420",
+    "shadow": "#B8986E",
+    "line": "#000000"
+  },
+  "page": {
+    "text": "#F2E4CE",
+    "muted": "#B8986E",
+    "code": "#E6C07B",
+    "rule": [
+      "#4A3420",
+      "#4A3420"
+    ],
+    "shadow": true
+  },
+  "slot": {
+    "fill": "#4A3420",
+    "edge": "#B8986E"
+  },
+  "texture": {
+    "background": "minecraft:textures/block/spruce_planks.png",
+    "border": "minecraft:textures/block/spruce_log.png",
+    "tint": "#5A000000",
+    "border_tint": "#3C000000",
+    "border_width": 5,
+    "well": "#B9140E08"
+  }
+}

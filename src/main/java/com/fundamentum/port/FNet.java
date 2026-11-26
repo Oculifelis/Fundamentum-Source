@@ -76,21 +76,52 @@ public final class FNet {
     }
 
     public static void toPlayer(ServerPlayer player, Object message) {
-        PacketDistributor.sendToPlayer(player, wrap(message, Side.TO_CLIENT));
+        send(player, wrap(message, Side.TO_CLIENT));
     }
 
-    /** To every player who can see the entity (not the entity itself when it is a player). */
+    /**
+     * True when the player's client can take this payload. Vanilla clients, clients without Fundamentum and players
+     * with no real connection (mock or detached players) can't, and NeoForge throws when one is sent to them anyway.
+     */
+    public static boolean canReceive(ServerPlayer player, CustomPacketPayload.Type<?> type) {
+        if (player.connection == null) return false;
+        net.minecraft.network.Connection raw = player.connection.getConnection();
+        return raw != null && raw.channel() != null && player.connection.hasChannel(type);
+    }
+
+    /** Sends any payload to one player, skipping players whose client can't take it (see {@link #canReceive}). */
+    public static void send(ServerPlayer player, CustomPacketPayload payload) {
+        if (canReceive(player, payload.type())) PacketDistributor.sendToPlayer(player, payload);
+    }
+
+    /** To every player who can see the entity (not the entity itself when it is a player), skipping clients that can't take it. */
     public static void toTracking(Entity entity, Object message) {
-        PacketDistributor.sendToPlayersTrackingEntity(entity, wrap(message, Side.TO_CLIENT));
+        CustomPacketPayload payload = wrap(message, Side.TO_CLIENT);
+        for (ServerPlayer p : trackers(entity)) send(p, payload);
     }
 
-    /** To every player who can see the entity, and to the entity when it is a player. */
+    /** To every player who can see the entity, and to the entity when it is a player, skipping clients that can't take it. */
     public static void toTrackingAndSelf(Entity entity, Object message) {
-        PacketDistributor.sendToPlayersTrackingEntityAndSelf(entity, wrap(message, Side.TO_CLIENT));
+        CustomPacketPayload payload = wrap(message, Side.TO_CLIENT);
+        for (ServerPlayer p : trackers(entity)) send(p, payload);
+        if (entity instanceof ServerPlayer self) send(self, payload);
+    }
+
+    /** The players the entity is currently sent to (its tracking players, not the entity itself). */
+    public static java.util.List<ServerPlayer> trackers(Entity entity) {
+        if (!(entity.level() instanceof net.minecraft.server.level.ServerLevel level)) return java.util.List.of();
+        Object tracked = ((com.fundamentum.mixin.ChunkMapAccessor) level.getChunkSource().chunkMap).fundamentum$entityMap().get(entity.getId());
+        if (tracked == null) return java.util.List.of();
+        java.util.List<ServerPlayer> out = new java.util.ArrayList<>();
+        for (net.minecraft.server.network.ServerPlayerConnection c : ((com.fundamentum.mixin.TrackedEntityAccessor) tracked).fundamentum$seenBy()) out.add(c.getPlayer());
+        return out;
     }
 
     public static void toAll(Object message) {
-        PacketDistributor.sendToAllPlayers(wrap(message, Side.TO_CLIENT));
+        var server = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
+        if (server == null) return;
+        CustomPacketPayload payload = wrap(message, Side.TO_CLIENT);
+        for (ServerPlayer p : server.getPlayerList().getPlayers()) send(p, payload);
     }
 
     /** From the client to the server. Call only on the client. */

@@ -1,0 +1,46 @@
+{
+  "name": "Dark",
+  "tags": [
+    "dark",
+    "editor"
+  ],
+  "style": "flat",
+  "backdrop": "#CC000000",
+  "colors": {
+    "fill": "#F518191C",
+    "frame": "#46484E",
+    "rule": "#34363C",
+    "title": "#ECECEC",
+    "muted": "#6E7076",
+    "text": "#E8E8E8",
+    "strong": "#E8E8E8",
+    "soft": "#96989E",
+    "mod": "#96989E",
+    "nav": "#96989E"
+  },
+  "shadow": true,
+  "accent": {
+    "shift": 0.0,
+    "selection": 50
+  },
+  "well": {
+    "fill": "#222327",
+    "light": "#222327",
+    "shadow": "#50525A",
+    "line": "#34363C"
+  },
+  "page": {
+    "text": "#D6D6D6",
+    "muted": "#6E7076",
+    "code": "#E6C07B",
+    "rule": [
+      "#34363C",
+      "#34363C"
+    ],
+    "shadow": true
+  },
+  "slot": {
+    "fill": "#222327",
+    "edge": "#50525A"
+  }
+}

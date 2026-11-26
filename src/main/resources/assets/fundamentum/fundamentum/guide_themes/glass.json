@@ -1,0 +1,46 @@
+{
+  "name": "Frosted Glass",
+  "tags": [
+    "light",
+    "editor"
+  ],
+  "style": "flat",
+  "backdrop": "#59000000",
+  "colors": {
+    "fill": "#C8EEF0F4",
+    "frame": "#FFFFFF",
+    "rule": "#D0D4DC",
+    "title": "#14161A",
+    "muted": "#5A5E66",
+    "text": "#14161A",
+    "strong": "#14161A",
+    "soft": "#2C2F34",
+    "mod": "#2C2F34",
+    "nav": "#2C2F34"
+  },
+  "shadow": false,
+  "accent": {
+    "shift": -0.4,
+    "selection": 50
+  },
+  "well": {
+    "fill": "#E0E4EA",
+    "light": "#E0E4EA",
+    "shadow": "#B8BCC6",
+    "line": "#D0D4DC"
+  },
+  "page": {
+    "text": "#14161A",
+    "muted": "#5A5E66",
+    "code": "#8A5A00",
+    "rule": [
+      "#D0D4DC",
+      "#D0D4DC"
+    ],
+    "shadow": false
+  },
+  "slot": {
+    "fill": "#E0E4EA",
+    "edge": "#B8BCC6"
+  }
+}

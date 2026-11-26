@@ -1,0 +1,46 @@
+{
+  "name": "Sepia",
+  "tags": [
+    "light",
+    "paper"
+  ],
+  "style": "flat",
+  "backdrop": "#BF000000",
+  "colors": {
+    "fill": "#F5F1E7D0",
+    "frame": "#A08A66",
+    "rule": "#D9C9A6",
+    "title": "#433422",
+    "muted": "#8C7756",
+    "text": "#433422",
+    "strong": "#433422",
+    "soft": "#5C4B34",
+    "mod": "#5C4B34",
+    "nav": "#5C4B34"
+  },
+  "shadow": false,
+  "accent": {
+    "shift": -0.45,
+    "selection": 60
+  },
+  "well": {
+    "fill": "#D9C9A6",
+    "light": "#D9C9A6",
+    "shadow": "#8C7756",
+    "line": "#D9C9A6"
+  },
+  "page": {
+    "text": "#433422",
+    "muted": "#8C7756",
+    "code": "#7A3E00",
+    "rule": [
+      "#D9C9A6",
+      "#D9C9A6"
+    ],
+    "shadow": false
+  },
+  "slot": {
+    "fill": "#D9C9A6",
+    "edge": "#8C7756"
+  }
+}

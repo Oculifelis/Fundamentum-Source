@@ -3,6 +3,8 @@ package com.fundamentum.recipeview.rei;
 import com.fundamentum.recipeview.RecipeViews;
 import com.fundamentum.recipeview.ViewCategory;
 import com.fundamentum.recipeview.ViewRecipe;
+import com.fundamentum.recipeview.ViewHover;
+import dev.architectury.event.CompoundEventResult;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -10,6 +12,7 @@ import me.shedaniel.rei.api.client.plugins.REIClientPlugin;
 import me.shedaniel.rei.api.client.registry.category.CategoryRegistry;
 import me.shedaniel.rei.api.client.registry.display.DisplayRegistry;
 import me.shedaniel.rei.api.client.registry.entry.EntryRegistry;
+import me.shedaniel.rei.api.client.registry.screen.ScreenRegistry;
 import me.shedaniel.rei.api.common.entry.type.VanillaEntryTypes;
 import me.shedaniel.rei.api.common.util.EntryIngredients;
 import me.shedaniel.rei.api.common.util.EntryStacks;
@@ -46,6 +49,14 @@ public final class RecipeViewRei implements REIClientPlugin {
             r.add(DefaultInformationDisplay.createFromEntries(EntryIngredients.ofItemStacks(e.getKey()), e.getKey().get(0).getHoverName())
                     .lines(e.getValue()));
         }
+    }
+
+    @Override
+    public void registerScreens(ScreenRegistry r) {
+        r.registerFocusedStack((screen, mouse) -> {
+            ViewHover.Hit h = ViewHover.at(screen, mouse.x, mouse.y);
+            return h == null ? CompoundEventResult.pass() : CompoundEventResult.interruptTrue(EntryStacks.of(h.stack()));
+        });
     }
 
     @Override

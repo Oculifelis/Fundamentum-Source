@@ -130,7 +130,7 @@ public final class PortSelfTest {
 
     private static void run(MinecraftServer server) {
         List<Runnable> parts = List.of(PortSelfTest::ids, () -> attach(server), () -> levelData(server), () -> stackData(server),
-            () -> net(server), () -> registration(server), () -> wrappers(server));
+            () -> net(server), () -> registration(server), () -> wrappers(server), () -> helpers(server));
         for (Runnable part : parts) {
             try {
                 part.run();
@@ -345,5 +345,29 @@ public final class PortSelfTest {
         } finally {
             z.discard();
         }
+    }
+
+    private static void helpers(MinecraftServer server) {
+        ServerLevel level = server.overworld();
+        check(FVanilla.modLoaded("fundamentum") && !FVanilla.modLoaded("no_such_mod_here"), "modLoaded");
+        check(!FVanilla.isClient(), "isClient is false on a dedicated server");
+        net.minecraft.server.level.ServerPlayer p = FVanilla.fakePlayer(level, "porthelpers");
+        check(p != null, "a player for the helpers");
+        if (p != null) {
+            check(FVanilla.chargeAttack(p) && p.getAttackStrengthScale(0.5F) >= 0.99F, "chargeAttack fills the attack charge");
+            check(FVanilla.attackReach(p) >= 2.99 && FVanilla.attackReach(p) <= 5.01, "attackReach is the player's reach (" + FVanilla.attackReach(p) + ")");
+            check(!throwsOn(() -> FVanilla.swing(p)), "swing");
+        }
+        com.fundamentum.data.DataTable<?> table = com.fundamentum.effect.Effects.VANILLA_CURES;
+        var key = table.entries().keySet().stream().findFirst().orElse(null);
+        check(key != null, "the effect cures table has entries");
+        if (key != null) {
+            check(table.get(key.toString()) == table.get(key) && table.raw(key.toString()) == table.raw(key), "DataTable lookup by string id");
+        }
+        check(table.get("Not A Key!") == null && table.get("fundamentum:no_such_entry") == null, "DataTable string lookup misses are null");
+        net.minecraft.core.RegistryAccess access = level.registryAccess();
+        Points pt = new Points(4, "sync");
+        check(pt.equals(TRACKED.roundTripSync(pt, access)), "FAttach roundTripSync through the sync codec");
+        check(throwsOn(() -> MEMORY.roundTripSync(pt, access)), "roundTripSync refuses an attachment with no sync codec");
     }
 }

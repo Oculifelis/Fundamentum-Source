@@ -1,0 +1,36 @@
+{
+  "description": {
+    "translate": "enchantment.fundamentum.rebound"
+  },
+  "supported_items": "#fundamentum:enchantable/shield",
+  "weight": 4,
+  "max_level": 3,
+  "min_cost": {
+    "base": 8,
+    "per_level_above_first": 10
+  },
+  "max_cost": {
+    "base": 58,
+    "per_level_above_first": 10
+  },
+  "anvil_cost": 2,
+  "slots": [
+    "hand"
+  ],
+  "effects": {
+    "fundamentum:weapon_effects": {
+      "hook": "on_block",
+      "effects": [
+        {
+          "type": "modify",
+          "field": "reflect",
+          "op": "add",
+          "value": {
+            "base": 0.25,
+            "per_level_above_first": 0.2
+          }
+        }
+      ]
+    }
+  }
+}

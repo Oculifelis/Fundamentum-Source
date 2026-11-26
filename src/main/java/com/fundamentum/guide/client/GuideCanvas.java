@@ -1,19 +1,19 @@
 package com.fundamentum.guide.client;
 
+import com.fundamentum.guide.GuideTheme;
 import com.fundamentum.port.FId;
 import com.fundamentum.port.FVanilla;
+import com.fundamentum.recipeview.ViewHover;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.client.input.MouseButtonEvent;
-import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntitySpawnReason;
@@ -21,22 +21,40 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
 
-/** Draws a laid-out guide page in a scrolling box; clicking a link opens it. Client only, per version. */
+/** Draws a laid-out guide page in a scrolling box, in the book's theme; clicking a link opens it. Client only, per version. */
 public final class GuideCanvas extends AbstractWidget {
+    /** The item under the mouse in the last frame drawn, so recipe viewers' keys (show recipes, show uses) work on it. */
+    private static volatile ViewHover.Hit hover;
+    private static volatile long hoverAt;
+
+    static {
+        ViewHover.source((screen, mx, my) -> {
+            ViewHover.Hit h = hover;
+            if (h == null || screen != Minecraft.getInstance().gui.screen() || System.currentTimeMillis() - hoverAt > 250) return null;
+            return mx >= h.x() && mx < h.x() + h.w() && my >= h.y() && my < h.y() + h.h() ? h : null;
+        });
+    }
+
     private static final Map<FId, LivingEntity> ENTITIES = new HashMap<>();
     private final Consumer<FId> onLink;
+    private final GuideTheme theme;
     private GuideLayout.Result content = new GuideLayout.Result(List.of(), 0);
     private double scroll;
     private float yaw = com.fundamentum.multiblock.client.GuiMultiblockRenderer.YAW;
 
     public GuideCanvas(int x, int y, int w, int h, Consumer<FId> onLink) {
+        this(x, y, w, h, GuideTheme.DEFAULT, onLink);
+    }
+
+    public GuideCanvas(int x, int y, int w, int h, GuideTheme theme, Consumer<FId> onLink) {
         super(x, y, w, h, Component.empty());
         this.onLink = onLink;
+        this.theme = theme;
     }
 
     /** The width pages are laid out in (room left for the scroll bar). */
     public int contentWidth() {
-        return this.width - 10;
+        return this.width - 12;
     }
 
     public void setContent(GuideLayout.Result content) {
@@ -45,8 +63,18 @@ public final class GuideCanvas extends AbstractWidget {
         this.yaw = com.fundamentum.multiblock.client.GuiMultiblockRenderer.YAW;
     }
 
+    /** How far down the page is scrolled, 0 to 1. */
+    public double scrollFraction() {
+        int max = maxScroll();
+        return max <= 0 ? 0 : this.scroll / max;
+    }
+
+    public void setScrollFraction(double f) {
+        this.scroll = Math.max(0, Math.min(maxScroll(), f * maxScroll()));
+    }
+
     private int maxScroll() {
-        return Math.max(0, this.content.height() - this.height + 8);
+        return Math.max(0, this.content.height() - this.height + 4);
     }
 
     private static ItemStack cycle(List<ItemStack> stacks) {
@@ -55,26 +83,39 @@ public final class GuideCanvas extends AbstractWidget {
 
     @Override
     protected void extractWidgetRenderState(GuiGraphicsExtractor g, int mx, int my, float pt) {
-        Font font = Minecraft.getInstance().font;
-        int x0 = getX() + 4;
-        int y0 = getY() + 4 - (int) this.scroll;
-        g.fill(getX(), getY(), getX() + this.width, getY() + this.height, 0x90000000);
-        g.enableScissor(getX(), getY(), getX() + this.width, getY() + this.height);
+        GuidePaint p = new GuideGfx(g);
+        GuideTheme.Page pal = this.theme.page();
+        int x0 = getX() + 1;
+        int y0 = getY() + 2 - (int) this.scroll;
+        p.scissor(getX(), getY(), getX() + this.width, getY() + this.height);
         ItemStack hovered = ItemStack.EMPTY;
+        int hx = 0, hy = 0;
         boolean inside = isMouseOver(mx, my);
         for (GuideLayout.Op op : this.content.ops()) {
             if (op instanceof GuideLayout.Text t) {
-                g.text(font, t.text(), x0 + t.x(), y0 + t.y(), t.colour(), false);
+                p.text(t.text(), x0 + t.x(), y0 + t.y(), t.colour(), pal.shadow());
             } else if (op instanceof GuideLayout.Box b) {
-                g.fill(x0 + b.x(), y0 + b.y(), x0 + b.x() + b.w(), y0 + b.y() + b.h(), b.colour());
+                GuideSkin.rect(p, x0 + b.x(), y0 + b.y(), b.w(), b.h(), b.colour());
+            } else if (op instanceof GuideLayout.Slot s) {
+                GuideSkin.slot(p, this.theme, x0 + s.x(), y0 + s.y(), s.size());
+            } else if (op instanceof GuideLayout.Well w) {
+                GuideSkin.well(p, this.theme, x0 + w.x(), y0 + w.y(), w.w(), w.h(), this.theme.well().fill());
+            } else if (op instanceof GuideLayout.Arrow a) {
+                GuideSkin.craftArrow(p, this.theme, x0 + a.x(), y0 + a.y());
+            } else if (op instanceof GuideLayout.Rule r) {
+                GuideSkin.rule(p, x0 + r.x(), y0 + r.y(), r.w(), r.dark(), r.light());
             } else if (op instanceof GuideLayout.ItemOp i) {
                 ItemStack s = cycle(i.stacks());
                 int ix = x0 + i.x();
                 int iy = y0 + i.y();
-                g.item(s, ix, iy);
-                if (inside && mx >= ix && mx < ix + 16 && my >= iy && my < iy + 16) hovered = s;
+                p.item(s, ix, iy);
+                if (inside && mx >= ix && mx < ix + 16 && my >= iy && my < iy + 16) {
+                    hovered = s;
+                    hx = ix;
+                    hy = iy;
+                }
             } else if (op instanceof GuideLayout.Image im) {
-                g.blit(RenderPipelines.GUI_TEXTURED, im.texture().vanilla(), x0 + im.x(), y0 + im.y(), 0, 0, im.w(), im.h(), im.w(), im.h());
+                p.texture(im.texture(), x0 + im.x(), y0 + im.y(), im.w(), im.h(), im.w(), im.h());
             } else if (op instanceof GuideLayout.Blocks b) {
                 com.fundamentum.multiblock.client.GuiMultiblockRenderer.submit(g, com.fundamentum.multiblock.client.MultiblockScene.of(b.pattern()),
                     x0 + b.x(), y0 + b.y(), b.w(), b.h(), this.yaw, com.fundamentum.multiblock.client.GuiMultiblockRenderer.PITCH);
@@ -85,21 +126,21 @@ public final class GuideCanvas extends AbstractWidget {
                 if (living != null) {
                     InventoryScreen.extractEntityInInventoryFollowsMouse(g, ex, ey, ex + e.w(), ey + e.h(), e.scale(), 0.0625F, mx, my, living);
                 } else {
-                    g.text(font, Component.literal("? " + e.type()), ex + 2, ey + 2, GuideLayout.MISSING, false);
+                    p.text(Component.literal("? " + e.type()), ex + 2, ey + 2, GuideLayout.MISSING, false);
                 }
             }
         }
-        g.disableScissor();
+        p.endScissor();
         if (maxScroll() > 0) {
-            int bar = Math.max(10, this.height * this.height / Math.max(1, this.content.height() + 8));
-            int by = getY() + (int) ((this.height - bar) * (this.scroll / maxScroll()));
-            g.fill(getX() + this.width - 4, getY(), getX() + this.width, getY() + this.height, 0x40FFFFFF);
-            g.fill(getX() + this.width - 4, by, getX() + this.width, by + bar, 0xC0FFFFFF);
+            int bar = Math.max(10, (this.height - 2) * this.height / Math.max(1, this.content.height() + 4));
+            GuideSkin.scrollbar(p, this.theme, getX() + this.width - 7, getY(), this.height, bar, this.scroll / maxScroll());
         }
-        if (!hovered.isEmpty()) g.setTooltipForNextFrame(font, hovered, mx, my);
+        if (!hovered.isEmpty()) p.tooltip(hovered, mx, my);
+        hover = hovered.isEmpty() ? null : new ViewHover.Hit(hovered, hx, hy, 16, 16);
+        hoverAt = System.currentTimeMillis();
     }
 
-    private static LivingEntity entity(FId id) {
+    static LivingEntity entity(FId id) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null) return null;
         LivingEntity cached = ENTITIES.get(id);
@@ -120,8 +161,8 @@ public final class GuideCanvas extends AbstractWidget {
 
     @Override
     public void onClick(MouseButtonEvent event, boolean doubleClick) {
-        double mx = event.x() - getX() - 4;
-        double my = event.y() - getY() - 4 + this.scroll;
+        double mx = event.x() - getX() - 1;
+        double my = event.y() - getY() - 2 + this.scroll;
         for (GuideLayout.Op op : this.content.ops()) {
             if (op instanceof GuideLayout.Link l && mx >= l.x() && mx < l.x() + l.w() && my >= l.y() && my < l.y() + l.h()) {
                 this.onLink.accept(l.target());

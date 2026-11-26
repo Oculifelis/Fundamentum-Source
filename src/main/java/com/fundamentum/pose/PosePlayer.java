@@ -119,6 +119,14 @@ public final class PosePlayer {
         public boolean thirdPerson() {
             return this.bones.containsKey("right_arm") || this.bones.containsKey("left_arm");
         }
+
+        /** True when the sample moves the head, body, legs or held item. */
+        public boolean body() {
+            for (String b : BODY_BONES) {
+                if (this.bones.containsKey(b)) return true;
+            }
+            return false;
+        }
     }
 
     /** One item's binding (see the class comment). Angles in degrees, the support point in pixels. */
@@ -460,6 +468,11 @@ public final class PosePlayer {
                 s.add(bone, clip.base.getOrDefault(bone, "rest"), clip.sample(bone, seconds), 1.0F);
             }
         }
+        for (String bone : BODY_BONES) {
+            if (clip.has(bone)) {
+                s.add(bone, "", clip.sample(bone, seconds), 1.0F);
+            }
+        }
         if (clip.has("first_person")) {
             s.add("first_person", "", clip.sample("first_person", seconds), 1.0F);
         }
@@ -543,6 +556,61 @@ public final class PosePlayer {
             part.x += px;
             part.y += py;
             part.z += pz;
+        }
+    }
+
+    /** Bones a clip may move besides the arms: offsets added on top of whatever pose the model already has. */
+    public static final String[] BODY_BONES = {"head", "body", "right_leg", "left_leg", "item"};
+
+    /**
+     * Third person, after the vanilla pose is set: adds the sample's head, body and leg offsets (degrees and pixels, like
+     * the arms; a left-handed player mirrors them and swaps the legs). The "item" bone is applied by {@link #applyItem}.
+     */
+    public static void applyBody(HumanoidModel<?> model, @Nullable Sample s, HumanoidArm mainArm) {
+        if (s == null) {
+            return;
+        }
+        boolean left = mainArm == HumanoidArm.LEFT;
+        add(model.head, s.bones.get("head"), left);
+        add(model.body, s.bones.get("body"), left);
+        add(left ? model.leftLeg : model.rightLeg, s.bones.get("right_leg"), left);
+        add(left ? model.rightLeg : model.leftLeg, s.bones.get("left_leg"), left);
+    }
+
+    /** The weighted "item" offset as six values (RX..PZ, degrees and pixels), or null when the sample has none. */
+    public static float @Nullable [] item(@Nullable Sample s) {
+        List<Layer> ls = s == null ? null : s.bones.get("item");
+        if (ls == null) {
+            return null;
+        }
+        float[] out = new float[6];
+        for (Layer l : ls) {
+            for (int i = 0; i < 6; i++) {
+                out[i] += l.w() * l.v()[i];
+            }
+        }
+        if (s.leftHanded) {
+            out[PoseClip.RY] = -out[PoseClip.RY];
+            out[PoseClip.RZ] = -out[PoseClip.RZ];
+            out[PoseClip.PX] = -out[PoseClip.PX];
+        }
+        return out;
+    }
+
+    private static void add(ModelPart part, @Nullable List<Layer> ls, boolean left) {
+        if (ls == null) {
+            return;
+        }
+        float m = left ? -1.0F : 1.0F;
+        for (Layer l : ls) {
+            float w = l.w();
+            float[] v = l.v();
+            part.xRot += w * v[PoseClip.RX] * Mth.DEG_TO_RAD;
+            part.yRot += w * m * v[PoseClip.RY] * Mth.DEG_TO_RAD;
+            part.zRot += w * m * v[PoseClip.RZ] * Mth.DEG_TO_RAD;
+            part.x += w * m * v[PoseClip.PX];
+            part.y += w * v[PoseClip.PY];
+            part.z += w * v[PoseClip.PZ];
         }
     }
 

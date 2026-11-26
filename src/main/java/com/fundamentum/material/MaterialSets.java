@@ -57,14 +57,8 @@ public final class MaterialSets {
 
     private static final Logger LOG = LoggerFactory.getLogger("fundamentum");
 
-    /** Missing slot -> the slot that stands in for it. Every chain ends at "main". */
-    public static final Map<String, String> SLOT_FALLBACK = Map.ofEntries(
-        Map.entry("wall", "main"), Map.entry("wall_accent", "wall"), Map.entry("floor", "main"), Map.entry("floor_accent", "floor"),
-        Map.entry("pillar", "main"), Map.entry("trim", "wall_accent"), Map.entry("ceiling", "floor"), Map.entry("rubble", "main"),
-        Map.entry("foundation", "wall"), Map.entry("roof", "main"), Map.entry("roof_b", "roof"), Map.entry("roof_c", "roof_b"),
-        Map.entry("quoin", "wall_accent"), Map.entry("paving", "floor"), Map.entry("carved", "main"), Map.entry("statue", "carved"),
-        Map.entry("plaster", "main"), Map.entry("planks", "main"), Map.entry("post", "log"), Map.entry("timber", "stripped"),
-        Map.entry("stripped", "log"));
+    /** Missing slot -> the slot that stands in for it, from MaterialRules (packs add to it). Read-only, always current. */
+    public static final Map<String, String> SLOT_FALLBACK = MaterialRules.slotFallbackView();
 
     public static final DataTable<JsonObject> TABLE = DataTables.registerJson(Identifier.fromNamespaceAndPath("fundamentum", "material_sets"),
         "fundamentum/material_sets").keyField("set").onLoad(t -> rebuild());
@@ -85,7 +79,13 @@ public final class MaterialSets {
     }
 
     public static void init() {
-        // class load registers the data table
+        // class load registers the data tables
+        MaterialRules.init();
+    }
+
+    /** The sets are rebuilt on next use (the material rules changed). */
+    static void invalidate() {
+        built = false;
     }
 
     // ------------------------------------------------------------------------------------------------ code

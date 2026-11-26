@@ -1,0 +1,1 @@
+{"entity": "minecraft:zombie", "loot_table": "fundamentum_test:bag_test", "always": ["minecraft:gold_ingot"], "own_seconds": 60}

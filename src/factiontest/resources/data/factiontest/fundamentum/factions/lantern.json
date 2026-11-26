@@ -1,0 +1,23 @@
+{
+  "name": "Order of the Lantern",
+  "color": "#E0B040",
+  "members": ["minecraft:vindicator"],
+  "professions": ["minecraft:cleric"],
+  "relations": { "factiontest:raiders": { "type": "enemy", "spill": 0.5 } },
+  "min": -1000, "max": 1000, "start": 0,
+  "ranks": [
+    { "id": "hated", "min": -1000, "attitude": "hostile", "price": 1.5 },
+    { "id": "neutral", "min": -99, "attitude": "neutral" },
+    { "id": "friendly", "min": 100, "attitude": "friendly", "price": 0.5,
+      "rewards": { "items": [ { "id": "minecraft:emerald", "count": 3 } ], "unlocks": ["factiontest:lantern_reward"] } },
+    { "id": "honoured", "min": 500, "attitude": "defend", "price": 0.5 }
+  ],
+  "actions": {
+    "kill_member": -50, "kill_member_alignment": { "factiontest:order": -2 },
+    "kill_enemy": 10,
+    "break_block": { "rep": -25, "blocks": ["minecraft:gold_block"] },
+    "quest_done": 30
+  },
+  "drift": { "per_day": 2000, "toward": 0 },
+  "membership": { "joinable": true, "group": "factiontest:orders", "min_rank": "neutral", "leave_rep": -100 }
+}

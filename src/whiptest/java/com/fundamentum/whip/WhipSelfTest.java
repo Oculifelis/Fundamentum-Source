@@ -120,8 +120,8 @@ final class WhipSelfTest {
             @Override
             public void cordHit(WhipHit hit) {
                 CORD.incrementAndGet();
-                // The hit must be where the cord touches the creature, not in the air beside it.
-                if (hit.touched.getBoundingBox().inflate(hit.whip.tuning.hitRadius() + 0.05).contains(hit.contact) == false) {
+                // The hit must be where the cord touches the creature (widened like the hit test for thin mobs), not in the air beside it.
+                if (Whips.atLeastWide(hit.touched.getBoundingBox()).inflate(hit.whip.tuning.hitRadius() + 0.05).contains(hit.contact) == false) {
                     AIR.incrementAndGet();
                     LOG.info("WHIPTEST hit in the air: contact {} off {}", hit.contact, hit.touched.getBoundingBox());
                 }

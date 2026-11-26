@@ -20,7 +20,6 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.AddServerReloadListenersEvent;
 import net.neoforged.neoforge.event.OnDatapackSyncEvent;
-import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,7 +72,7 @@ public final class DataTables {
         for (DataTable<?> table : TABLES.values()) {
             if (table.isSynced()) {
                 var payload = DataTablePayload.of(table);
-                event.getRelevantPlayers().forEach(p -> PacketDistributor.sendToPlayer(p, payload));
+                event.getRelevantPlayers().forEach(p -> com.fundamentum.port.FNet.send(p, payload));
             }
         }
     }

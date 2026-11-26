@@ -1,0 +1,115 @@
+{
+ "name": "Bestiary",
+ "colors": {
+  "ink": "e8dcc0",
+  "dim": "a89878",
+  "accent": "c03a3a",
+  "rule": "5a4838",
+  "card": "4a3a30",
+  "card_edge": "8a6a3a",
+  "page": "3a2c24",
+  "gold": "b08a4a",
+  "banner": "5a1a16",
+  "leather": "2a1a16"
+ },
+ "title_text": "f8e8c8",
+ "title_shadow": "240a08",
+ "title_upper": true,
+ "card_text": "e8dcc0",
+ "stamp_text": "e8dcc0",
+ "rule_color": "5a4838",
+ "bullet": ">",
+ "numerals": "plain",
+ "right": "hunter",
+ "header": "field_notes",
+ "frame": "poster",
+ "window": {
+  "x": -161,
+  "y": -57,
+  "w": 66,
+  "h": 50,
+  "oval": false,
+  "ground": 42
+ },
+ "caption": null,
+ "stamp_label_dy": 16,
+ "layers": {
+  "spread": {
+   "x": -188,
+   "y": -118,
+   "w": 376,
+   "h": 250,
+   "tw": 376,
+   "th": 250
+  },
+  "closed": {
+   "x": 0,
+   "y": -118,
+   "w": 188,
+   "h": 236,
+   "tw": 188,
+   "th": 236
+  },
+  "title": {
+   "x": -172,
+   "y": -102,
+   "w": 164,
+   "h": 21,
+   "tw": 164,
+   "th": 21
+  },
+  "portrait": {
+   "x": -168,
+   "y": -70,
+   "w": 80,
+   "h": 76,
+   "tw": 80,
+   "th": 76
+  },
+  "stamp_on": {
+   "x": 17,
+   "y": 32,
+   "w": 25,
+   "h": 25,
+   "tw": 25,
+   "th": 25
+  },
+  "stamp_off": {
+   "x": 17,
+   "y": 32,
+   "w": 25,
+   "h": 25,
+   "tw": 25,
+   "th": 25
+  },
+  "tab": {
+   "x": -150,
+   "y": -127,
+   "w": 22,
+   "h": 17,
+   "tw": 22,
+   "th": 17
+  },
+  "tab_up": {
+   "x": -150,
+   "y": -131,
+   "w": 22,
+   "h": 21,
+   "tw": 22,
+   "th": 21
+  }
+ },
+ "animation": {
+  "open_ticks": 16,
+  "turn_ticks": 12,
+  "close_ticks": 16,
+  "stamp_ticks": 11
+ },
+ "sounds": {
+  "open": "minecraft:item.book.page_turn",
+  "turn": "minecraft:item.book.page_turn",
+  "click": "minecraft:ui.button.click",
+  "stamp": "minecraft:item.honeycomb.wax_on",
+  "close": "minecraft:item.book.put"
+ }
+}

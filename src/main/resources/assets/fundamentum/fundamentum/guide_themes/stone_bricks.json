@@ -1,0 +1,55 @@
+{
+  "name": "Stone Bricks",
+  "tags": [
+    "dark",
+    "textured",
+    "minecraft"
+  ],
+  "style": "textured",
+  "backdrop": "#99000000",
+  "colors": {
+    "fill": "#FF1E1E22",
+    "frame": "#000000",
+    "rule": "#40404A",
+    "title": "#ECECEC",
+    "muted": "#A0A0A8",
+    "text": "#ECECEC",
+    "strong": "#ECECEC",
+    "soft": "#D1D1D4",
+    "mod": "#D1D1D4",
+    "nav": "#D1D1D4"
+  },
+  "shadow": true,
+  "accent": {
+    "shift": 0.0,
+    "selection": 70
+  },
+  "well": {
+    "fill": "#40404A",
+    "light": "#40404A",
+    "shadow": "#A0A0A8",
+    "line": "#000000"
+  },
+  "page": {
+    "text": "#ECECEC",
+    "muted": "#A0A0A8",
+    "code": "#E6C07B",
+    "rule": [
+      "#40404A",
+      "#40404A"
+    ],
+    "shadow": true
+  },
+  "slot": {
+    "fill": "#40404A",
+    "edge": "#A0A0A8"
+  },
+  "texture": {
+    "background": "minecraft:textures/block/stone_bricks.png",
+    "border": "minecraft:textures/block/polished_blackstone_bricks.png",
+    "tint": "#50000000",
+    "border_tint": "#3C000000",
+    "border_width": 5,
+    "well": "#B4101012"
+  }
+}

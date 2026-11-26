@@ -1,0 +1,1 @@
+com.fundamentum.script.kubejs.FundamentumKubeJSPlugin
