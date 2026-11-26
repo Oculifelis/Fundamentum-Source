@@ -1,0 +1,46 @@
+{
+  "name": "Everforest",
+  "tags": [
+    "dark",
+    "editor"
+  ],
+  "style": "flat",
+  "backdrop": "#BF000000",
+  "colors": {
+    "fill": "#F52D353B",
+    "frame": "#3D484D",
+    "rule": "#3D484D",
+    "title": "#A7C080",
+    "muted": "#859289",
+    "text": "#D3C6AA",
+    "strong": "#D3C6AA",
+    "soft": "#B7B39E",
+    "mod": "#B7B39E",
+    "nav": "#B7B39E"
+  },
+  "shadow": true,
+  "accent": {
+    "shift": 0.0,
+    "selection": 60
+  },
+  "well": {
+    "fill": "#3D484D",
+    "light": "#3D484D",
+    "shadow": "#859289",
+    "line": "#3D484D"
+  },
+  "page": {
+    "text": "#D3C6AA",
+    "muted": "#859289",
+    "code": "#DBBC7F",
+    "rule": [
+      "#3D484D",
+      "#3D484D"
+    ],
+    "shadow": true
+  },
+  "slot": {
+    "fill": "#3D484D",
+    "edge": "#859289"
+  }
+}

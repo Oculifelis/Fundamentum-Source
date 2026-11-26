@@ -66,18 +66,36 @@ public final class FNet {
         return BY_ID.size();
     }
 
+    /** True when the player has a real connection whose client has this channel (not vanilla, mock or detached). */
+    public static boolean canReceive(SimpleChannel channel, ServerPlayer player) {
+        return player.connection != null && player.connection.connection != null && player.connection.connection.channel() != null && channel.isRemotePresent(player.connection.connection);
+    }
+
     public static void toPlayer(ServerPlayer player, Object message) {
-        channel().send(PacketDistributor.PLAYER.with(() -> player), wrap(message, Side.TO_CLIENT));
+        if (canReceive(channel(), player)) channel().send(PacketDistributor.PLAYER.with(() -> player), wrap(message, Side.TO_CLIENT));
     }
 
-    /** To every player who can see the entity (not the entity itself when it is a player). */
+    /** To every player who can see the entity (not the entity itself when it is a player), skipping clients that can't take it. */
     public static void toTracking(Entity entity, Object message) {
-        channel().send(PacketDistributor.TRACKING_ENTITY.with(() -> entity), wrap(message, Side.TO_CLIENT));
+        Object wrapped = wrap(message, Side.TO_CLIENT);
+        for (ServerPlayer p : trackers(entity)) if (canReceive(channel(), p)) channel().send(PacketDistributor.PLAYER.with(() -> p), wrapped);
     }
 
-    /** To every player who can see the entity, and to the entity when it is a player. */
+    /** To every player who can see the entity, and to the entity when it is a player, skipping clients that can't take it. */
     public static void toTrackingAndSelf(Entity entity, Object message) {
-        channel().send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> entity), wrap(message, Side.TO_CLIENT));
+        Object wrapped = wrap(message, Side.TO_CLIENT);
+        for (ServerPlayer p : trackers(entity)) if (canReceive(channel(), p)) channel().send(PacketDistributor.PLAYER.with(() -> p), wrapped);
+        if (entity instanceof ServerPlayer self && canReceive(channel(), self)) channel().send(PacketDistributor.PLAYER.with(() -> self), wrapped);
+    }
+
+    /** The players the entity is currently sent to (its tracking players, not the entity itself). */
+    public static java.util.List<ServerPlayer> trackers(Entity entity) {
+        if (!(entity.level() instanceof net.minecraft.server.level.ServerLevel level)) return java.util.List.of();
+        Object tracked = ((com.fundamentum.mixin.ChunkMapAccessor) level.getChunkSource().chunkMap).fundamentum$entityMap().get(entity.getId());
+        if (tracked == null) return java.util.List.of();
+        java.util.List<ServerPlayer> out = new java.util.ArrayList<>();
+        for (net.minecraft.server.network.ServerPlayerConnection c : ((com.fundamentum.mixin.TrackedEntityAccessor) tracked).fundamentum$seenBy()) out.add(c.getPlayer());
+        return out;
     }
 
     public static void toAll(Object message) {

@@ -1,0 +1,13 @@
+{
+  "replace": false,
+  "values": [
+    {
+      "id": "#forge:nuggets/bismuth",
+      "required": false
+    },
+    {
+      "id": "#forge:nuggets/ichorium",
+      "required": false
+    }
+  ]
+}

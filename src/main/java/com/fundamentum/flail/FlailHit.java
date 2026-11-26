@@ -21,12 +21,16 @@ public final class FlailHit {
     public final double speed;
     /** What the hand was doing: swing, spin, smash, launch or reel. */
     public final FlailSim.Mode mode;
-    /** The damage to deal; hooks may change it. */
+    /** How full the spin was (0 to 1): the live spin while spinning, the thrown charge on a smash or launch. */
+    public final double charge;
+    /** The damage to deal. Hooks may change it. */
     public float damage;
+    /** Extra knockback on top of the flail's own. Hooks may change it. */
+    public double knockback;
     private boolean cancelled;
 
     FlailHit(ServerPlayer player, ItemStack stack, FlailSpec spec, LivingEntity target, Vec3 contact, int head, boolean chain, double speed,
-             FlailSim.Mode mode, float damage) {
+             FlailSim.Mode mode, double charge, float damage) {
         this.player = player;
         this.stack = stack;
         this.spec = spec;
@@ -36,6 +40,7 @@ public final class FlailHit {
         this.chain = chain;
         this.speed = speed;
         this.mode = mode;
+        this.charge = charge;
         this.damage = damage;
     }
 

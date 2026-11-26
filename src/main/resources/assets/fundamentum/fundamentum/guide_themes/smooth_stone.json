@@ -1,0 +1,55 @@
+{
+  "name": "Smooth Stone",
+  "tags": [
+    "light",
+    "textured",
+    "minecraft"
+  ],
+  "style": "textured",
+  "backdrop": "#99000000",
+  "colors": {
+    "fill": "#FFF2F2F2",
+    "frame": "#000000",
+    "rule": "#C8C8CC",
+    "title": "#1E1E22",
+    "muted": "#5E5E66",
+    "text": "#1E1E22",
+    "strong": "#1E1E22",
+    "soft": "#343439",
+    "mod": "#343439",
+    "nav": "#1E1E22"
+  },
+  "shadow": false,
+  "accent": {
+    "shift": -0.5,
+    "selection": 70
+  },
+  "well": {
+    "fill": "#C8C8CC",
+    "light": "#C8C8CC",
+    "shadow": "#5E5E66",
+    "line": "#5E5E66"
+  },
+  "page": {
+    "text": "#1E1E22",
+    "muted": "#5E5E66",
+    "code": "#8A5A00",
+    "rule": [
+      "#C8C8CC",
+      "#C8C8CC"
+    ],
+    "shadow": false
+  },
+  "slot": {
+    "fill": "#C8C8CC",
+    "edge": "#5E5E66"
+  },
+  "texture": {
+    "background": "minecraft:textures/block/smooth_stone.png",
+    "border": "minecraft:textures/block/stone_bricks.png",
+    "tint": "#14FFFFFF",
+    "border_tint": "#3C000000",
+    "border_width": 5,
+    "well": "#E6F2F2F2"
+  }
+}

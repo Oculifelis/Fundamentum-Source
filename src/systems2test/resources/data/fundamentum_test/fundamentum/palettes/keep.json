@@ -1,0 +1,13 @@
+{
+  "roles": {
+    "wall": [
+      {"set": "minecraft:stone_bricks", "weight": 3},
+      {"set": "minecraft:deepslate_bricks", "weight": 1},
+      {"set": "fundamentum_test:no_such_set", "weight": 5},
+      {"set": "minecraft:oak", "weight": 0}
+    ],
+    "floor": ["minecraft:oak"],
+    "roof": []
+  },
+  "fallback": "minecraft:bricks"
+}

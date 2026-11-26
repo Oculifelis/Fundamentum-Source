@@ -1,0 +1,9 @@
+{
+  "profession": "minecraft:weaponsmith",
+  "level": 1,
+  "wants": {"item": "minecraft:diamond", "count": 3},
+  "wants_b": {"item": "minecraft:stick"},
+  "gives": {"item": "minecraft:wooden_sword"},
+  "max_uses": 7,
+  "xp": 2
+}

@@ -71,6 +71,8 @@ public final class ThrownWeapons {
     public static final TagKey<Item> ENCHANTABLE_THROWN = itemTag("enchantable/thrown");
     /** Items the return-only enchantments go on. */
     public static final TagKey<Item> ENCHANTABLE_BOOMERANG = itemTag("enchantable/boomerang");
+    /** Thrown weapons that fly through water as fast as through air. */
+    public static final TagKey<Item> NO_WATER_DRAG = itemTag("thrown/no_water_drag");
 
     /** The damage class of thrown hits ({@code fundamentum:thrower}, attribute {@code fundamentum:thrower_damage}). */
     public static final DamageClasses.DamageClass CLASS = DamageClasses.THROWER;

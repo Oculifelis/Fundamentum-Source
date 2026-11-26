@@ -1,0 +1,1 @@
+{ "stats": [ { "id": "stattest:magic", "default": 3, "min": 0, "max": 50 } ] }

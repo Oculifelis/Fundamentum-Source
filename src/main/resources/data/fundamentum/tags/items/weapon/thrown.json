@@ -1,0 +1,13 @@
+{
+  "replace": false,
+  "values": [
+    {
+      "id": "#fundamentum:thrown",
+      "required": false
+    },
+    {
+      "id": "minecraft:trident",
+      "required": false
+    }
+  ]
+}

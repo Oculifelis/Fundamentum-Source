@@ -462,6 +462,7 @@ public final class Effects {
     }
 
     private static void removeById(LivingEntity entity, ResourceLocation id) {
+        com.fundamentum.stat.Stats.removeModifiers(entity, com.fundamentum.port.FId.of(id.toString()));
         java.util.UUID uuid = com.fundamentum.attribute.AttributeBonus.uuid(id);
         for (net.minecraft.world.entity.ai.attributes.Attribute attribute : BuiltInRegistries.ATTRIBUTE) {
             AttributeInstance instance = entity.getAttribute(attribute);

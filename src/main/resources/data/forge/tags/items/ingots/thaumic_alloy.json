@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    {
+      "id": "taintedmagic:thaumic_alloy",
+      "required": false
+    }
+  ]
+}

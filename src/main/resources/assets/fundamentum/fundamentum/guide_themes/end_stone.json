@@ -1,0 +1,56 @@
+{
+  "name": "End Stone",
+  "tags": [
+    "light",
+    "fantasy",
+    "textured",
+    "minecraft"
+  ],
+  "style": "textured",
+  "backdrop": "#99000000",
+  "colors": {
+    "fill": "#FFF6F2D6",
+    "frame": "#000000",
+    "rule": "#D8D0B0",
+    "title": "#2A2032",
+    "muted": "#4A3A5A",
+    "text": "#2A2032",
+    "strong": "#2A2032",
+    "soft": "#352940",
+    "mod": "#352940",
+    "nav": "#2A2032"
+  },
+  "shadow": false,
+  "accent": {
+    "shift": -0.5,
+    "selection": 70
+  },
+  "well": {
+    "fill": "#D8D0B0",
+    "light": "#D8D0B0",
+    "shadow": "#4A3A5A",
+    "line": "#6A4A8A"
+  },
+  "page": {
+    "text": "#2A2032",
+    "muted": "#4A3A5A",
+    "code": "#8A5A00",
+    "rule": [
+      "#D8D0B0",
+      "#D8D0B0"
+    ],
+    "shadow": false
+  },
+  "slot": {
+    "fill": "#D8D0B0",
+    "edge": "#4A3A5A"
+  },
+  "texture": {
+    "background": "minecraft:textures/block/end_stone_bricks.png",
+    "border": "minecraft:textures/block/amethyst_block.png",
+    "tint": "#0AFFFFFF",
+    "border_tint": "#3C000000",
+    "border_width": 5,
+    "well": "#E1F6F2D6"
+  }
+}

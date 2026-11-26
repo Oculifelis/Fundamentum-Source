@@ -1,0 +1,21 @@
+{
+  "replace": false,
+  "values": [
+    {
+      "id": "#minecraft:swords",
+      "required": false
+    },
+    {
+      "id": "#minecraft:axes",
+      "required": false
+    },
+    {
+      "id": "#fundamentum:scythes",
+      "required": false
+    },
+    {
+      "id": "#fundamentum:whips",
+      "required": false
+    }
+  ]
+}

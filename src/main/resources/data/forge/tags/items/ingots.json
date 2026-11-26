@@ -1,0 +1,25 @@
+{
+  "replace": false,
+  "values": [
+    {
+      "id": "#forge:ingots/bismuth",
+      "required": false
+    },
+    {
+      "id": "#forge:ingots/shadowmetal",
+      "required": false
+    },
+    {
+      "id": "#forge:ingots/thaumic_alloy",
+      "required": false
+    },
+    {
+      "id": "#forge:ingots/ichorium",
+      "required": false
+    },
+    {
+      "id": "#forge:ingots/neutronized_metal",
+      "required": false
+    }
+  ]
+}

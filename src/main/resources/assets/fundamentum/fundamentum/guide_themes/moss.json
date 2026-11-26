@@ -1,0 +1,46 @@
+{
+  "name": "Moss",
+  "tags": [
+    "dark",
+    "minecraft"
+  ],
+  "style": "flat",
+  "backdrop": "#BF000000",
+  "colors": {
+    "fill": "#F51C2414",
+    "frame": "#33402A",
+    "rule": "#33402A",
+    "title": "#B4D278",
+    "muted": "#8EA26A",
+    "text": "#E4ECD0",
+    "strong": "#E4ECD0",
+    "soft": "#C5D2AC",
+    "mod": "#C5D2AC",
+    "nav": "#C5D2AC"
+  },
+  "shadow": true,
+  "accent": {
+    "shift": 0.0,
+    "selection": 60
+  },
+  "well": {
+    "fill": "#33402A",
+    "light": "#33402A",
+    "shadow": "#8EA26A",
+    "line": "#33402A"
+  },
+  "page": {
+    "text": "#E4ECD0",
+    "muted": "#8EA26A",
+    "code": "#E8C870",
+    "rule": [
+      "#33402A",
+      "#33402A"
+    ],
+    "shadow": true
+  },
+  "slot": {
+    "fill": "#33402A",
+    "edge": "#8EA26A"
+  }
+}

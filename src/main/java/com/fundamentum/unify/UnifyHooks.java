@@ -127,6 +127,19 @@ public final class UnifyHooks {
         for (ItemStack g : gone) event.getEntries().remove(g);
     }
 
+    /**
+     * Rebuilds every creative tab the way a client does on joining a world and says whether {@code item} still shows in
+     * a tab or in search (for the unify test).
+     */
+    public static boolean shownInTabs(net.minecraft.server.MinecraftServer server, Item item) {
+        net.minecraft.world.item.CreativeModeTabs.tryRebuildTabContents(server.getWorldData().enabledFeatures(), true, server.registryAccess());
+        for (CreativeModeTab tab : net.minecraft.world.item.CreativeModeTabs.allTabs()) {
+            for (ItemStack s : tab.getDisplayItems()) if (s.is(item)) return true;
+            for (ItemStack s : tab.getSearchTabDisplayItems()) if (s.is(item)) return true;
+        }
+        return false;
+    }
+
     /** Publishes the map once the whole datapack load has prepared. */
     private static final class Listener extends SimplePreparableReloadListener<UnifyMap> {
         @Override

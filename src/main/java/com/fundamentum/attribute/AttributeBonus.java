@@ -1,5 +1,7 @@
 package com.fundamentum.attribute;
 
+import com.fundamentum.port.FId;
+import com.fundamentum.stat.Stats;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import java.util.ArrayList;
@@ -26,9 +28,16 @@ import net.minecraft.world.entity.ai.attributes.AttributeModifier;
  * <pre>{"attribute": "minecraft:max_health", "amount": 4, "operation": "add_value"}</pre>
  * {@code operation} is {@code add_value} (the default), {@code add_multiplied_base} or {@code add_multiplied_total}; the older
  * names {@code addition}, {@code multiply_base} and {@code multiply_total} are read too, so one file works on every version.
+ * A bonus can name a Fundamentum stat instead ({@code {"stat": "mymod:magic_power", "amount": 2}}): it then adds a stat
+ * modifier ({@link Stats#addModifier}) rather than an attribute one, so data stats work in armour sets and effects too.
+ * Then {@code attribute} is null and {@code stat} is set; otherwise {@code stat} is null.
  * Modifiers are transient: whoever applies one removes it again by the same id (made into a UUID on this version).
  */
-public record AttributeBonus(Holder<Attribute> attribute, double amount, Op operation) {
+public record AttributeBonus(Holder<Attribute> attribute, double amount, Op operation, FId stat) {
+    public AttributeBonus(Holder<Attribute> attribute, double amount, Op operation) {
+        this(attribute, amount, operation, null);
+    }
+
     /** The operation, by the same names on every version. */
     public enum Op { ADD_VALUE, ADD_MULTIPLIED_BASE, ADD_MULTIPLIED_TOTAL }
 
@@ -37,6 +46,10 @@ public record AttributeBonus(Holder<Attribute> attribute, double amount, Op oper
     }
 
     public static AttributeBonus parse(JsonObject json) {
+        if (json.has("stat")) {
+            return new AttributeBonus(null, GsonHelper.getAsDouble(json, "amount"), op(GsonHelper.getAsString(json, "operation", "add_value")),
+                FId.of(GsonHelper.getAsString(json, "stat")));
+        }
         ResourceLocation id = new ResourceLocation(GsonHelper.getAsString(json, "attribute"));
         Holder<Attribute> attribute = lookup(id);
         if (attribute == null) {
@@ -97,6 +110,10 @@ public record AttributeBonus(Holder<Attribute> attribute, double amount, Op oper
 
     /** Adds (or replaces) this bonus on {@code entity} under {@code id}, its amount times {@code scale}. */
     public void apply(LivingEntity entity, ResourceLocation id, double scale) {
+        if (this.stat != null) {
+            Stats.addModifier(entity, this.stat, FId.of(id.toString()), this.amount * scale, this.operation);
+            return;
+        }
         AttributeInstance instance = entity.getAttribute(this.attribute.value());
         if (instance == null) {
             return;
@@ -108,6 +125,10 @@ public record AttributeBonus(Holder<Attribute> attribute, double amount, Op oper
 
     /** Takes the bonus added under {@code id} off again. */
     public void remove(LivingEntity entity, ResourceLocation id) {
+        if (this.stat != null) {
+            Stats.removeModifier(entity, this.stat, FId.of(id.toString()));
+            return;
+        }
         AttributeInstance instance = entity.getAttribute(this.attribute.value());
         if (instance != null) {
             instance.removeModifier(uuid(id));
@@ -123,7 +144,9 @@ public record AttributeBonus(Holder<Attribute> attribute, double amount, Op oper
     public Component describe(double scale) {
         double v = this.amount * scale;
         String number = this.operation == Op.ADD_VALUE ? trim(v) : trim(v * 100) + "%";
-        return Component.literal((v >= 0 ? "+" : "") + number + " ").append(Component.translatable(this.attribute.value().getDescriptionId()));
+        return Component.literal((v >= 0 ? "+" : "") + number + " ").append(this.stat != null
+            ? Component.translatableWithFallback(Stats.def(this.stat).name(), this.stat.path())
+            : Component.translatable(this.attribute.value().getDescriptionId()));
     }
 
     private static String trim(double v) {

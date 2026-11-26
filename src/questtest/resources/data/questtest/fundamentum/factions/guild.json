@@ -1,0 +1,20 @@
+{
+  "name": "Guild",
+  "members": [
+    "minecraft:villager"
+  ],
+  "ranks": [
+    {
+      "id": "neutral",
+      "min": -1000
+    },
+    {
+      "id": "trusted",
+      "min": 50
+    }
+  ],
+  "actions": {
+    "quest_done": 20,
+    "quest_failed": -10
+  }
+}

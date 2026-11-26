@@ -1,9 +1,10 @@
 {
   "required": true,
+  "refmap": "fundamentum.refmap.json",
   "minVersion": "0.8",
   "package": "com.fundamentum.mixin",
   "compatibilityLevel": "JAVA_17",
-  "mixins": ["LivingEntityMixin", "EnchantmentMixin", "LivingEntityShieldMixin", "MobMixin", "BiomeSourceMixin", "MultiNoiseBiomeSourceMixin", "NoiseGeneratorSettingsMixin", "ChunkGeneratorMixin", "UnifyRecipeManagerMixin", "UnifyHopperMixin", "UnifyItemHandlerMixin", "FoodFinishMixin", "GameEventsMixin", "InventoryEventsMixin"],
-  "client": ["SoulFlameMixin", "SoulScreenFireMixin", "ClientLevelMixin", "DimensionSpecialEffectsMixin", "EntityGlowMixin", "JukeboxEventsMixin", "WindowMixin", "QuadEmissionMixin", "BiomeTintMixin", "GhostBlockMixin"],
+  "mixins": ["ChunkMapAccessor", "TrackedEntityAccessor", "LivingEntityMixin", "EnchantmentMixin", "LivingEntityShieldMixin", "MobMixin", "BiomeSourceMixin", "MultiNoiseBiomeSourceMixin", "NoiseGeneratorSettingsMixin", "ChunkGeneratorMixin", "UnifyRecipeManagerMixin", "UnifyHopperMixin", "UnifyItemHandlerMixin", "FoodFinishMixin", "GameEventsMixin", "InventoryEventsMixin", "PlayerStateMixin", "PlayerHealthMixin", "StatCounterMixin", "ScoreEventsMixin", "VillagerPriceMixin"],
+  "client": ["SoulFlameMixin", "SoulScreenFireMixin", "ClientLevelMixin", "DimensionSpecialEffectsMixin", "EntityGlowMixin", "JukeboxEventsMixin", "WindowMixin", "QuadEmissionMixin", "BiomeTintMixin", "GhostBlockMixin", "PoseBodyMixin", "PoseItemMixin"],
   "injectors": {"defaultRequire": 1}
 }

@@ -10,6 +10,7 @@ import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
@@ -86,7 +87,8 @@ public final class FVanilla {
 
     /** The attribute instance by id, or null when the entity has no such attribute. */
     public static AttributeInstance attribute(LivingEntity entity, FId id) {
-        Attribute a = BuiltInRegistries.ATTRIBUTE.containsKey(id.vanilla()) ? BuiltInRegistries.ATTRIBUTE.get(id.vanilla()) : null;
+        // the Forge registry follows aliases (an Apothic-folded stat's old id); the vanilla view's containsKey does not
+        Attribute a = net.minecraftforge.registries.ForgeRegistries.ATTRIBUTES.getValue(id.vanilla());
         return a == null ? null : entity.getAttribute(a);
     }
 
@@ -274,6 +276,21 @@ public final class FVanilla {
         return EntityType.create(tag, level).orElse(null);
     }
 
+    /** The entity's saved data without its type id, as a player's is saved; pairs with {@link #loadInto}. */
+    public static CompoundTag saveData(Entity entity) {
+        return entity.saveWithoutId(new CompoundTag());
+    }
+
+    /** Reads a saved tag into an existing entity, attached data included (tests: a player read back from its save). */
+    public static void loadInto(Entity entity, CompoundTag tag) {
+        entity.load(tag);
+    }
+
+    /** Reads a value with a codec from a tag, with the level's registries where the version needs them; null if it fails. */
+    public static <T> T parse(com.mojang.serialization.Codec<T> codec, Tag tag, Level level) {
+        return codec.parse(NbtOps.INSTANCE, tag).result().orElse(null);
+    }
+
     public static CompoundTag saveBlockEntity(BlockEntity be, Level level) {
         return be.saveWithFullMetadata();
     }
@@ -322,6 +339,17 @@ public final class FVanilla {
         return statValue(player, BuiltInRegistries.STAT_TYPE.get(type.vanilla()), value);
     }
 
+    /** The vanilla stat of this type and value (like minecraft:custom and minecraft:jump), or null when either is unknown. */
+    public static net.minecraft.stats.Stat<?> stat(FId type, FId value) {
+        if (!BuiltInRegistries.STAT_TYPE.containsKey(type.vanilla())) return null;
+        return stat(BuiltInRegistries.STAT_TYPE.get(type.vanilla()), value);
+    }
+
+    private static <T> net.minecraft.stats.Stat<T> stat(net.minecraft.stats.StatType<T> type, FId value) {
+        if (!type.getRegistry().containsKey(value.vanilla())) return null;
+        return type.get(type.getRegistry().get(value.vanilla()));
+    }
+
     private static <T> int statValue(ServerPlayer player, net.minecraft.stats.StatType<T> type, FId value) {
         if (!type.getRegistry().containsKey(value.vanilla())) return 0;
         return player.getStats().getValue(type.get(type.getRegistry().get(value.vanilla())));
@@ -349,5 +377,56 @@ public final class FVanilla {
     public static boolean structurePieceAt(ServerLevel level, BlockPos pos, FId id) {
         ResourceKey<net.minecraft.world.level.levelgen.structure.Structure> key = ResourceKey.create(Registries.STRUCTURE, id.vanilla());
         return level.structureManager().getStructureWithPieceAt(pos, key).isValid();
+    }
+
+    // ---- small loader and version helpers (1.31.0) ----
+
+    private static final String[] ATTACK_STRENGTH_NAMES = {"attackStrengthTicker", "f_20922_"};
+    private static java.lang.reflect.Field attackStrength;
+
+    /** True when the mod with this id is loaded. Safe to call early: false while the mod list isn't built yet. */
+    public static boolean modLoaded(String modId) {
+        return net.minecraftforge.fml.ModList.get() != null && net.minecraftforge.fml.ModList.get().isLoaded(modId);
+    }
+
+    /** True on the physical client (also for its integrated server), false on a dedicated server. */
+    public static boolean isClient() {
+        return net.minecraftforge.fml.loading.FMLEnvironment.dist.isClient();
+    }
+
+    /** Plays the main-hand arm swing and shows it to players nearby. */
+    public static void swing(LivingEntity entity) {
+        entity.swing(net.minecraft.world.InteractionHand.MAIN_HAND, true);
+    }
+
+    /** Fills a player's attack charge, so the next hit lands at full strength whatever the click timing was. */
+    public static boolean chargeAttack(net.minecraft.world.entity.player.Player player) {
+        try {
+            if (attackStrength == null) attackStrength = findAttackStrength(player.getClass());
+            attackStrength.setInt(player, 10000);
+            return true;
+        } catch (ReflectiveOperationException | RuntimeException e) {
+            return false;
+        }
+    }
+
+    private static java.lang.reflect.Field findAttackStrength(Class<?> type) throws NoSuchFieldException {
+        for (Class<?> c = type; c != null; c = c.getSuperclass()) {
+            for (String name : ATTACK_STRENGTH_NAMES) {
+                try {
+                    java.lang.reflect.Field f = c.getDeclaredField(name);
+                    f.setAccessible(true);
+                    return f;
+                } catch (NoSuchFieldException e) {
+                    // look further up
+                }
+            }
+        }
+        throw new NoSuchFieldException("attackStrengthTicker");
+    }
+
+    /** How far a player can hit an entity, in blocks (3 in survival, more with reach attributes). */
+    public static double attackReach(net.minecraft.world.entity.player.Player player) {
+        return player.getAttributeValue(net.minecraftforge.common.ForgeMod.ENTITY_REACH.get());
     }
 }

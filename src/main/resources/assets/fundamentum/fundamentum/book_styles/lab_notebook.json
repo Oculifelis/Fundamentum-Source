@@ -1,0 +1,119 @@
+{
+ "name": "Lab notebook",
+ "colors": {
+  "ink": "1e2a40",
+  "dim": "6a7080",
+  "accent": "c23a3a",
+  "rule": "a8c4d8",
+  "card": "ffffff",
+  "card_edge": "a8c4d8",
+  "page": "f6f4ec",
+  "gold": "c8a048",
+  "banner": "e8e2a0",
+  "leather": "2e4a6a"
+ },
+ "title_text": "1e2a40",
+ "title_shadow": null,
+ "title_upper": false,
+ "card_text": "1e2a40",
+ "stamp_text": "1e2a40",
+ "rule_color": "a8c4d8",
+ "bullet": "-",
+ "numerals": "plain",
+ "right": "standard",
+ "header": "field_notes",
+ "frame": "polaroid",
+ "window": {
+  "x": -164,
+  "y": -66,
+  "w": 72,
+  "h": 56,
+  "oval": false,
+  "ground": 46
+ },
+ "caption": {
+  "x": -128,
+  "y": -7,
+  "color": "3a4a7a"
+ },
+ "stamp_label_dy": 16,
+ "layers": {
+  "spread": {
+   "x": -188,
+   "y": -118,
+   "w": 376,
+   "h": 236,
+   "tw": 376,
+   "th": 236
+  },
+  "closed": {
+   "x": 0,
+   "y": -118,
+   "w": 188,
+   "h": 236,
+   "tw": 188,
+   "th": 236
+  },
+  "title": {
+   "x": -168,
+   "y": -102,
+   "w": 157,
+   "h": 19,
+   "tw": 157,
+   "th": 19
+  },
+  "portrait": {
+   "x": -168,
+   "y": -72,
+   "w": 82,
+   "h": 80,
+   "tw": 82,
+   "th": 80
+  },
+  "stamp_on": {
+   "x": 17,
+   "y": 32,
+   "w": 25,
+   "h": 25,
+   "tw": 25,
+   "th": 25
+  },
+  "stamp_off": {
+   "x": 17,
+   "y": 32,
+   "w": 25,
+   "h": 25,
+   "tw": 25,
+   "th": 25
+  },
+  "tab": {
+   "x": -150,
+   "y": -127,
+   "w": 22,
+   "h": 15,
+   "tw": 22,
+   "th": 15
+  },
+  "tab_up": {
+   "x": -150,
+   "y": -131,
+   "w": 22,
+   "h": 19,
+   "tw": 22,
+   "th": 19
+  }
+ },
+ "animation": {
+  "open_ticks": 16,
+  "turn_ticks": 12,
+  "close_ticks": 16,
+  "stamp_ticks": 11
+ },
+ "sounds": {
+  "open": "minecraft:item.book.page_turn",
+  "turn": "minecraft:item.book.page_turn",
+  "click": "minecraft:ui.button.click",
+  "stamp": "minecraft:item.honeycomb.wax_on",
+  "close": "minecraft:item.book.put"
+ }
+}

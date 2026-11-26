@@ -1,5 +1,7 @@
 package com.fundamentum.stat;
 
+import com.fundamentum.attribute.AttributeBonus;
+import com.fundamentum.attribute.StartupStats;
 import com.fundamentum.condition.Conditions;
 import com.fundamentum.event.Events;
 import com.fundamentum.event.FEvents;
@@ -30,7 +32,7 @@ import org.slf4j.LoggerFactory;
  * The stat test, only in {@code gradlew runServer -Pstattest} (world under run-stattest). The same file on every
  * version. Checks stored stats (declared and not), clamping, each built-in source, formatting, item and entity stats,
  * tooltips, the {@code stat} condition, the command, {@link Events.StatChanged}, the once-a-second check and the save and
- * sync codecs. Writes stattest-result.txt and stops the server. Log lines start with STATTEST.
+ * sync codecs, the vanilla statistic and scoreboard hooks, stat modifiers and startup stats (real attributes). Writes stattest-result.txt and stops the server. Log lines start with STATTEST.
  */
 public final class StatSelfTest {
     private StatSelfTest() { }
@@ -196,6 +198,91 @@ public final class StatSelfTest {
         before = CHANGED.size();
         Stats.scan(p);
         check(CHANGED.size() == before, "nothing changed, nothing posted");
+
+        // announced changes: vanilla statistics and scores
+        Stats.testPlayer = p;
+        Stats.flushPending(p);
+        p.awardStat(net.minecraft.stats.Stats.JUMP);
+        check(Stats.pending(p), "a watched vanilla statistic marks the player");
+        before = CHANGED.size();
+        Stats.flushPending(p);
+        c = lastChange(p, id("jumps"));
+        check(!Stats.pending(p) && CHANGED.size() > before && c != null && c.to() == c.from() + 1,
+            "the marked player's vanilla_stat stat posts StatChanged");
+        p.awardStat(net.minecraft.stats.Stats.WALK_ONE_CM);
+        check(!Stats.pending(p), "an unwatched vanilla statistic does not");
+        command(server, null, "scoreboard players set StatTester stattest 20");
+        check(Stats.pending(p), "a score change marks the player");
+        Stats.flushPending(p);
+        c = lastChange(p, id("score"));
+        check(c != null && c.to() == 20, "the marked player's scoreboard stat posts StatChanged");
+        command(server, null, "scoreboard players set Nobody stattest 3");
+        check(!Stats.pending(p), "another holder's score does not mark the player");
+
+        // modifiers
+        FId pw = id("power");
+        Stats.set(p, pw, 4);
+        before = CHANGED.size();
+        check(Stats.addModifier(p, pw, id("a"), 2, AttributeBonus.Op.ADD_VALUE) && Stats.get(p, pw) == 6 && Stats.base(p, pw) == 4,
+            "an add modifier adds to the value, not the base");
+        c = lastChange(p, pw);
+        check(CHANGED.size() > before && c != null && c.from() == 4 && c.to() == 6, "adding a modifier posts StatChanged");
+        Stats.addModifier(p, pw, id("b"), 0.5, AttributeBonus.Op.ADD_MULTIPLIED_BASE);
+        check(near(Stats.get(p, pw), 9), "multiply_base scales base plus adds (" + Stats.get(p, pw) + ")");
+        Stats.addModifier(p, pw, id("t"), 1, AttributeBonus.Op.ADD_MULTIPLIED_TOTAL);
+        check(Stats.get(p, pw) == 10, "the modified value is clamped to max");
+        check(Stats.removeModifier(p, pw, id("t")) && near(Stats.get(p, pw), 9), "removing a modifier undoes it");
+        check(!Stats.removeModifier(p, pw, id("t")), "removing a missing modifier says so");
+        Stats.add(p, pw, 1);
+        check(Stats.base(p, pw) == 5 && near(Stats.get(p, pw), 10), "add changes the base under the modifiers");
+        Stats.set(p, pw, 4);
+        Stats.removeModifiers(p, id("a"));
+        check(near(Stats.get(p, pw), 6) && Stats.modifiers(p, pw).size() == 1, "removeModifiers takes one id off");
+        command(server, p, "fundamentum stat modifier add @s stattest:power stattest:cmd 2 add_value");
+        check(near(Stats.get(p, pw), 9), "/fundamentum stat modifier add works (" + Stats.get(p, pw) + ")");
+        command(server, p, "fundamentum stat modifier remove @s stattest:power stattest:cmd");
+        check(near(Stats.get(p, pw), 6), "/fundamentum stat modifier remove works");
+        Stats.removeModifier(p, pw, id("b"));
+        check(Stats.get(p, pw) == 4 && Stats.modifiers(p, pw).isEmpty(), "with no modifiers the value is the base");
+        check(!Stats.addModifier(p, id("sharpness"), id("a"), 1, AttributeBonus.Op.ADD_VALUE), "item stats take no modifiers");
+        AttributeBonus bonus = AttributeBonus.parse(JsonParser.parseString("{\"stat\":\"stattest:power\",\"amount\":3}").getAsJsonObject());
+        check(bonus.attribute() == null && pw.equals(bonus.stat()), "a bonus can name a stat");
+        bonus.apply(p, id("set_bonus").vanilla(), 1);
+        check(Stats.get(p, pw) == 7, "applying a stat bonus adds a stat modifier");
+        bonus.remove(p, id("set_bonus").vanilla());
+        check(Stats.get(p, pw) == 4, "removing the stat bonus takes it off");
+
+        // startup stats
+        FId magic = id("magic");
+        check(StartupStats.entries().containsKey(magic), "a jar's startup stat is read (" + StartupStats.entries().keySet() + ")");
+        check(net.minecraft.core.registries.BuiltInRegistries.ATTRIBUTE.containsKey(magic.vanilla()), "a startup stat is a registered attribute");
+        check(Stats.declared(magic) && "attribute".equals(Stats.def(magic).sourceType()), "a startup stat is declared as an attribute stat");
+        check(Stats.get(p, magic) == 3 && Stats.get(z, magic) == 3, "players and mobs have it at its default");
+        Stats.addModifier(z, magic, id("a"), 4, AttributeBonus.Op.ADD_VALUE);
+        check(Stats.get(z, magic) == 7, "a startup stat takes modifiers");
+        Stats.removeModifier(z, magic, id("a"));
+        try {
+            Path dir = Path.of("stattest-startup");
+            Files.createDirectories(dir.resolve("stattest"));
+            Files.writeString(dir.resolve("stattest").resolve("extra.json"), "{\"default\": 2, \"max\": 5}");
+            Files.writeString(dir.resolve("loose.json"), "{\"id\": \"stattest:loose\"}");
+            Files.writeString(dir.resolve("bad.json"), "{\"default\": 9}");
+            Files.writeString(dir.resolve("stattest").resolve("broken.json"), "{\"default\": 9, \"max\": 5}");
+            Map<FId, StartupStats.Entry> cfg = StartupStats.fromConfig(dir);
+            StartupStats.Entry extra = cfg.get(id("extra"));
+            check(extra != null && extra.base() == 2 && extra.max() == 5 && "attribute.name.stattest.extra".equals(extra.name()),
+                "a config stat file takes its id from its path");
+            check(cfg.containsKey(id("loose")) && cfg.size() == 2, "a loose file needs an id, a broken one is skipped (" + cfg.keySet() + ")");
+        } catch (IOException e) {
+            check(false, "the startup stat files could not be written: " + e);
+        }
+        boolean refused = false;
+        try {
+            StartupStats.entry(FId.of("minecraft", "nope"), new com.google.gson.JsonObject());
+        } catch (IllegalArgumentException e) {
+            refused = true;
+        }
+        check(refused, "a startup stat cannot use the minecraft namespace");
 
         // sync
         Map<String, Double> values = Stats.values(p);

@@ -50,9 +50,14 @@ import org.slf4j.LoggerFactory;
  * Survival meters (thirst, body temperature, fatigue and the like), defined in data under
  * {@code data/<ns>/fundamentum/survival/} (see {@link Meter}). No meter exists unless a mod or data pack adds one.
  * Each meter's value is a stat, so it saves, syncs, shows in the stats screen and works in {@code stat} conditions.
- * Meters run for every online player in survival or adventure mode, one step every {@code survival_step_seconds} (the
- * {@code fundamentum:performance} config, 1 by default), each player on its own tick of that cycle so the work is spread
- * out. A longer step does the same seconds of change in one go.
+ * Meters run for every online player in survival or adventure mode. They change in whole seconds, the same as a step every
+ * second, but nothing is checked every second: each player keeps a plan (which rules hold right now) that is rebuilt only
+ * when something a rule reads changes, and the meters are brought up to date only when a value crosses a whole number or
+ * a threshold, a threshold's effect needs renewing or its damage is due. Events rebuild the plan: eating, hurt and heal,
+ * effects, sprinting, sneaking, swimming and sleeping, equipment and slots, dimension and section changes, respawn, a
+ * meter stat set from outside and a data reload. Rules that read things no event reports (moving, water, rain, fire,
+ * lava, climate and general conditions) are checked again every {@code survival_recheck_seconds} (the
+ * {@code fundamentum:performance} config, 5 by default); every plan is checked again after 30 seconds as a safety net.
  */
 public final class Survival {
     private Survival() { }
@@ -75,25 +80,45 @@ public final class Survival {
         public static final FStreamCodec<DrinkRequest> CODEC = FStreamCodec.unit(new DrinkRequest());
     }
 
-    /** Per player state that is not saved: last position, damage timers, drink cooldown. */
+    /** Per player state that is not saved: the plan, the schedule, last position, damage timers, drink cooldown. */
     private static final class Track {
-        double x, y, z;
+        double x, z;
         boolean placed;
         boolean moving;
+        long sampled;
         long lastDrink = Long.MIN_VALUE;
         final Map<String, Integer> timers = new HashMap<>();
         final java.util.Set<String> active = new java.util.HashSet<>();
+        /** The entity last seen, to notice a respawn (a new ServerPlayer object). */
+        ServerPlayer entity;
+        /** Clock tick the meters were last brought up to date; whole seconds are counted from it. */
+        long last;
+        /** Clock tick of the next scheduled update, and of the next plan check. */
+        long wake;
+        long recheck;
+        boolean dirty = true;
+        int epoch = -1;
+        /** Per meter, the steps that hold now: {0, amount} or {1, climate target, rate}. A meter left out is exempt. */
+        Map<FId, double[][]> plan = Map.of();
     }
+
+    /** Activities some event reports when they change; any other input to a rule is checked on the slow recheck. */
+    private static final java.util.Set<String> EVENTED = java.util.Set.of("sprinting", "swimming", "sneaking", "sleeping");
+    /** A plan is checked again after this long even when nothing said it changed. */
+    private static final int SAFETY_SECONDS = 30;
 
     private static volatile Map<FId, Meter> meters = Map.of();
     private static volatile Map<FId, Meter> clientMeters = Map.of();
     private static final java.util.concurrent.atomic.AtomicInteger CLIENT_VERSION = new java.util.concurrent.atomic.AtomicInteger();
     private static final Map<UUID, Track> TRACK = new ConcurrentHashMap<>();
-    private static final Map<UUID, ServerPlayer> LAST_ENTITY = new ConcurrentHashMap<>();
     private static volatile boolean defsChanged;
-    private static int ticks;
+    /** Meters with a rule that reads something no event reports. */
+    private static volatile java.util.Set<FId> polled = java.util.Set.of();
+    private static volatile int epoch;
+    private static long clock;
     private static boolean initialised;
-    private static ConfigValue<Integer> step;
+    private static boolean writing;
+    private static ConfigValue<Integer> recheck;
 
     /** Called once while Fundamentum loads. */
     public static void init() {
@@ -108,17 +133,36 @@ public final class Survival {
         });
         FLife.jsonData(FId.of("fundamentum", "survival"), "fundamentum/survival", Survival::load);
         FLife.serverTick(Survival::tick);
-        step = Timers.seconds("survival_step_seconds", 1);
+        recheck = Timers.seconds("survival_recheck_seconds", 5);
         FLife.serverStopped(s -> {
-            ticks = 0;
+            clock = 0;
             TRACK.clear();
-            LAST_ENTITY.clear();
         });
         FLife.playerLoggedIn(p -> {
             FNet.toPlayer(p, defsMessage());
             TRACK.remove(p.getUUID());
         });
-        FEvents.listen(FoodConsumed.class, (FoodConsumed e) -> consumed(e.player(), e.stack()));
+        FEvents.listen(FoodConsumed.class, (FoodConsumed e) -> {
+            consumed(e.player(), e.stack());
+            touch(e.player());
+        });
+        FLife.playerStateChanged(Survival::touch);
+        FLife.sectionEntered(Survival::touch);
+        FLife.inventoryChanged(Survival::touch);
+        FLife.handsChanged(Survival::touch);
+        FLife.playerChangedDimension((p, from, to) -> touch(p));
+        FLife.effectsChanged(e -> {
+            if (e instanceof ServerPlayer p) touch(p);
+        });
+        FEvents.listen(Events.SlotEquipped.class, (Events.SlotEquipped e) -> {
+            if (e.entity() instanceof ServerPlayer p) touch(p);
+        });
+        FEvents.listen(Events.SlotUnequipped.class, (Events.SlotUnequipped e) -> {
+            if (e.entity() instanceof ServerPlayer p) touch(p);
+        });
+        FEvents.listen(Events.StatChanged.class, (Events.StatChanged e) -> {
+            if (!writing && e.entity() instanceof ServerPlayer p && meterStat(e.stat())) touch(p);
+        });
         Conditions.register("activity", (json, ctx) -> {
             if (!(ctx.entity() instanceof ServerPlayer p) || !json.has("is")) return false;
             JsonElement is = json.get("is");
@@ -139,6 +183,13 @@ public final class Survival {
 
     // ---- data
 
+    /** A meter's optional {@code requires} (every mod listed must be loaded) and {@code unless} (none may be). */
+    private static boolean modsAllow(JsonObject o) {
+        if (o.has("requires")) for (JsonElement m : o.getAsJsonArray("requires")) if (!com.fundamentum.port.FClimate.modLoaded(m.getAsString())) return false;
+        if (o.has("unless")) for (JsonElement m : o.getAsJsonArray("unless")) if (com.fundamentum.port.FClimate.modLoaded(m.getAsString())) return false;
+        return true;
+    }
+
     private static void load(Map<FId, List<JsonElement>> files) {
         Map<FId, Meter> out = new TreeMap<>();
         files.forEach((id, list) -> {
@@ -146,12 +197,19 @@ public final class Survival {
             try {
                 JsonObject o = last.getAsJsonObject();
                 if (o.has("disabled") && o.get("disabled").getAsBoolean()) return;
+                if (!modsAllow(o)) return;
                 out.put(id, Meter.parse(id, o));
             } catch (RuntimeException e) {
                 LOG.error("Survival meter {} is broken: {}", id, e.toString());
             }
         });
         meters = Collections.unmodifiableMap(out);
+        java.util.Set<FId> poll = new java.util.HashSet<>();
+        for (Meter m : out.values()) {
+            for (Meter.Rule r : m.rules()) if (r.climate() != null || !evented(r.when())) poll.add(m.id());
+        }
+        polled = java.util.Set.copyOf(poll);
+        epoch++;
         defsChanged = true;
         if (!out.isEmpty()) LOG.info("Loaded {} survival meter(s)", out.size());
     }
@@ -201,12 +259,28 @@ public final class Survival {
     /** The player's value for a meter (its start value when the player has none yet). */
     public static double get(Player player, Meter meter) {
         if (Stats.def(meter.stat()).stored() && !Stats.ENTITY.get(player).containsKey(meter.stat().toString())) return meter.start();
-        return Stats.get(player, meter.stat());
+        return Stats.base(player, meter.stat());
     }
 
     /** Sets the player's value, kept inside the meter's range. */
     public static void set(Player player, Meter meter, double value) {
-        Stats.set(player, meter.stat(), meter.clamp(value));
+        write(player, meter, value);
+        if (player instanceof ServerPlayer p) touch(p);
+    }
+
+    private static void write(Player player, Meter meter, double value) {
+        boolean was = writing;
+        writing = true;
+        try {
+            Stats.set(player, meter.stat(), meter.clamp(value));
+        } finally {
+            writing = was;
+        }
+    }
+
+    private static boolean meterStat(FId stat) {
+        for (Meter m : meters.values()) if (m.stat().equals(stat)) return true;
+        return false;
     }
 
     public static void add(Player player, Meter meter, double amount) {
@@ -215,24 +289,73 @@ public final class Survival {
 
     // ---- ticking
 
+    /**
+     * Something a rule may read changed for the player: the plan is rebuilt on the next tick, after the seconds that
+     * passed are counted with the old one.
+     */
+    public static void touch(ServerPlayer p) {
+        Track t = TRACK.get(p.getUUID());
+        if (t != null && t.entity == p) t.dirty = true;
+    }
+
     private static void tick(MinecraftServer server) {
         if (defsChanged) {
             defsChanged = false;
             Defs msg = defsMessage();
             for (ServerPlayer p : server.getPlayerList().getPlayers()) FNet.toPlayer(p, msg);
         }
-        ticks++;
+        clock++;
         if (meters.isEmpty()) return;
-        int seconds = step == null ? 1 : Math.max(1, step.getOr(1));
-        int period = seconds * 20;
-        for (ServerPlayer p : List.copyOf(server.getPlayerList().getPlayers())) {
-            if (Timers.due(period, server, p.getUUID())) evaluate(p, seconds);
+        List<ServerPlayer> players = server.getPlayerList().getPlayers();
+        for (int i = 0; i < players.size(); i++) {
+            ServerPlayer p = players.get(i);
+            Track t = TRACK.get(p.getUUID());
+            if (t == null || t.entity != p) t = track(p);
+            if (t.dirty || t.epoch != epoch || clock >= t.wake) update(p, t);
         }
     }
 
+    /** The player's track; a new entity (login or respawn) starts its clock now, resetting meters after a death. */
+    private static Track track(ServerPlayer p) {
+        Track t = TRACK.computeIfAbsent(p.getUUID(), u -> new Track());
+        if (t.entity == p) return t;
+        boolean respawned = t.entity != null && t.entity.getHealth() <= 0;
+        t.entity = p;
+        t.last = clock;
+        t.dirty = true;
+        t.placed = false;
+        if (respawned) {
+            for (Meter m : meters.values()) {
+                if (!m.resetOnDeath()) continue;
+                write(p, m, m.respawn());
+                t.timers.keySet().removeIf(k -> k.startsWith(m.id() + "#"));
+            }
+        }
+        return t;
+    }
+
+    /** Counts the whole seconds since the last update with the current plan, rebuilds the plan if due, schedules. */
+    private static void update(ServerPlayer p, Track t) {
+        if (p.isDeadOrDying()) {
+            t.last = clock;
+            t.wake = clock + 20;
+            return;
+        }
+        int secs = (int) Math.min(Integer.MAX_VALUE, (clock - t.last) / 20);
+        if (secs > 0) {
+            advance(p, t, secs);
+            t.last += secs * 20L;
+        }
+        if (t.dirty || t.epoch != epoch || clock >= t.recheck) {
+            if (clock - t.sampled >= 20) sample(p, t, (clock - t.sampled) / 20.0);
+            plan(p, t);
+        }
+        schedule(p, t);
+    }
+
     /**
-     * One second of every meter for the player: death resets, rules, then thresholds. Runs by itself for online
-     * players; call it for others (it does nothing for dead players).
+     * One second of every meter for the player: death resets, rules, then thresholds. Online players update by
+     * themselves when something changes; call it for others (it does nothing for dead players).
      */
     public static void evaluate(ServerPlayer p) {
         evaluate(p, 1);
@@ -242,39 +365,135 @@ public final class Survival {
     public static void evaluate(ServerPlayer p, int seconds) {
         if (meters.isEmpty()) return;
         int secs = Math.max(1, seconds);
-        UUID uuid = p.getUUID();
-        ServerPlayer before = LAST_ENTITY.put(uuid, p);
-        boolean respawned = before != null && before != p && before.getHealth() <= 0;
+        Track t = track(p);
         if (p.isDeadOrDying()) return;
-        Track t = TRACK.computeIfAbsent(uuid, u -> new Track());
-        t.moving = t.placed && (Math.abs(p.getX() - t.x) + Math.abs(p.getZ() - t.z)) > 0.5;
+        sample(p, t, 1);
+        plan(p, t);
+        advance(p, t, secs);
+        t.last = clock;
+        schedule(p, t);
+    }
+
+    /** Whether the player moved since the last sample (more than half a block a second). */
+    private static void sample(ServerPlayer p, Track t, double secs) {
+        t.moving = t.placed && (Math.abs(p.getX() - t.x) + Math.abs(p.getZ() - t.z)) > 0.5 * Math.max(1, secs);
         t.x = p.getX();
-        t.y = p.getY();
         t.z = p.getZ();
         t.placed = true;
+        t.sampled = clock;
+    }
+
+    /** Works out which rules hold now. */
+    private static void plan(ServerPlayer p, Track t) {
+        t.dirty = false;
+        t.epoch = epoch;
         boolean exempt = p.isCreative() || p.isSpectator();
+        boolean poll = false;
+        Map<FId, double[][]> plan = new HashMap<>();
         for (Meter m : meters.values()) {
-            if (respawned && m.resetOnDeath()) {
-                set(p, m, m.respawn());
-                t.timers.keySet().removeIf(k -> k.startsWith(m.id() + "#"));
-            }
             if (exempt && !m.creative()) continue;
-            double v = get(p, m);
+            if (polled.contains(m.id())) poll = true;
+            List<double[]> steps = new java.util.ArrayList<>();
             for (Meter.Rule r : m.rules()) {
                 if (!when(p, r.when())) continue;
                 if (r.climate() != null) {
                     double target = climate(p.level(), p.blockPosition(), r.climate()) * r.scale() + r.offset();
-                    double rate = Meter.clamp(r.rate(), 0, 1);
-                    // moving part of the way each second, for several seconds
-                    v += (target - v) * (secs == 1 ? rate : 1 - Math.pow(1 - rate, secs));
-                } else {
-                    v += r.amount() * secs;
+                    steps.add(new double[] {1, target, Meter.clamp(r.rate(), 0, 1)});
+                } else if (r.amount() != 0) {
+                    steps.add(new double[] {0, r.amount()});
                 }
             }
-            v = m.clamp(v);
-            set(p, m, v);
+            plan.put(m.id(), steps.toArray(new double[0][]));
+        }
+        t.plan = plan;
+        int slow = poll ? Math.max(1, recheck == null ? 5 : recheck.getOr(5)) : SAFETY_SECONDS;
+        t.recheck = clock + slow * 20L;
+    }
+
+    /** One second of a plan's steps on a value: amounts add, climate steps move part of the way to their target. */
+    private static double second(Meter m, double[][] steps, double v) {
+        for (double[] st : steps) v += st[0] == 0 ? st[1] : (st[1] - v) * st[2];
+        return m.clamp(v);
+    }
+
+    /** Runs the plan for whole seconds, then the thresholds. */
+    private static void advance(ServerPlayer p, Track t, int secs) {
+        for (Meter m : meters.values()) {
+            double[][] steps = t.plan.get(m.id());
+            if (steps == null) continue;
+            double before = get(p, m);
+            double v = before;
+            int n = Math.min(secs, 3600);
+            for (int i = 0; i < n && steps.length > 0; i++) {
+                double next = second(m, steps, v);
+                if (next == v) break;
+                v = next;
+            }
+            if (v != before || !Stats.ENTITY.get(p).containsKey(m.stat().toString())) write(p, m, v);
             thresholds(p, m, v, t, secs);
         }
+    }
+
+    /**
+     * The next update: when a value crosses a whole number or a threshold, a threshold effect needs renewing or its
+     * damage is due, or the plan is due a check, whichever comes first.
+     */
+    private static void schedule(ServerPlayer p, Track t) {
+        int next = SAFETY_SECONDS;
+        for (Meter m : meters.values()) {
+            double[][] steps = t.plan.get(m.id());
+            if (steps == null) continue;
+            double v = get(p, m);
+            List<Meter.Threshold> ths = m.thresholds();
+            for (int i = 0; i < ths.size(); i++) {
+                Meter.Threshold th = ths.get(i);
+                if (!th.active(v)) continue;
+                if (th.effect() != null) next = Math.min(next, Math.max(1, th.duration() / 20 - 1));
+                if (th.damage() > 0) next = Math.min(next, Math.max(1, th.interval() - t.timers.getOrDefault(m.id() + "#" + i, 0)));
+            }
+            if (steps.length == 0) continue;
+            double w = v;
+            for (int s = 1; s < next; s++) {
+                double after = second(m, steps, w);
+                if (after == w) break;
+                w = after;
+                if (Math.floor(w) != Math.floor(v) || crossed(ths, v, w)) {
+                    next = s;
+                    break;
+                }
+            }
+        }
+        t.wake = Math.min(t.last + next * 20L, t.recheck);
+    }
+
+    private static boolean crossed(List<Meter.Threshold> ths, double a, double b) {
+        for (Meter.Threshold th : ths) if (th.active(a) != th.active(b)) return true;
+        return false;
+    }
+
+    /** Whether a rule's {@code when} reads only things some event reports. */
+    static boolean evented(JsonElement when) {
+        if (when == null || when.isJsonNull()) return true;
+        if (when.isJsonPrimitive()) return EVENTED.contains(when.getAsString().toLowerCase(Locale.ROOT));
+        if (when.isJsonArray()) {
+            for (JsonElement e : when.getAsJsonArray()) if (!evented(e)) return false;
+            return true;
+        }
+        JsonObject o = when.getAsJsonObject();
+        if (!o.has("type") || !"activity".equals(o.get("type").getAsString()) || !o.has("is")) return false;
+        return evented(o.get("is"));
+    }
+
+    /** Ticks until the player's meters next update by themselves (for tests); -1 when they have no track. */
+    public static long nextUpdate(ServerPlayer p) {
+        Track t = TRACK.get(p.getUUID());
+        return t == null || t.entity != p ? -1 : t.wake - clock;
+    }
+
+    /** Whether the player's plan waits to be rebuilt (for tests). */
+    public static boolean pending(ServerPlayer p) {
+        Track t = TRACK.get(p.getUUID());
+        return t != null && t.entity == p && t.dirty;
     }
 
     /** The generic damage type for a meter that has none of its own. */

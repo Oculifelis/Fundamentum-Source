@@ -71,6 +71,16 @@ public final class Multiblocks {
             return positions().contains(pos);
         }
 
+        /** Where key character {@code symbol} sits in this build. */
+        public List<BlockPos> positions(char symbol) {
+            return this.pattern.positions(symbol, this.controller, this.facing, this.mirrored);
+        }
+
+        /** Where each key character with extra fields sits in this build; read the fields with {@code pattern().extras(c)}. */
+        public java.util.Map<Character, List<BlockPos>> positionsByKey() {
+            return this.pattern.positionsByKey(this.controller, this.facing, this.mirrored, false);
+        }
+
         /** Whether the world still holds this structure. */
         public boolean stillThere(Level level) {
             return this.pattern.matches(level::getBlockState, this.controller, this.facing, this.mirrored);

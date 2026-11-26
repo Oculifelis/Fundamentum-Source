@@ -1,0 +1,6 @@
+{
+  "item": "minecraft:wooden_sword",
+  "attack_damage": 9,
+  "attack_speed": 2.0,
+  "modifiers": [{"attribute": "minecraft:armor", "amount": 3, "operation": "add_value", "slot": "mainhand"}]
+}

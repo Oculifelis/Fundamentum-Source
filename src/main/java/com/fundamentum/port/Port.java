@@ -20,6 +20,7 @@ import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimplePreparableReloadListener;
 import net.minecraftforge.event.OnDatapackSyncEvent;
+import net.minecraftforge.event.entity.EntityEvent;
 import net.minecraftforge.event.entity.living.LivingEquipmentChangeEvent;
 import net.minecraftforge.event.entity.living.MobEffectEvent;
 import net.minecraftforge.event.level.ChunkWatchEvent;
@@ -59,6 +60,7 @@ public final class Port {
         });
         modBus.addListener((RegisterCapabilitiesEvent event) -> FAttach.registerCapability(event));
         modBus.addListener((FMLCommonSetupEvent event) -> FNet.register());
+        modBus.addListener((net.minecraftforge.event.entity.EntityAttributeModificationEvent event) -> FReg.attachAttributes(event));
 
         IEventBus bus = MinecraftForge.EVENT_BUS;
         bus.addGenericListener(Entity.class, (AttachCapabilitiesEvent<Entity> e) -> FAttach.attach(e));
@@ -79,6 +81,9 @@ public final class Port {
         bus.addListener((MobEffectEvent.Expired e) -> FLife.fireEffectsChanged(e.getEntity()));
         bus.addListener((LivingEquipmentChangeEvent e) -> {
             if (e.getSlot().getType() == EquipmentSlot.Type.HAND && e.getEntity() instanceof ServerPlayer p) FLife.fireHandChanged(p);
+        });
+        bus.addListener((EntityEvent.EnteringSection e) -> {
+            if (!FLife.SECTION.isEmpty() && e.getEntity() instanceof ServerPlayer p) FLife.fireSectionEntered(p);
         });
         bus.addListener((ChunkWatchEvent.Watch e) -> FLife.fireChunkWatched(e.getPlayer(), e.getLevel(), e.getPos().x, e.getPos().z));
         bus.addListener((PlayerEvent.StartTracking e) -> FAttach.startTracking(e));

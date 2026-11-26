@@ -209,6 +209,10 @@ public final class WhipsClient {
 
     /** Held whips shown coiled between swings ({@link WhipDefinition#idleCoil}), by player entity id. */
     private static final Map<Integer, WhipDefinition> COILED = new ConcurrentHashMap<>();
+    /** The tick each held coil came back (after a swing, or on drawing the whip), so it winds in instead of popping. */
+    private static final Map<Integer, Long> COIL_SINCE = new ConcurrentHashMap<>();
+    /** Ticks a coil takes to wind back in from a hanging cord. */
+    private static final double COIL_EASE_TICKS = 6.0;
 
     /** A crack's ring ({@link WhipDefinition#shockwave}): where, which way the cord ran, colour, and the tick it began. */
     private record Ring(Vec3 at, Vec3 normal, int color, long start, boolean own, double size) {}
@@ -293,7 +297,7 @@ public final class WhipsClient {
         for (int k = 0; k < aims.length; k++) {
             aims[k] = new WhipVec(looks.get(k).x(), looks.get(k).y(), looks.get(k).z());
         }
-        WhipSwing swing = new WhipSwing(whip.tuning, aims, side);
+        WhipSwing swing = new WhipSwing(Whips.tuning(player, whip), aims, side);
         Vec3 hand = Whips.hand(player, 1.0F);
         swing.start(Whips.vec(hand), Whips.solids(level));
         SWINGS.put(entity, new Swing(item, whip, swing, hand));
@@ -348,7 +352,7 @@ public final class WhipsClient {
             }
             s.snapshot(s.prev);
             Vec3 hand = Whips.hand(player, 1.0F);
-            WhipTuning t = s.whip.tuning;
+            WhipTuning t = Whips.tuning(player, s.whip);
             boolean more = s.swing.tick(Whips.vec(s.hand), Whips.vec(hand), solids, (strand, cord, tick, dt) -> {
                 if (s.swing.crack(strand, cord, tick, dt)) {
                     WhipVec tip = cord.tip();
@@ -437,6 +441,10 @@ public final class WhipsClient {
                 COILED.put(player.getId(), whip);
             }
         }
+        for (Integer id : COILED.keySet()) {
+            COIL_SINCE.putIfAbsent(id, level.getGameTime());
+        }
+        COIL_SINCE.keySet().retainAll(COILED.keySet());
         RINGS.removeIf(r -> level.getGameTime() - r.start() > RING_TICKS * (r.size() > 1.0 ? 2 : 1));
         CHARGING.keySet().removeIf(id -> !(level.getEntity(id) instanceof Player));
         HIP.keySet().removeIf(id -> !(level.getEntity(id) instanceof Player));
@@ -663,7 +671,7 @@ public final class WhipsClient {
             HipAt at = HIPS.get(id);
             if (whip != null && at != null && level.getEntity(id) instanceof Player player && !player.isInvisible()
                 && !(player == mc.getCameraEntity() && mc.options.getCameraType().isFirstPerson())) {
-                coilAt(event, level, player, item, whip, at.at(), at.forward(), at.out(), at.down(), 0.75 * player.getScale(), cam);
+                coilAt(event, level, player, item, whip, at.at(), at.forward(), at.out(), at.down(), 0.75 * player.getScale(), 1.0, cam);
             }
         });
         HIPS.clear();
@@ -689,8 +697,11 @@ public final class WhipsClient {
         float yaw = Mth.lerp(pt, player.yBodyRotO, player.yBodyRot) * Mth.DEG_TO_RAD;
         Vec3 forward = new Vec3(-Mth.sin(yaw), 0, Mth.cos(yaw));
         Vec3 out = new Vec3(-Mth.cos(yaw), 0, -Mth.sin(yaw)).scale(player.getMainArm() == HumanoidArm.RIGHT ? 1 : -1);
+        Long since = COIL_SINCE.get(id);
+        double wind = since == null ? 1.0 : Mth.clamp((level.getGameTime() - since + pt) / COIL_EASE_TICKS, 0.0, 1.0);
+        wind = wind * wind * (3.0 - 2.0 * wind);
         coilAt(event, level, player, BuiltInRegistries.ITEM.getKey(player.getMainHandItem().getItem()), whip, start, forward, out,
-            new Vec3(0, -1, 0), (firstPerson ? 0.55 : 1.0) * player.getScale(), cam);
+            new Vec3(0, -1, 0), (firstPerson ? 0.55 : 1.0) * player.getScale(), wind, cam);
     }
 
     /**
@@ -698,7 +709,7 @@ public final class WhipsClient {
      * loose end: the held coil (under the handle) and the hip coil both.
      */
     private static void coilAt(Frame event, ClientLevel level, Player player, ResourceLocation item, WhipDefinition whip,
-                               Vec3 start, Vec3 forward, Vec3 out, Vec3 down, double scale, Vec3 cam) {
+                               Vec3 start, Vec3 forward, Vec3 out, Vec3 down, double scale, double wind, Vec3 cam) {
         double r = 0.15 * scale;
         int turns = 3, per = 14, tail = 4;
         int n = turns * per + 1 + tail;
@@ -715,6 +726,14 @@ public final class WhipsClient {
             } else {
                 int j = i - turns * per;
                 world[i] = world[turns * per].add(down.scale(0.06 * scale * j)).add(forward.scale(0.01 * scale * j));
+            }
+        }
+        for (int i = 0; i < n; i++) {
+            if (wind < 1.0) {
+                // Winding back in after a swing: from a cord hanging off the handle into the loops.
+                double f = (double) i / (n - 1);
+                Vec3 hanging = start.add(down.scale(0.9 * scale * f)).add(forward.scale(0.12 * scale * f));
+                world[i] = hanging.lerp(world[i], wind);
             }
             p[i] = world[i].subtract(cam);
             light[i] = LevelRenderer.getLightColor(level, BlockPos.containing(world[i]));

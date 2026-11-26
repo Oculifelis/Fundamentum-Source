@@ -15,12 +15,12 @@ import org.spongepowered.asm.mixin.Mutable;
 import org.spongepowered.asm.mixin.Shadow;
 
 /**
- * Lets biome slices make a source count its possible biomes again (features are placed only in those). Named twice (dev
- * name and SRG alias, unremapped) so Fundamentum needs no refmap.
+ * Lets biome slices make a source count its possible biomes again (features are placed only in those).
+ * The public supplier uses the edition refmap so its runtime field name is exact.
  */
 @Mixin(BiomeSource.class)
 public abstract class BiomeSourceMixin implements PossibleBiomesReset {
-    @Shadow(remap = false, aliases = "f_47891_") @Final @Mutable public Supplier<Set<Holder<Biome>>> possibleBiomes;
+    @Shadow @Final @Mutable public Supplier<Set<Holder<Biome>>> possibleBiomes;
 
     @Override
     public void fundamentum$resetPossibleBiomes(Supplier<Stream<Holder<Biome>>> biomes) {

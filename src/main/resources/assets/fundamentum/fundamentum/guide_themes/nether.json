@@ -1,0 +1,50 @@
+{
+  "name": "Nether",
+  "tags": [
+    "dark",
+    "minecraft"
+  ],
+  "style": "bevel",
+  "backdrop": "#A1000000",
+  "colors": {
+    "fill": "#FF2A0E0E",
+    "frame": "#000000",
+    "rule": "#140606",
+    "title": "#F4D6C8",
+    "muted": "#B0786A",
+    "text": "#F4D6C8",
+    "strong": "#F4D6C8",
+    "soft": "#F4D6C8",
+    "mod": "#F4D6C8",
+    "nav": "#F4D6C8"
+  },
+  "shadow": true,
+  "accent": {
+    "shift": 0.0,
+    "selection": 60
+  },
+  "well": {
+    "fill": "#3A1414",
+    "light": "#5A1E1A",
+    "shadow": "#140606",
+    "line": "#000000"
+  },
+  "page": {
+    "text": "#F4D6C8",
+    "muted": "#B0786A",
+    "code": "#FFE080",
+    "rule": [
+      "#140606",
+      "#5A1E1A"
+    ],
+    "shadow": true
+  },
+  "slot": {
+    "fill": "#3A1414",
+    "edge": "#140606"
+  },
+  "bevel": {
+    "light": "#4A1E1A",
+    "shadow": "#140606"
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "name": "Cherry",
+  "tags": [
+    "light",
+    "textured",
+    "minecraft"
+  ],
+  "style": "textured",
+  "backdrop": "#99000000",
+  "colors": {
+    "fill": "#FFFBEEF2",
+    "frame": "#000000",
+    "rule": "#F0D4DE",
+    "title": "#3A1E2A",
+    "muted": "#5A2E3E",
+    "text": "#3A1E2A",
+    "strong": "#3A1E2A",
+    "soft": "#452331",
+    "mod": "#452331",
+    "nav": "#3A1E2A"
+  },
+  "shadow": false,
+  "accent": {
+    "shift": -0.5,
+    "selection": 70
+  },
+  "well": {
+    "fill": "#F0D4DE",
+    "light": "#F0D4DE",
+    "shadow": "#5A2E3E",
+    "line": "#8A4A5C"
+  },
+  "page": {
+    "text": "#3A1E2A",
+    "muted": "#5A2E3E",
+    "code": "#8A5A00",
+    "rule": [
+      "#F0D4DE",
+      "#F0D4DE"
+    ],
+    "shadow": false
+  },
+  "slot": {
+    "fill": "#F0D4DE",
+    "edge": "#5A2E3E"
+  },
+  "texture": {
+    "background": "minecraft:textures/block/cherry_planks.png",
+    "border": "minecraft:textures/block/cherry_planks.png",
+    "tint": "#0AFFFFFF",
+    "border_tint": "#6E000000",
+    "border_width": 5,
+    "well": "#E6FBEEF2"
+  }
+}

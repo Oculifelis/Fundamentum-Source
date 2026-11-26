@@ -258,6 +258,12 @@ public final class FAttach<T> {
         return this.codec.parse(ops, this.codec.encodeStart(ops, value).getOrThrow(false, msg -> { })).getOrThrow(false, msg -> { });
     }
 
+    /** Sends a value through the sync (stream) codec and back, for attachments that sync but don't save. */
+    public T roundTripSync(T value, RegistryAccess access) {
+        if (this.streamCodec == null) throw new IllegalStateException(this.id + " has no sync codec");
+        return this.streamCodec.roundTrip(value, access);
+    }
+
     private T getIn(ICapabilityProvider holder) {
         Store s = store(holder);
         T v = s.get(this);
@@ -275,6 +281,9 @@ public final class FAttach<T> {
 
     private static Store store(ICapabilityProvider holder) {
         Store s = holder.getCapability(CAP).resolve().orElse(null);
+        // A dead player stays in the player list until respawn with its capabilities already invalidated; per-tick
+        // code reading it gets an empty throwaway store (the respawn copy revives the real one).
+        if (s == null && holder instanceof Entity e && e.isRemoved()) return new Store();
         if (s == null) throw new IllegalStateException("FAttach has no storage on " + holder + " (not registered yet, or the holder was removed)");
         return s;
     }

@@ -115,6 +115,17 @@ public final class MultiblockSelfTest {
         check(fp.width() == 3 && fp.height() == 2 && fp.depth() == 3, "size is width, layers, rows");
         check(fp.counts().get('I') == 6 && fp.counts().get('L') == 5 && fp.counts().get('C') == 1, "part counts " + fp.counts());
         check(fp.rotates() && !fp.mirrors() && all.get(MIRRORED).mirrors() && !all.get(FIXED).rotates(), "rotate and mirror flags");
+        check(fp.extras('G').get("socket").getAsBoolean() && fp.extras('G').get("role").getAsString().equals("arc_electrode")
+            && fp.extras('G').getAsJsonObject("tier").get("min").getAsInt() == 2 && !fp.extras('G').has("block"),
+            "extra key fields are kept (" + fp.extras('G') + ")");
+        check(fp.extras('F').get("role").getAsString().equals("heater") && !fp.extras('F').has("state") && fp.extras('I').size() == 0
+            && fp.allExtras().keySet().equals(java.util.Set.of('G', 'F')), "only unread fields count as extras (" + fp.allExtras() + ")");
+        fp.extras('G').addProperty("socket", false);
+        check(fp.extras('G').get("socket").getAsBoolean(), "extras hand out copies");
+        check(fp.cells('L').size() == 5 && fp.cells('C').size() == 1 && fp.cells('Z').isEmpty() && fp.controller() == 'C', "cells by key character");
+        MultiblockPattern opt = MultiblockPattern.parse(JsonParser.parseString(
+            "{\"layers\":[[\"CA\"]],\"key\":{\"C\":\"minecraft:stone\",\"A\":{\"options\":[\"minecraft:dirt\",\"#minecraft:logs\"],\"role\":\"x\"}},\"controller\":\"C\"}").getAsJsonObject());
+        check(opt.parts().get('A').options().size() == 2 && opt.extras('A').get("role").getAsString().equals("x"), "an object key entry may list options");
         check(throwsOn("{\"layers\":[[\"CC\"]],\"key\":{\"C\":\"minecraft:stone\"},\"controller\":\"C\"}"), "two controllers are refused");
         check(throwsOn("{\"layers\":[[\"CX\"]],\"key\":{\"C\":\"minecraft:stone\"},\"controller\":\"C\"}"), "a character missing from the key is refused");
         check(throwsOn("{\"layers\":[[\"C\",\"AA\"]],\"key\":{\"C\":\"minecraft:stone\",\"A\":\"minecraft:dirt\"},\"controller\":\"C\"}"), "ragged rows are refused");
@@ -133,6 +144,10 @@ public final class MultiblockSelfTest {
             check(level.getBlockState(base.offset(gold[i][0], 0, gold[i][1])).is(Blocks.GOLD_BLOCK), "the gold corner sits where expected facing " + facing);
             BlockState f = level.getBlockState(base.offset(furnace[i][0], 1, furnace[i][1]));
             check(f.is(Blocks.FURNACE) && f.getValue(BlockStateProperties.HORIZONTAL_FACING) == facing, "the furnace turns with the pattern facing " + facing);
+            check(m != null && m.positions('G').equals(List.of(base.offset(gold[i][0], 0, gold[i][1])))
+                && m.positions('F').equals(List.of(base.offset(furnace[i][0], 1, furnace[i][1])))
+                && m.positionsByKey().keySet().equals(java.util.Set.of('G', 'F')) && m.positionsByKey().get('G').equals(m.positions('G')),
+                "positions by key follow the build facing " + facing);
             check(m != null && m.positions().size() == 15 && m.contains(base.offset(gold[i][0], 0, gold[i][1])), "positions cover the structure facing " + facing);
         }
 

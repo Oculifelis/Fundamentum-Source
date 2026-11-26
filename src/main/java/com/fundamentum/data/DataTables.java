@@ -76,7 +76,7 @@ public final class DataTables {
         for (DataTable<?> table : TABLES.values()) {
             if (table.isSynced()) {
                 var payload = DataTablePayload.of(table);
-                players.forEach(p -> CHANNEL.send(PacketDistributor.PLAYER.with(() -> p), payload));
+                players.stream().filter(p -> com.fundamentum.port.FNet.canReceive(CHANNEL, p)).forEach(p -> CHANNEL.send(PacketDistributor.PLAYER.with(() -> p), payload));
             }
         }
     }

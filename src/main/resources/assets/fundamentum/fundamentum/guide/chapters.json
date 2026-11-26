@@ -1,0 +1,7 @@
+{
+  "title": "Fundamentum",
+  "icon": "minecraft:book",
+  "chapters": [
+    {"id": "themes", "title": "Guide Themes", "icon": "minecraft:painting", "order": 1}
+  ]
+}

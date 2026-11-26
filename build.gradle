@@ -1,8 +1,20 @@
+buildscript {
+    repositories { maven { url = 'https://repo.spongepowered.org/repository/maven-public/' } }
+    dependencies { classpath 'org.spongepowered:mixingradle:0.7.38' }
+}
+
 plugins {
     id 'eclipse'
     id 'idea'
     id 'maven-publish'
     id 'net.minecraftforge.gradle' version '[6.0.24,6.2)'
+}
+
+apply plugin: 'org.spongepowered.mixin'
+
+mixin {
+    add sourceSets.main, 'fundamentum.refmap.json'
+    config 'fundamentum.mixins.json'
 }
 
 version = "${mod_version}+${minecraft_version}"
@@ -74,6 +86,11 @@ minecraft {
             if (project.hasProperty('flailtest')) {
                 property 'fundamentum.flailtest', 'true'
             }
+            // gradlew runServer -Pbossbagtest: boss bags (bossbagtest), stops the server when done
+            if (project.hasProperty('bossbagtest')) {
+                property 'fundamentum.bossbagtest', 'true'
+                workingDirectory project.file('run-bossbagtest')
+            }
             // gradlew runServer -Psystems2test: bosses, loot helpers, material sets, mana bridge and HUD layers (systems2test), stops the server when done
             if (project.hasProperty('systems2test')) {
                 property 'fundamentum.systems2test', 'true'
@@ -104,10 +121,25 @@ minecraft {
                 property 'fundamentum.stattest', 'true'
                 workingDirectory project.file('run-stattest')
             }
+            // gradlew runServer -Pjadetest: our Jade plugin's common half on a dedicated server (compat/jade/JadeSelfTest), stops the server when done
+            if (project.hasProperty('jadetest')) {
+                property 'fundamentum.jadetest', 'true'
+                workingDirectory project.file('run-jadetest')
+            }
+            // gradlew runServer -Papothictest: our shared stats folded into Apothic Attributes' (attribute/ApothicSelfTest), stops the server when done
+            if (project.hasProperty('apothictest')) {
+                property 'fundamentum.apothictest', 'true'
+                workingDirectory project.file('run-apothictest')
+            }
             // gradlew runServer -Ptransfertest: fluid and energy transfer, tanks, item-to-fluid declarations and the command (transfer/TransferSelfTest), stops the server when done
             if (project.hasProperty('transfertest')) {
                 property 'fundamentum.transfertest', 'true'
                 workingDirectory project.file('run-transfertest')
+            }
+            // gradlew runServer -Pdiscounttest: per-aspect discounts on items, stacks, armour and Curios, and the Thaumaturge wand hook when it is loaded (compat/discount/DiscountSelfTest), stops the server when done
+            if (project.hasProperty('discounttest')) {
+                property 'fundamentum.discounttest', 'true'
+                workingDirectory project.file('run-discounttest')
             }
             // gradlew runServer -Pgoaltest: data-driven mob goals and their behaviour (MobGoalSelfTest), stops the server when done
             if (project.hasProperty('goaltest')) {
@@ -128,6 +160,49 @@ minecraft {
             if (project.hasProperty('survivaltest')) {
                 property 'fundamentum.survivaltest', 'true'
                 workingDirectory project.file('run-survivaltest')
+            }
+            // gradlew runServer -Pdodgetest: dodge charges, motion, i-frames, recharge and style rules (dodge/DodgeSelfTest), stops the server when done
+            if (project.hasProperty('dodgetest')) {
+                property 'fundamentum.dodgetest', 'true'
+                workingDirectory project.file('run-dodgetest')
+            }
+            // gradlew runServer -Psummontoggletest: the summon switch (summon/SummonToggleSelfTest), stops the server when done
+            if (project.hasProperty('summontoggletest')) {
+                property 'fundamentum.summontoggletest', 'true'
+                workingDirectory project.file('run-summontoggletest')
+            }
+            // gradlew runServer -Pcombattest: poise, parry, stamina bridge, traits, kinds, driver order and shake (combat/CombatSelfTest), stops the server when done
+            if (project.hasProperty('combattest')) {
+                property 'fundamentum.combattest', 'true'
+                workingDirectory project.file('run-combattest')
+            }
+            // gradlew runServer -Pfactiontest: rep, ranks, members, attitudes, prices, acts, joining, alignment, drift (faction/FactionSelfTest), stops the server when done
+            if (project.hasProperty('factiontest')) {
+                property 'fundamentum.factiontest', 'true'
+                workingDirectory project.file('run-factiontest')
+            }
+            // gradlew runServer -Pscripttest: a KubeJS server script drives the script surface and its events
+            // (script/ScriptSelfTest), stops the server when done
+            if (project.hasProperty('scripttest')) {
+                property 'fundamentum.scripttest', 'true'
+                workingDirectory project.file('run-scripttest')
+                copy { from 'src/scripttest/server_scripts'; into 'run-scripttest/kubejs/server_scripts' }
+                copy { from 'src/scripttest/zs'; into 'run-scripttest/scripts' }
+            }
+            // gradlew runServer -Preligiontest: gods, pantheons, shrines, prayer, offerings, boons, rituals, wrath (religion/ReligionSelfTest), stops the server when done
+            if (project.hasProperty('religiontest')) {
+                property 'fundamentum.religiontest', 'true'
+                workingDirectory project.file('run-religiontest')
+            }
+            // gradlew runServer -Pquesttest: offers, objectives, hand-in, rewards, gates, cooldowns, time limits (quest/QuestSelfTest), stops the server when done
+            if (project.hasProperty('questtest')) {
+                property 'fundamentum.questtest', 'true'
+                workingDirectory project.file('run-questtest')
+            }
+            // gradlew runServer -Pweighttest: item weights, load steps, overload slowdown (weight/WeightSelfTest), stops the server when done
+            if (project.hasProperty('weighttest')) {
+                property 'fundamentum.weighttest', 'true'
+                workingDirectory project.file('run-weighttest')
             }
             // gradlew runServer -Pmusictest: music rules, boss and combat state, the client sync (music/MusicSelfTest), stops the server when done
             if (project.hasProperty('musictest')) {
@@ -183,12 +258,17 @@ repositories {
     maven {
         name = 'JEI (BlameJared)'
         url = 'https://maven.blamejared.com/'
-        content { includeGroup 'mezz.jei' }
+        content { includeGroup 'mezz.jei'; includeGroup 'com.blamejared.crafttweaker'; includeGroup 'org.openzen.zencode' }
     }
     maven {
         name = 'Shedaniel (REI)'
         url = 'https://maven.shedaniel.me/'
         content { includeGroup 'me.shedaniel'; includeGroup 'me.shedaniel.cloth' }
+    }
+    maven {
+        name = 'KubeJS (Latvian)'
+        url = 'https://maven.latvian.dev/releases'
+        content { includeGroup 'dev.latvian.mods' }
     }
     maven {
         name = 'Architectury'
@@ -221,6 +301,18 @@ dependencies {
     compileOnly("me.shedaniel.cloth:basic-math:${basic_math_version}") { transitive = false }
     compileOnly(fg.deobf("dev.architectury:architectury-forge:${architectury_version}")) { transitive = false }
     compileOnly(fg.deobf("dev.emi:emi-forge:${emi_version}:api")) { transitive = false }
+    // KubeJS is optional: compiled against only (script/kubejs, listed in kubejs.plugins.txt); never in the jar.
+    // -Pscripttest loads it in the dev run
+    compileOnly(fg.deobf("dev.latvian.mods:kubejs-forge:${kubejs_version}")) { transitive = false }
+    compileOnly(fg.deobf("dev.latvian.mods:rhino-forge:${rhino_version}")) { transitive = false }
+    // CraftTweaker is optional: compiled against only (script/crafttweaker), never in the jar
+    compileOnly(fg.deobf("com.blamejared.crafttweaker:CraftTweaker-forge-1.20.1:${crafttweaker_version}")) { transitive = false }
+    if (project.hasProperty('scripttest')) {
+        runtimeOnly(fg.deobf("com.blamejared.crafttweaker:CraftTweaker-forge-1.20.1:${crafttweaker_version}")) { transitive = false }
+        runtimeOnly(fg.deobf("dev.latvian.mods:kubejs-forge:${kubejs_version}")) { transitive = false }
+        runtimeOnly(fg.deobf("dev.latvian.mods:rhino-forge:${rhino_version}")) { transitive = false }
+        runtimeOnly(fg.deobf("dev.architectury:architectury-forge:${architectury_version}")) { transitive = false }
+    }
     // Jade is optional: compiled against its jar only (the jukebox progress line in compat/jade); never in the jar
     compileOnly fg.deobf("maven.modrinth:jade:${jade_version}")
     // TerraBlender is optional: biome slices register a region subclass when it is loaded (biome/TerraBlenderRegion); never in the jar
@@ -271,12 +363,18 @@ if (project.hasProperty('throwntest')) {
 if (project.hasProperty('shieldtest')) {
     sourceSets.main.resources.srcDir 'src/shieldtest/resources'
     sourceSets.main.java.srcDir 'src/shieldtest/java'
+    tasks.named('processResources').configure { duplicatesStrategy = DuplicatesStrategy.INCLUDE }
 }
 if (project.hasProperty('flailtest')) {
     sourceSets.main.resources.srcDir 'src/flailtest/resources'
     sourceSets.main.java.srcDir 'src/flailtest/java'
     // the test's tags replace the emptied ones in main (the test folder comes last, so its copy wins)
     tasks.named('processResources').configure { duplicatesStrategy = DuplicatesStrategy.INCLUDE }
+}
+// The boss bag test's code and data, only in -Pbossbagtest runs
+if (project.hasProperty('bossbagtest')) {
+    sourceSets.main.java.srcDir 'src/bossbagtest/java'
+    sourceSets.main.resources.srcDir 'src/bossbagtest/resources'
 }
 // The systems test's code and data (bosses, loot, material sets), only in -Psystems2test runs
 if (project.hasProperty('systems2test')) {
@@ -330,6 +428,16 @@ if (project.hasProperty('stattest')) {
     sourceSets.main.resources.srcDir 'src/stattest/resources'
 }
 
+// The Apothic Attributes test, only in -Papothictest runs: Apothic and Placebo from a local folder (-Papothicdir, default the GTO instance)
+if (project.hasProperty('apothictest')) {
+    sourceSets.main.java.srcDir 'src/apothictest/java'
+    repositories { flatDir { dirs project.findProperty('apothicdir') ?: 'H:/PrismLauncher/instances/GTO/minecraft/mods' } }
+    dependencies {
+        runtimeOnly fg.deobf('blank:ApothicAttributes-1.20.1:1.3.7')
+        runtimeOnly fg.deobf('blank:Placebo-1.20.1:8.6.3')
+    }
+}
+
 // The unify test's code and data, only in -Punifytest runs
 if (project.hasProperty('unifytest')) {
     sourceSets.main.java.srcDir 'src/unifytest/java'
@@ -345,6 +453,11 @@ if (project.hasProperty('multiblocktest')) {
 if (project.hasProperty('transfertest')) {
     sourceSets.main.java.srcDir 'src/transfertest/java'
     sourceSets.main.resources.srcDir 'src/transfertest/resources'
+}
+// The aspect discount test's code and data, only in -Pdiscounttest runs
+if (project.hasProperty('discounttest')) {
+    sourceSets.main.java.srcDir 'src/discounttest/java'
+    sourceSets.main.resources.srcDir 'src/discounttest/resources'
 }
 // The mob goal test's code and data, only in -Pgoaltest runs
 if (project.hasProperty('goaltest')) {
@@ -365,6 +478,51 @@ if (project.hasProperty('foodtest')) {
 if (project.hasProperty('survivaltest')) {
     sourceSets.main.java.srcDir 'src/survivaltest/java'
     sourceSets.main.resources.srcDir 'src/survivaltest/resources'
+}
+// The dodge test's code and data, only in -Pdodgetest runs
+if (project.hasProperty('dodgetest')) {
+    sourceSets.main.java.srcDir 'src/dodgetest/java'
+    sourceSets.main.resources.srcDir 'src/dodgetest/resources'
+}
+// The summon switch test's code and data, only in -Psummontoggletest runs
+if (project.hasProperty('summontoggletest')) {
+    sourceSets.main.java.srcDir 'src/summontoggletest/java'
+    sourceSets.main.resources.srcDir 'src/summontoggletest/resources'
+}
+
+// The combat test's code, only in -Pcombattest runs
+if (project.hasProperty('combattest')) {
+    sourceSets.main.java.srcDir 'src/combattest/java'
+}
+
+// The faction test's code and data, only in -Pfactiontest runs
+if (project.hasProperty('factiontest')) {
+    sourceSets.main.java.srcDir 'src/factiontest/java'
+    sourceSets.main.resources.srcDir 'src/factiontest/resources'
+}
+
+// The script test's code and data, only in -Pscripttest runs
+if (project.hasProperty('scripttest')) {
+    sourceSets.main.java.srcDir 'src/scripttest/java'
+    sourceSets.main.resources.srcDir 'src/scripttest/resources'
+}
+
+// The religion test's code and data, only in -Preligiontest runs
+if (project.hasProperty('religiontest')) {
+    sourceSets.main.java.srcDir 'src/religiontest/java'
+    sourceSets.main.resources.srcDir 'src/religiontest/resources'
+}
+
+// The quest test's code and data, only in -Pquesttest runs
+if (project.hasProperty('questtest')) {
+    sourceSets.main.java.srcDir 'src/questtest/java'
+    sourceSets.main.resources.srcDir 'src/questtest/resources'
+}
+
+// The weight test's code and data, only in -Pweighttest runs
+if (project.hasProperty('weighttest')) {
+    sourceSets.main.java.srcDir 'src/weighttest/java'
+    sourceSets.main.resources.srcDir 'src/weighttest/resources'
 }
 // The biome slice test's code and data, only in -Pbiometest runs (never build a jar with -Pbiometest)
 if (project.hasProperty('biometest')) {
@@ -459,5 +617,27 @@ if (project.hasProperty('hudshot')) {
         workingDirectory project.file('run-hudshot')
         // the test-only mixin that keeps the cursor free is named only in this run
         args '-mixin.config=fundamentum-hudshot.mixins.json'
+    }
+}
+
+// Cache the mapping outputs that are required by the production jar.
+dependencies { annotationProcessor 'org.spongepowered:mixin:0.8.5:processor' }
+tasks.named('compileJava', JavaCompile) {
+    outputs.files(layout.buildDirectory.file('tmp/compileJava/compileJava-refmap.json'),
+            layout.buildDirectory.file('tmp/compileJava/compileJava-mappings.tsrg'),
+            layout.buildDirectory.file('tmp/compileJava/fundamentum.refmap.json'))
+}
+tasks.named('jar', Jar) {
+    doFirst {
+        def refmap = layout.buildDirectory.file('tmp/compileJava/fundamentum.refmap.json').get().asFile
+        if (!refmap.isFile() || refmap.length() == 0) throw new GradleException('Missing production Mixin refmap')
+    }
+}
+
+// The Jade test, only in -Pjadetest runs: Jade itself at run time
+if (project.hasProperty('jadetest')) {
+    sourceSets.main.java.srcDir 'src/jadetest/java'
+    dependencies {
+        runtimeOnly fg.deobf("maven.modrinth:jade:${jade_version}")
     }
 }

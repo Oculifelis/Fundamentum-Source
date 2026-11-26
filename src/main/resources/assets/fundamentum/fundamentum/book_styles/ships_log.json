@@ -1,0 +1,115 @@
+{
+ "name": "Ship's log",
+ "colors": {
+  "ink": "1e2a3a",
+  "dim": "5a6a7a",
+  "accent": "2a5a8a",
+  "rule": "b8b0a0",
+  "card": "ece4cc",
+  "card_edge": "8a7a5a",
+  "page": "e4dcc4",
+  "gold": "d8c8a0",
+  "banner": "1e3a5a",
+  "leather": "5a4028"
+ },
+ "title_text": "f0e8d0",
+ "title_shadow": "0a1a2a",
+ "title_upper": true,
+ "card_text": "1e2a3a",
+ "stamp_text": "1e2a3a",
+ "rule_color": "b8b0a0",
+ "bullet": "~",
+ "numerals": "plain",
+ "right": "standard",
+ "header": "log_entry",
+ "frame": "porthole",
+ "window": {
+  "x": -163,
+  "y": -67,
+  "w": 70,
+  "h": 70,
+  "oval": true,
+  "ground": 56
+ },
+ "caption": null,
+ "stamp_label_dy": 16,
+ "layers": {
+  "spread": {
+   "x": -188,
+   "y": -118,
+   "w": 376,
+   "h": 250,
+   "tw": 376,
+   "th": 250
+  },
+  "closed": {
+   "x": 0,
+   "y": -118,
+   "w": 188,
+   "h": 236,
+   "tw": 188,
+   "th": 236
+  },
+  "title": {
+   "x": -168,
+   "y": -102,
+   "w": 156,
+   "h": 18,
+   "tw": 156,
+   "th": 18
+  },
+  "portrait": {
+   "x": -167,
+   "y": -71,
+   "w": 78,
+   "h": 78,
+   "tw": 78,
+   "th": 78
+  },
+  "stamp_on": {
+   "x": 16,
+   "y": 31,
+   "w": 27,
+   "h": 26,
+   "tw": 27,
+   "th": 26
+  },
+  "stamp_off": {
+   "x": 17,
+   "y": 32,
+   "w": 25,
+   "h": 25,
+   "tw": 25,
+   "th": 25
+  },
+  "tab": {
+   "x": -150,
+   "y": -127,
+   "w": 22,
+   "h": 15,
+   "tw": 22,
+   "th": 15
+  },
+  "tab_up": {
+   "x": -150,
+   "y": -131,
+   "w": 22,
+   "h": 19,
+   "tw": 22,
+   "th": 19
+  }
+ },
+ "animation": {
+  "open_ticks": 16,
+  "turn_ticks": 12,
+  "close_ticks": 16,
+  "stamp_ticks": 11
+ },
+ "sounds": {
+  "open": "minecraft:item.book.page_turn",
+  "turn": "minecraft:item.book.page_turn",
+  "click": "minecraft:ui.button.click",
+  "stamp": "minecraft:item.honeycomb.wax_on",
+  "close": "minecraft:item.book.put"
+ }
+}

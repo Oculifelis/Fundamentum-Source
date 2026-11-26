@@ -1,0 +1,11 @@
+{
+  "tables": [
+    "fundamentum_test:override_target"
+  ],
+  "entries": [
+    {
+      "item": "minecraft:totem_of_undying",
+      "weight": 1
+    }
+  ]
+}

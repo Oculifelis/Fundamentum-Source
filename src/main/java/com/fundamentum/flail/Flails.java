@@ -1,5 +1,8 @@
 package com.fundamentum.flail;
 
+import com.fundamentum.enchant.FEnchantments;
+import com.fundamentum.enchant.WeaponHook;
+
 import com.fundamentum.compat.BetterCombat;
 import com.fundamentum.data.DataTable;
 import com.fundamentum.data.DataTables;
@@ -400,7 +403,8 @@ public final class Flails {
         if (s.sim.mode == FlailSim.Mode.SMASH || s.sim.mode == FlailSim.Mode.LAUNCH) {
             mult *= 0.75 + 0.5 * s.sim.charge;
         }
-        FlailHit fh = new FlailHit(player, stack, spec, living, contact, head, chain, speed, s.sim.mode, (float) (spec.damage * mult));
+        double charge = s.sim.mode == FlailSim.Mode.SPIN ? s.sim.chargeNow() : s.sim.charge;
+        FlailHit fh = new FlailHit(player, stack, spec, living, contact, head, chain, speed, s.sim.mode, charge, (float) (spec.damage * mult));
         List<FlailHooks> hooks = hooksFor(s.item, spec);
         for (FlailHooks h : hooks) {
             h.hit(fh);
@@ -408,6 +412,10 @@ public final class Flails {
         if (fh.cancelled() || fh.damage <= 0) {
             return;
         }
+        WeaponHook eh = FEnchantments.fire(new WeaponHook("on_flail_hit", level, player, stack, living).damage(fh.damage)
+            .knockback(fh.knockback).charge(charge).mode(s.sim.mode.name().toLowerCase(java.util.Locale.ROOT)));
+        fh.damage = eh.damage;
+        fh.knockback = eh.knockback;
         DamageSource source = player.damageSources().playerAttack(player);
         float dealt = enchantedDamage(stack, living, fh.damage);
         DEALING.set(spec);
@@ -426,7 +434,7 @@ public final class Flails {
         if (v.lengthSqr() < 1.0E-6) {
             v = along;
         }
-        double kb = spec.knockback * Math.min(1.25, spec.speedFactor(speed)) * (chain ? 0.5 : 1.0);
+        double kb = spec.knockback * Math.min(1.25, spec.speedFactor(speed)) * (chain ? 0.5 : 1.0) + fh.knockback;
         if (kb > 0 && v.horizontalDistanceSqr() > 1.0E-6) {
             living.knockback(kb, -v.x, -v.z);
         }

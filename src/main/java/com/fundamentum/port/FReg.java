@@ -9,6 +9,11 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.world.effect.MobEffect;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.attributes.Attribute;
+import net.minecraft.world.entity.ai.attributes.AttributeInstance;
+import net.minecraft.world.entity.ai.attributes.RangedAttribute;
+import net.minecraftforge.event.entity.EntityAttributeModificationEvent;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.item.BlockItem;
@@ -26,11 +31,11 @@ public final class FReg {
     private FReg() { }
 
     /** A registered thing, available once registration has run. */
-    public static final class Ref<T> implements Supplier<T> {
+    public static class Ref<T> implements Supplier<T> {
         private final FId id;
         private T value;
 
-        private Ref(FId id) {
+        Ref(FId id) {
             this.id = id;
         }
 
@@ -94,6 +99,54 @@ public final class FReg {
 
     public static Ref<SoundEvent> sound(FId id) {
         return add(Registries.SOUND_EVENT, id, key -> SoundEvent.createVariableRangeEvent(id.vanilla()));
+    }
+
+    /**
+     * A ranged attribute every living entity gets, synced to clients. Its name key is {@code attribute.name.<ns>.<path>}.
+     * Read it with {@link Attr#value}; gear and effects change it like any vanilla attribute.
+     */
+    public static Attr attribute(FId id, double base, double min, double max) {
+        Attr attr = new Attr(id);
+        PENDING.add(new Pending<Attribute>(Registries.ATTRIBUTE, castRef(attr), key ->
+            new RangedAttribute("attribute.name." + id.namespace() + "." + id.path(), base, min, max).setSyncable(true)));
+        ATTRS.add(attr);
+        return attr;
+    }
+
+    /** A registered attribute, with the version-neutral reads. */
+    public static final class Attr extends Ref<Attribute> {
+        private Attr(FId id) {
+            super(id);
+        }
+
+        /** The vanilla attribute, for modifiers and effects (a holder on 1.21 and later). */
+        public Attribute holder() {
+            return get();
+        }
+
+        /** The entity's current value, or the base value when it has no instance. */
+        public double value(LivingEntity entity) {
+            AttributeInstance inst = entity.getAttribute(holder());
+            return inst == null ? get().getDefaultValue() : inst.getValue();
+        }
+
+        /** The entity's base value (before modifiers). */
+        public double base(LivingEntity entity) {
+            AttributeInstance inst = entity.getAttribute(holder());
+            return inst == null ? get().getDefaultValue() : inst.getBaseValue();
+        }
+    }
+
+    private static final List<Attr> ATTRS = new ArrayList<>();
+
+    static void attachAttributes(EntityAttributeModificationEvent event) {
+        for (var type : event.getTypes()) {
+            for (Attr a : ATTRS) {
+                if (!a.bound()) continue;
+                Attribute h = a.holder();
+                if (!event.has(type, h)) event.add(type, h);
+            }
+        }
     }
 
     /** Anything else, by its vanilla registry key ({@code Registries.X}). */

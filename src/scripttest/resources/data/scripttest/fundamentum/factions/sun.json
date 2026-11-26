@@ -1,0 +1,5 @@
+{
+  "name": "Script Sun",
+  "kind": "deity",
+  "ranks": [ { "id": "neutral", "min": -1000 }, { "id": "devout", "min": 20 } ]
+}

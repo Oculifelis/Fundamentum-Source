@@ -179,6 +179,10 @@ public final class UnifySelfTest {
         // viewers
         check(RecipeViews.hidden(new ItemStack(COPPER_INGOT.get())) && !RecipeViews.hidden(new ItemStack(Items.COPPER_INGOT)), "replaced items are hidden from recipe viewers");
 
+        // creative tabs, built the way a client builds them on joining a world (a read-only entry set crashed this once)
+        check(!UnifyHooks.shownInTabs(server, Items.GOLD_INGOT) && UnifyHooks.shownInTabs(server, Items.IRON_INGOT),
+            "creative tabs build with unify on and leave out replaced items");
+
         // ores
         check(UnifyHooks.oreModifierLoaded(server), "the ore biome modifier is loaded");
         check(UnifyOreModifier.duplicate(ore(DEEP_ORE.get(), COPPER_ORE.get())), "an ore feature of replaced ores only is a duplicate");

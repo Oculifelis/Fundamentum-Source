@@ -27,7 +27,10 @@ public final class FundamentumClient {
         ConfigClient.init();
         com.fundamentum.armorset.ArmorSetTooltip.init();
         com.fundamentum.stat.client.StatClient.init();
+        com.fundamentum.quest.client.QuestClient.init();
         com.fundamentum.survival.client.SurvivalClient.init();
+        com.fundamentum.dodge.client.DodgeClient.init();
+        com.fundamentum.weight.client.WeightClient.init();
         com.fundamentum.climate.Seasons.clientRefresh(com.fundamentum.port.FClimateClient::refreshTints);
     }
 

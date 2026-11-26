@@ -10,12 +10,15 @@ import com.fundamentum.boss.Bosses;
 import com.fundamentum.event.Events;
 import com.fundamentum.event.FEvents;
 import com.fundamentum.loot.BossDrops;
+import com.fundamentum.loot.LootAdditions;
 import com.fundamentum.loot.LootPools;
 import com.fundamentum.material.MaterialColor;
+import com.fundamentum.material.MaterialRules;
 import com.fundamentum.material.MaterialSet;
 import com.fundamentum.material.MaterialSets;
 import com.fundamentum.material.MaterialSwapProcessor;
 import com.fundamentum.material.Materials;
+import com.fundamentum.material.Palettes;
 import com.google.gson.JsonParser;
 import com.mojang.authlib.GameProfile;
 import com.mojang.logging.LogUtils;
@@ -117,7 +120,7 @@ public final class Systems2SelfTest {
     public static void started(ServerStartedEvent event) {
         if (System.getProperty("fundamentum.systems2test") == null) return;
         MinecraftServer server = event.getServer();
-        for (Runnable part : List.<Runnable>of(() -> bosses(server), () -> loot(server), () -> materials(server), () -> orbis(server), () -> mana(server), () -> hud())) {
+        for (Runnable part : List.<Runnable>of(() -> bosses(server), () -> loot(server), () -> materials(server), () -> palettes(server), () -> orbis(server), () -> mana(server), () -> hud())) {
             try {
                 part.run();
             } catch (Throwable t) {
@@ -238,6 +241,25 @@ public final class Systems2SelfTest {
         LootTable other = server.getLootData().getLootTable(id("minecraft:chests/abandoned_mineshaft"));
         check(other.getRandomItems(params).stream().noneMatch(s -> s.is(Items.NETHER_STAR)), "addition stays out of other chests");
 
+        // exclude globs, replace, code-registered additions, and data overriding code with the same id
+        java.util.function.Function<String, List<ItemStack>> rollTable = name -> server.getLootData().getLootTable(id(name)).getRandomItems(params);
+        var glob = LootAdditions.all().get(test("glob_test"));
+        check(glob != null && glob.matches(id("fundamentum_test:glob/hit")) && glob.matches(id("fundamentum_test:glob/deep/hit"))
+            && !glob.matches(id("fundamentum_test:glob/skip")) && !glob.matches(id("fundamentum_test:other")), "glob: * crosses slashes, ! excludes");
+        check(rollTable.apply("fundamentum_test:glob/deep/hit").stream().anyMatch(s -> s.is(Items.HEART_OF_THE_SEA)), "glob addition lands in a matched table");
+        check(rollTable.apply("fundamentum_test:glob/skip").stream().noneMatch(s -> s.is(Items.HEART_OF_THE_SEA)), "an excluded table gets nothing");
+        List<ItemStack> replaced = rollTable.apply("fundamentum_test:replace_target");
+        check(replaced.size() == 1 && replaced.get(0).is(Items.DRAGON_EGG), "replace clears the table's own loot: " + replaced);
+        LootAdditions.register(test("code_inline"), LootAdditions.of(List.of("fundamentum_test:code_target"), 1f, LootPools.get(test("weights"))));
+        LootAdditions.register(test("code_pool"), LootAdditions.ofPool(List.of("fundamentum_test:code_pool_target"), 1f, test("weights")));
+        LootAdditions.register(test("override_test"), LootAdditions.ofPool(List.of("fundamentum_test:override_target"), 1f, test("weights")));
+        List<ItemStack> inline = rollTable.apply("fundamentum_test:code_target");
+        check(inline.size() == 1 && (inline.get(0).is(Items.DIAMOND) || inline.get(0).is(Items.EMERALD)), "code addition with an inline pool (of): " + inline);
+        List<ItemStack> byPool = rollTable.apply("fundamentum_test:code_pool_target");
+        check(byPool.size() == 1 && (byPool.get(0).is(Items.DIAMOND) || byPool.get(0).is(Items.EMERALD)), "code addition by pool id (ofPool): " + byPool);
+        List<ItemStack> over = rollTable.apply("fundamentum_test:override_target");
+        check(over.size() == 1 && over.get(0).is(Items.TOTEM_OF_UNDYING), "a data file replaces the code addition with the same id: " + over);
+
         RandomSource r = RandomSource.create(1234);
         int diamonds = 0, emeralds = 0, n = 4000;
         for (int i = 0; i < n; i++) {
@@ -295,6 +317,43 @@ public final class Systems2SelfTest {
         return st.map(s -> BuiltInRegistries.BLOCK.getKey(s.getBlock()).toString()).orElse("none");
     }
 
+    // ------------------------------------------------------------------------------------------------ palettes
+    private static void palettes(MinecraftServer server) {
+        var keepId = test("keep");
+        Optional<Palettes.Palette> keep = Palettes.get(keepId);
+        check(keep.isPresent(), "the data palette fundamentum_test:keep loads");
+        if (keep.isEmpty()) return;
+        Palettes.Palette p = keep.get();
+        check(p.roles().size() == 3 && id("minecraft:bricks").equals(p.fallback()), "keep has 3 roles and falls back to bricks: " + p.roles().keySet() + " " + p.fallback());
+        check(MaterialSets.get(id("minecraft:stone_bricks")).isPresent() && MaterialSets.get(id("minecraft:deepslate_bricks")).isPresent(), "stone_bricks and deepslate_bricks sets exist");
+        RandomSource r = RandomSource.create(1234L);
+        int stone = 0, deep = 0, other = 0;
+        for (int i = 0; i < 4000; i++) {
+            Optional<MaterialSet> s = p.pick("wall", r);
+            String sid = s.map(m -> m.id().toString()).orElse("none");
+            if (sid.equals("minecraft:stone_bricks")) stone++;
+            else if (sid.equals("minecraft:deepslate_bricks")) deep++;
+            else other++;
+        }
+        double share = stone / 4000.0;
+        check(other == 0, "wall picks skip the missing set and the weight 0 set (" + other + " others)");
+        check(Math.abs(share - 0.75) <= 0.03, "wall picks follow weight 3:1 (stone share " + share + ", deepslate " + deep + ")");
+        check(p.pick("floor", r).map(m -> m.id().toString()).orElse("none").equals("minecraft:oak"), "a plain string entry in floor picks oak");
+        check(p.pick("roof", r).map(m -> m.id().toString()).orElse("none").equals("minecraft:bricks"), "the empty roof role falls back to bricks");
+        check(p.pick("no_such_role", r).map(m -> m.id().toString()).orElse("none").equals("minecraft:bricks"), "an unknown role falls back to bricks");
+        Optional<BlockState> stairs = p.block("floor", "stairs", "", r);
+        check(is(stairs, "minecraft:oak_stairs"), "floor stairs resolve to oak_stairs: " + show(stairs));
+        Optional<BlockState> slab = p.block("roof", "slab", "", r);
+        check(is(slab, "minecraft:brick_slab"), "roof slab resolves through the fallback to brick_slab: " + show(slab));
+        Palettes.register(keepId, new Palettes.Palette(Map.of("wall", List.of(new Palettes.Weighted(id("minecraft:oak"), 1))), null));
+        check(Palettes.get(keepId).map(k -> id("minecraft:bricks").equals(k.fallback())).orElse(false), "a code palette with the same id loses to the data one");
+        var codeId = test("code_only");
+        Palettes.register(codeId, new Palettes.Palette(Map.of("wall", List.of(new Palettes.Weighted(test("no_such_set"), 4))), null));
+        Optional<Palettes.Palette> code = Palettes.get(codeId);
+        check(code.isPresent(), "a code-only palette is found by get");
+        check(code.isPresent() && code.get().pick("wall", r).isEmpty() && code.get().block("wall", "base", "", r).isEmpty(), "a palette with only missing sets and no fallback picks nothing");
+    }
+
     private static void materials(MinecraftServer server) {
         note("material sets: " + MaterialSets.all().size() + " on, " + MaterialSets.allIncludingDisabled().size() + " in all");
         Optional<MaterialSet> oak = MaterialSets.get(id("minecraft:oak"));
@@ -334,6 +393,33 @@ public final class Systems2SelfTest {
         check(MaterialSets.withTag("test_override").stream().anyMatch(m -> m.id().equals(id("minecraft:bricks"))), "withTag finds the override tag");
         check(is(MaterialSets.role(id("minecraft:bricks"), "stairs"), "minecraft:brick_stairs"), "role by id");
         check(MaterialSets.role(id("fundamentum_test:no_such_set"), "stairs").isEmpty(), "unknown set gives empty");
+        check("wall".equals(MaterialRules.slotFallback().get("test_slot")) && "main".equals(MaterialRules.slotFallback().get("roof")),
+            "datapack material rule adds a slot fallback and keeps the shipped ones");
+        check("wall".equals(MaterialSets.SLOT_FALLBACK.get("test_slot")), "SLOT_FALLBACK shows datapack rules");
+        check(MaterialRules.wearPrefixes().contains("test_wear_") && MaterialRules.wearPrefixes().contains("mossy_")
+            && MaterialRules.nether().contains("netherrack"), "datapack material rule adds a wear prefix and keeps the shipped lists");
+        check(oak.map(o -> o.slotOf("test_slot")).isPresent(), "a datapack slot fallback resolves on a set");
+        var swordMods = new ItemStack(Items.WOODEN_SWORD).getAttributeModifiers(net.minecraft.world.entity.EquipmentSlot.MAINHAND);
+        double swordDamage = swordMods.get(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE).stream().mapToDouble(m -> m.getAmount()).sum();
+        double swordSpeed = swordMods.get(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_SPEED).stream().mapToDouble(m -> m.getAmount()).sum();
+        double swordArmor = swordMods.get(net.minecraft.world.entity.ai.attributes.Attributes.ARMOR).stream().mapToDouble(m -> m.getAmount()).sum();
+        check(Math.abs(swordDamage - 8) < 1e-6 && Math.abs(swordSpeed + 2) < 1e-6,
+            "datapack item_stats replace a sword's attack damage and speed: " + swordDamage + " " + swordSpeed);
+        check(Math.abs(swordArmor - 3) < 1e-6, "datapack item_stats add an extra modifier: " + swordArmor);
+        var tradeVillager = new net.minecraft.world.entity.npc.Villager(net.minecraft.world.entity.EntityType.VILLAGER, server.overworld());
+        boolean tradeAdded = false, tradeDisabled = true;
+        for (var listing : net.minecraft.world.entity.npc.VillagerTrades.TRADES.get(net.minecraft.world.entity.npc.VillagerProfession.WEAPONSMITH).get(1)) {
+            try {
+                var offer = listing.getOffer(tradeVillager, server.overworld().random);
+                if (offer == null) continue;
+                if (offer.getResult().is(Items.WOODEN_SWORD) && offer.getBaseCostA().is(Items.DIAMOND) && offer.getBaseCostA().getCount() == 3
+                    && offer.getCostB().is(Items.STICK) && offer.getMaxUses() == 7) tradeAdded = true;
+                if (offer.getResult().is(Items.GOLDEN_SWORD) && offer.getBaseCostA().is(Items.DIAMOND)) tradeDisabled = false;
+            } catch (RuntimeException ignored) {
+            }
+        }
+        check(tradeAdded, "datapack trades add a villager trade");
+        check(tradeDisabled, "a datapack trade with disabled true is left out");
 
         // template swap between two sets
         ServerLevel level = server.overworld();
